@@ -59,7 +59,7 @@ escalation_agent = Agent(
     human judgment. You never authorize irreversible actions without
     explicit human approval.""",
     tools=[request_human_approval],
-    llm="gemini/gemini-1.5-flash",
+    llm="openai/gpt-4o-mini",
     max_iter=5,
     allow_delegation=False,
     verbose=True
@@ -71,7 +71,7 @@ triage_agent = Agent(
     goal="Classify issues and route appropriately",
     backstory="Expert at prioritizing incidents by severity and impact.",
     allow_delegation=True,  # Can delegate to escalation
-    llm="gemini/gemini-1.5-flash",
+    llm="openai/gpt-4o-mini",
     max_iter=10
 )
 
@@ -130,12 +130,12 @@ escalation_crew = Crew(
     agents=[triage_agent, escalation_agent],
     tasks=[critical_task],
     process=Process.hierarchical,  # Manager can route to escalation
-    manager_llm="gemini/gemini-1.5-pro",
+    manager_llm="openai/gpt-4o",
     verbose=True
 )
 
 result = escalation_crew.kickoff(inputs={
-    "incident_description": "BigQuery slot exhaustion - queries failing"
+    "incident_description": "Database resource exhaustion - queries failing"
 })
 ```
 

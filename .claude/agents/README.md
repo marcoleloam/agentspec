@@ -74,15 +74,6 @@ Use `_template.md` as the definitive template. Key sections:
 6. **Response Format** - Consistent output with confidence scores
 7. **Remember** - Mission and core principle
 
-## Domain-Specific Examples
+## Creating Domain-Specific Agents
 
-Additional domain-specific agents are available in `examples/agents/`:
-
-| Category | Count | Examples |
-|----------|-------|----------|
-| `ai-ml/` | 4 | llm-specialist, genai-architect |
-| `aws/` | 4 | lambda-builder, aws-deployer |
-| `data-engineering/` | 8 | spark-specialist, lakeflow-expert |
-| `developer/` | 1 | python-developer |
-
-These serve as examples for creating your own domain-specific agents.
+Use `_template.md` to create agents for your specific domain (e.g., AWS, GCP, data engineering, ML/AI). Place them in a new category directory under `agents/`.

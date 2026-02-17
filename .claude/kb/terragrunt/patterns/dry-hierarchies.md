@@ -121,7 +121,7 @@ dependency "pubsub" {
 
 # Module-specific inputs (merged with inherited)
 inputs = {
-  service_name  = "invoice-processor"
+  service_name  = "data-processor"
   min_instances = include.env.locals.cloud_run_min_instances
   max_instances = include.env.locals.cloud_run_max_instances
   memory        = include.env.locals.cloud_run_memory

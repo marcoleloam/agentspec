@@ -12,7 +12,7 @@
 ## Implementation
 
 ```python
-"""Dashboard Metrics Pattern - Key metrics for Invoice Processing Pipeline"""
+"""Dashboard Metrics Pattern - Key metrics for LLM Application"""
 from langfuse import get_client
 from dataclasses import dataclass
 import time
@@ -21,20 +21,20 @@ langfuse = get_client()
 
 @dataclass
 class ProjectTargets:
-    cost_per_invoice: float = 0.003  # $0.003
-    latency_p95_seconds: float = 3.0  # P95 < 3s
-    accuracy_percent: float = 90.0   # 90% accuracy
+    cost_per_request: float = 0.010  # $0.01
+    latency_p95_seconds: float = 3.0  # P95 latency target
+    accuracy_percent: float = 90.0   # target accuracy threshold
 
 TARGETS = ProjectTargets()
 
 def record_pipeline_metrics(trace_id: str, latency_ms: float, cost_usd: float, accuracy: float, success: bool):
-    """Record all key metrics for a single invoice processing."""
+    """Record all key metrics for a single request processing."""
     langfuse.create_score(trace_id=trace_id, name="latency_ms",
         value=min(latency_ms / (TARGETS.latency_p95_seconds * 1000), 1.0),
         data_type="NUMERIC", comment=f"Latency: {latency_ms:.0f}ms")
 
     langfuse.create_score(trace_id=trace_id, name="cost_normalized",
-        value=min(cost_usd / (TARGETS.cost_per_invoice * 3), 1.0),
+        value=min(cost_usd / (TARGETS.cost_per_request * 3), 1.0),
         data_type="NUMERIC", comment=f"Cost: ${cost_usd:.4f}")
 
     langfuse.create_score(trace_id=trace_id, name="accuracy",
@@ -46,28 +46,28 @@ def record_pipeline_metrics(trace_id: str, latency_ms: float, cost_usd: float, a
     langfuse.create_score(trace_id=trace_id, name="slo_latency_met",
         value=latency_ms <= TARGETS.latency_p95_seconds * 1000, data_type="BOOLEAN")
     langfuse.create_score(trace_id=trace_id, name="slo_cost_met",
-        value=cost_usd <= TARGETS.cost_per_invoice, data_type="BOOLEAN")
+        value=cost_usd <= TARGETS.cost_per_request, data_type="BOOLEAN")
     langfuse.create_score(trace_id=trace_id, name="slo_accuracy_met",
         value=accuracy >= TARGETS.accuracy_percent / 100, data_type="BOOLEAN")
 
-def process_with_metrics(image_bytes: bytes, user_id: str) -> dict:
+def process_with_metrics(input_data: bytes, user_id: str) -> dict:
     """Full pipeline with comprehensive metrics."""
     start_time = time.time()
 
     with langfuse.start_as_current_observation(
-        as_type="span", name="invoice-pipeline", user_id=user_id,
+        as_type="span", name="llm-pipeline", user_id=user_id,
         metadata={"pipeline_version": "1.0"}
     ) as trace:
         try:
             with langfuse.start_as_current_observation(
-                as_type="generation", name="extraction", model="gemini-1.5-pro"
+                as_type="generation", name="extraction", model="your-model-name"
             ) as gen:
-                result = extract_invoice(image_bytes)
+                result = extract_data(input_data)
                 usage = {"input": result.input_tokens, "output": result.output_tokens}
                 gen.update(output=result.text, usage_details=usage)
 
             latency_ms = (time.time() - start_time) * 1000
-            cost_usd = calculate_cost(usage, "gemini-1.5-pro")
+            cost_usd = calculate_cost(usage, "your-model-name")
             accuracy = evaluate_accuracy(result.text)
 
             record_pipeline_metrics(trace.trace_id, latency_ms, cost_usd, accuracy, True)
@@ -84,7 +84,7 @@ def process_with_metrics(image_bytes: bytes, user_id: str) -> dict:
 
 | Metric | Target | Alert Threshold |
 |--------|--------|-----------------|
-| Cost/invoice | $0.003 | > $0.005 |
+| Cost/request | $0.010 | > $0.020 |
 | Latency P95 | 3s | > 5s |
 | Accuracy | 90% | < 85% |
 

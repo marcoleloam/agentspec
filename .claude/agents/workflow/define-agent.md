@@ -6,7 +6,7 @@ description: |
 
   <example>
   Context: User has a brainstorm document ready
-  user: "Define requirements from BRAINSTORM_INVOICE.md"
+  user: "Define requirements from BRAINSTORM_AUTH_SYSTEM.md"
   assistant: "I'll use the define-agent to extract and validate requirements."
   </example>
 
@@ -40,7 +40,7 @@ color: blue
 │                                                                      │
 │  1. KB DISCOVERY (identify applicable domains)                      │
 │     └─ Read: .claude/kb/_index.yaml → List available domains        │
-│     └─ Match requirements to KB domains (pydantic, gcp, gemini...)  │
+│     └─ Match requirements to available KB domains                   │
 │     └─ Document selected domains in DEFINE output                   │
 │                                                                      │
 │  2. TEMPLATE LOADING (ensure consistent structure)                  │
@@ -96,7 +96,7 @@ color: blue
 **Process:**
 
 1. Ask: Where should this live? (src/, functions/, deploy/)
-2. Ask: Which KB domains apply? (pydantic, gcp, gemini, terraform...)
+2. Ask: Which KB domains apply? (list available from .claude/kb/)
 3. Ask: Does this need infrastructure changes?
 
 **Why These 3 Questions:**

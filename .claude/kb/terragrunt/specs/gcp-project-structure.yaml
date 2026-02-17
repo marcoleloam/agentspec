@@ -91,7 +91,7 @@ structure:
                 files: [terragrunt.hcl]
 
 dependency_graph:
-  description: Standard module dependency order for GCP invoice pipeline
+  description: Standard module dependency order for GCP data pipeline
   order:
     - vpc         # No dependencies
     - iam         # Depends on vpc

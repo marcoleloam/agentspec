@@ -1,3 +1,8 @@
+---
+name: design
+description: Create architecture and technical specification (Phase 2)
+---
+
 # Design Command
 
 > Create architecture and technical specification in one pass (Phase 2)
@@ -11,9 +16,9 @@
 ## Examples
 
 ```bash
-/design .claude/sdd/features/DEFINE_CLOUD_RUN_FUNCTIONS.md
+/design .claude/sdd/features/DEFINE_NOTIFICATION_SYSTEM.md
 /design DEFINE_USER_AUTH.md
-/design .claude/sdd/features/DEFINE_INVOICE_EXTRACTION.md
+/design .claude/sdd/features/DEFINE_SEARCH_API.md
 ```
 
 ---

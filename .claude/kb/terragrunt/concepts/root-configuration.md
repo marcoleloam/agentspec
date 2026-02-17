@@ -68,7 +68,7 @@ inputs = {
 ## Quick Reference
 
 | Component | Purpose | Generated File |
-|-----------|---------|----------------|
+| --------- | ------- | -------------- |
 | `generate "backend"` | State storage config | `backend.tf` |
 | `generate "provider"` | GCP provider config | `provider.tf` |
 | `inputs` | Common variables | N/A (passed to TF) |
@@ -80,7 +80,7 @@ inputs = {
 
 locals {
   environment = "dev"
-  project_id  = "invoice-processing-dev"
+  project_id  = "myapp-dev"
   region      = "us-central1"
 
   # Environment-specific settings

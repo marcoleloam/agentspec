@@ -6,25 +6,25 @@
 
 ## Overview
 
-Gemini's Structured Outputs feature guarantees responses adhere to a specified JSON schema. This is essential for invoice extraction where consistent field names and types are required for downstream processing.
+Gemini's Structured Outputs feature guarantees responses adhere to a specified JSON schema. This is essential for document extraction where consistent field names and types are required for downstream processing.
 
-## Basic responseSchema Usage
+## The Pattern
 
 ```python
 from google import genai
 from google.genai import types
 
-client = genai.Client(vertexai=True, project="my-project", location="us-central1")
+client = genai.Client(vertexai=True, project="your-project-id", location="us-central1")
 
 # Define the schema
-invoice_schema = {
+document_schema = {
     "type": "object",
     "properties": {
-        "invoice_id": {"type": "string"},
-        "vendor_name": {"type": "string"},
-        "invoice_date": {"type": "string", "format": "date"},
-        "total_amount": {"type": "number"},
-        "line_items": {
+        "document_id": {"type": "string"},
+        "source_name": {"type": "string"},
+        "created_date": {"type": "string", "format": "date"},
+        "total_value": {"type": "number"},
+        "items": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -37,7 +37,7 @@ invoice_schema = {
             }
         }
     },
-    "required": ["invoice_id", "vendor_name", "total_amount"]
+    "required": ["document_id", "source_name", "total_value"]
 }
 
 response = client.models.generate_content(
@@ -45,7 +45,7 @@ response = client.models.generate_content(
     contents=[image_content],
     config=types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=invoice_schema
+        response_schema=document_schema
     )
 )
 
@@ -57,14 +57,14 @@ data = json.loads(response.text)
 ## Quick Reference
 
 | Config Key | Value | Purpose |
-|------------|-------|---------|
+| ---------- | ----- | ------- |
 | `response_mime_type` | `"application/json"` | Enable JSON mode |
 | `response_schema` | JSON Schema object | Define structure |
 
 ## Supported JSON Schema Features (Gemini 2.5+)
 
 | Feature | Support | Example |
-|---------|---------|---------|
+| ------- | ------- | ------- |
 | Basic types | Yes | `string`, `number`, `integer`, `boolean` |
 | Arrays | Yes | `{"type": "array", "items": {...}}` |
 | Nested objects | Yes | `{"type": "object", "properties": {...}}` |
@@ -76,7 +76,7 @@ data = json.loads(response.text)
 ## Best Practices
 
 | Practice | Reason |
-|----------|--------|
+| -------- | ------ |
 | Match schema order in prompts | Improves output quality |
 | Use required fields | Ensures critical data extracted |
 | Keep schemas focused | One document type per schema |
@@ -89,8 +89,8 @@ data = json.loads(response.text)
 ```python
 # Duplicating schema in prompt
 prompt = """
-Extract invoice data as JSON:
-{"invoice_id": "...", "total": "..."}  # DON'T repeat schema here
+Extract document data as JSON:
+{"document_id": "...", "total": "..."}  # DON'T repeat schema here
 """
 ```
 
@@ -98,10 +98,10 @@ Extract invoice data as JSON:
 
 ```python
 # Schema only in config, clear instruction in prompt
-prompt = "Extract all invoice information from this document."
+prompt = "Extract all document information from this file."
 config = types.GenerateContentConfig(
     response_mime_type="application/json",
-    response_schema=invoice_schema  # Schema here only
+    response_schema=document_schema  # Schema here only
 )
 ```
 

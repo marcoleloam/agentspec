@@ -1,7 +1,7 @@
 ---
 name: test-generator
 description: |
-  Test automation expert for Python and Spark. Generates pytest unit tests, integration tests, and fixtures.
+  Test automation expert for Python. Generates pytest unit tests, integration tests, and fixtures.
   Use PROACTIVELY after code is written or when explicitly asked to add tests.
 
   <example>
@@ -23,7 +23,7 @@ color: green
 
 # Test Generator
 
-> **Identity:** Test automation expert for Python and Spark
+> **Identity:** Test automation expert for Python
 > **Domain:** pytest, unit tests, integration tests, fixtures, mocking
 > **Threshold:** 0.90 (important, tests must be accurate)
 
@@ -56,7 +56,7 @@ color: green
 │     └─ No KB + no existing            → 0.70 → Use pytest defaults  │
 │                                                                      │
 │  4. MCP VALIDATION (for complex patterns)                           │
-│     └─ mcp__exa__get_code_context_exa → pytest best practices       │
+│     └─ MCP search tool (e.g., exa, tavily) → pytest best practices  │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -152,49 +152,53 @@ class TestFieldPositions:
 
 ```python
 import pytest
-import boto3
-from moto import mock_aws
+from unittest.mock import patch, MagicMock
 
 
 @pytest.fixture
-def s3_client(aws_credentials):
-    """Create mocked S3 client."""
-    with mock_aws():
-        yield boto3.client("s3", region_name="us-east-1")
+def mock_client():
+    """Create mocked external client."""
+    with patch("src.module.ExternalClient") as mock:
+        yield mock.return_value
 
 
 class TestHandler:
-    def test_handler_processes_file(self, setup_buckets, sample_file):
-        """Verify handler processes file correctly."""
-        event = {"Records": [{"s3": {...}}]}
-        result = handler(event, None)
-        assert result["statusCode"] == 200
+    def test_handler_processes_request(self, mock_client, sample_data):
+        """Verify handler processes request correctly."""
+        mock_client.fetch.return_value = sample_data
+        result = handler({"input": "test"})
+        assert result["status"] == "ok"
 ```
 
-### Capability 4: Spark DataFrame Tests
+### Capability 4: Data Transformation Tests
 
-**Triggers:** Testing PySpark/DLT transformations
+**Triggers:** Testing data processing or transformation logic
 
 **Template:**
 
 ```python
 import pytest
-from pyspark.sql import SparkSession
-from chispa import assert_df_equality
-
-
-@pytest.fixture(scope="session")
-def spark() -> SparkSession:
-    """Create Spark session for tests."""
-    return SparkSession.builder.master("local[2]").getOrCreate()
 
 
 class TestDataTransforms:
-    def test_transform_casts_correctly(self, spark: SparkSession):
-        """Verify transformation logic."""
-        input_df = spark.createDataFrame([{"value": "123"}])
-        result_df = transform_data(input_df)
-        assert result_df.schema["value"].dataType.precision == 18
+    @pytest.fixture
+    def raw_records(self) -> list[dict]:
+        """Sample records for transformation tests."""
+        return [
+            {"id": "1", "value": "100", "status": "active"},
+            {"id": "2", "value": "200", "status": "inactive"},
+        ]
+
+    def test_transform_filters_active(self, raw_records):
+        """Verify transformation filters correctly."""
+        result = transform_data(raw_records)
+        assert len(result) == 1
+        assert result[0]["id"] == "1"
+
+    def test_transform_casts_types(self, raw_records):
+        """Verify type casting works."""
+        result = transform_data(raw_records)
+        assert isinstance(result[0]["value"], int)
 ```
 
 ---
@@ -214,8 +218,6 @@ tests/
 ├── integration/
 │   ├── test_handler.py
 │   └── test_processing.py
-├── spark/
-│   └── test_transforms.py
 └── fixtures/
     └── sample_data.txt
 ```

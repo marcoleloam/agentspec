@@ -36,7 +36,7 @@ def publish_with_trace(bucket: str, file_name: str, trace_id: str = None):
             "trace_id": trace_id, "parent_span_id": span.id
         }
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path("project-id", "invoice-topic")
+        topic_path = publisher.topic_path("your-project-id", "data-topic")
         future = publisher.publish(topic_path, json.dumps(message).encode("utf-8"))
         span.update(output={"message_id": future.result()})
 
@@ -51,7 +51,7 @@ def process_with_trace_context(cloud_event):
         trace_id=trace_id, parent_observation_id=parent_span_id,
         metadata={"event_id": cloud_event["id"]}
     ) as span:
-        result = process_invoice(data["bucket"], data["name"])
+        result = process_record(data["bucket"], data["name"])
         span.update(output=result)
         if needs_further_processing(result):
             call_downstream_service(result, trace_id=trace_id, parent_span_id=span.id)
@@ -97,7 +97,7 @@ def get_trace_url(trace_id: str) -> str:
 ## Example Usage
 
 ```python
-publish_with_trace(bucket="invoices-bucket", file_name="invoice-001.tiff")
+publish_with_trace(bucket="data-bucket", file_name="document-001.pdf")
 trace_url = get_trace_url("trace-abc123")
 ```
 

@@ -14,8 +14,8 @@ Google Cloud Storage is a unified object storage service for unstructured data. 
 # Read from GCS in Cloud Run function
 from google.cloud import storage
 
-def download_invoice(bucket_name: str, blob_name: str) -> bytes:
-    """Download invoice file from GCS."""
+def download_file(bucket_name: str, blob_name: str) -> bytes:
+    """Download file from GCS."""
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
@@ -30,7 +30,7 @@ def upload_processed(bucket_name: str, blob_name: str, data: bytes):
 
     blob.upload_from_string(
         data,
-        content_type="image/png"
+        content_type="application/octet-stream"
     )
 ```
 
@@ -42,14 +42,14 @@ def upload_processed(bucket_name: str, blob_name: str, data: bytes):
 | Object delete | `deleted` event | Cleanup workflows |
 | Metadata update | `metadataUpdated` event | Tag-based processing |
 
-## Invoice Pipeline Buckets
+## Data Pipeline Buckets
 
 | Bucket | Purpose | Lifecycle |
 |--------|---------|-----------|
-| `invoices-input` | Raw TIFF uploads | 30-day retention |
-| `invoices-processed` | Converted PNGs | 90-day retention |
-| `invoices-archive` | Completed invoices | Cold storage after 30 days |
-| `invoices-failed` | Failed processing | Manual review |
+| `data-input` | Raw file uploads | 30-day retention |
+| `data-processed` | Processed files | 90-day retention |
+| `data-archive` | Completed records | Cold storage after 30 days |
+| `data-failed` | Failed processing | Manual review |
 
 ## Event Types
 
@@ -88,7 +88,7 @@ def upload_with_metadata(bucket_name: str, blob_name: str, data: bytes):
 
     blob.upload_from_string(
         data,
-        content_type="image/png",
+        content_type="application/octet-stream",
         timeout=300
     )
 ```
@@ -114,8 +114,8 @@ def upload_with_metadata(bucket_name: str, blob_name: str, data: bytes):
 
 ## Storage Classes
 
-| Class | Use Case | Invoice Pipeline |
-|-------|----------|------------------|
+| Class | Use Case | Data Pipeline |
+|-------|----------|---------------|
 | Standard | Frequent access | Input, processed |
 | Nearline | Monthly access | Archive |
 | Coldline | Quarterly access | Long-term archive |

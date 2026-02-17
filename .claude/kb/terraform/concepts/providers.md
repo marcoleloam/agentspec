@@ -8,7 +8,7 @@
 
 Providers are plugins that Terraform uses to create and manage resources. Each provider offers a set of resource types and data sources. The Google provider enables management of GCP infrastructure.
 
-## GCP Provider Configuration
+## The Pattern
 
 ### Basic Setup
 

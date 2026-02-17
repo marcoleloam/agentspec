@@ -6,7 +6,7 @@ description: |
 
   <example>
   Context: User has a raw idea without clear requirements
-  user: "I want to build something to process invoices automatically"
+  user: "I want to build an automated data processing pipeline"
   assistant: "I'll use the brainstorm-agent to explore this idea and clarify requirements."
   </example>
 

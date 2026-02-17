@@ -8,7 +8,7 @@
 
 Workspaces allow you to manage multiple distinct sets of infrastructure resources from a single configuration. Each workspace has its own state file, enabling environment separation (dev, staging, prod).
 
-## Workspace Commands
+## The Pattern
 
 | Command | Purpose |
 |---------|---------|
@@ -63,7 +63,7 @@ locals {
 }
 
 resource "google_cloud_run_service" "api" {
-  name = "invoice-api-${terraform.workspace}"
+  name = "app-api-${terraform.workspace}"
 
   template {
     spec {
@@ -86,16 +86,16 @@ With GCS backend, workspaces create separate state files:
 ```hcl
 terraform {
   backend "gcs" {
-    bucket = "tf-state-myproject"
-    prefix = "invoice-pipeline"
+    bucket = "tf-state-your-project-id"
+    prefix = "app-pipeline"
   }
 }
 ```
 
 Results in:
 ```text
-gs://tf-state-myproject/
-├── invoice-pipeline/
+gs://tf-state-your-project-id/
+├── app-pipeline/
 │   ├── default.tfstate
 │   ├── dev.tfstate
 │   ├── staging.tfstate
@@ -120,7 +120,7 @@ gs://tf-state-myproject/
 
 ```hcl
 resource "google_storage_bucket" "data" {
-  name = "invoice-data-${var.project_id}-${terraform.workspace}"
+  name = "app-data-${var.project_id}-${terraform.workspace}"
 }
 ```
 

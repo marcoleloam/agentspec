@@ -56,8 +56,8 @@ model: opus
 │     └─ Novel technology stack            → 0.60 → Validate via MCP  │
 │                                                                      │
 │  4. MCP VALIDATION (for technology decisions)                       │
-│     └─ mcp__upstash-context-7-mcp__query-docs → Best practices      │
-│     └─ mcp__exa__get_code_context_exa → Production patterns         │
+│     └─ MCP docs tool (e.g., context7, ref) → Best practices         │
+│     └─ MCP search tool (e.g., exa, tavily) → Production patterns    │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```

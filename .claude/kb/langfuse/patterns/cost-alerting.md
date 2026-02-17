@@ -15,7 +15,7 @@
 ```python
 """
 Cost Alerting Pattern
-Monitor and alert on LLM costs with $0.003/invoice target
+Monitor and alert on LLM costs with $0.01/request target
 """
 import os
 from langfuse import get_client
@@ -26,10 +26,10 @@ langfuse = get_client()
 
 @dataclass
 class CostThresholds:
-    """Cost thresholds for invoice processing."""
-    per_invoice_target: float = 0.003  # $0.003 per invoice
-    per_invoice_warning: float = 0.005  # $0.005 warning level
-    per_invoice_critical: float = 0.010  # $0.010 critical level
+    """Cost thresholds for LLM request processing."""
+    per_request_target: float = 0.010  # $0.01 per request
+    per_request_warning: float = 0.020  # $0.020 warning level
+    per_request_critical: float = 0.050  # $0.050 critical level
     daily_budget: float = 100.0  # $100/day
     monthly_budget: float = 3000.0  # $3000/month
 
@@ -67,8 +67,8 @@ def calculate_generation_cost(usage_details: dict, model: str) -> float:
 # COST MONITORING
 # ============================================
 
-def process_with_cost_monitoring(image_bytes: bytes) -> dict:
-    """Process invoice with cost monitoring and alerting."""
+def process_with_cost_monitoring(input_data: bytes) -> dict:
+    """Process request with cost monitoring and alerting."""
 
     with langfuse.start_as_current_observation(
         as_type="span",
@@ -78,10 +78,10 @@ def process_with_cost_monitoring(image_bytes: bytes) -> dict:
         with langfuse.start_as_current_observation(
             as_type="generation",
             name="extraction",
-            model="gemini-1.5-pro"
+            model="your-model-name"
         ) as generation:
 
-            result = call_gemini(image_bytes)
+            result = call_llm(input_data)
 
             usage = {
                 "input": result.usage.input_tokens,
@@ -94,41 +94,41 @@ def process_with_cost_monitoring(image_bytes: bytes) -> dict:
             )
 
             # Calculate and check cost
-            cost = calculate_generation_cost(usage, "gemini-1.5-pro")
+            cost = calculate_generation_cost(usage, "your-model-name")
 
             # Score for cost tracking
             generation.score(
                 name="request_cost",
-                value=min(cost / THRESHOLDS.per_invoice_critical, 1.0),
+                value=min(cost / THRESHOLDS.per_request_critical, 1.0),
                 data_type="NUMERIC",
                 comment=f"Cost: ${cost:.6f}"
             )
 
             # Alert on threshold breach
-            if cost > THRESHOLDS.per_invoice_critical:
+            if cost > THRESHOLDS.per_request_critical:
                 generation.score(
                     name="cost_alert",
                     value="critical",
                     data_type="CATEGORICAL",
-                    comment=f"Cost ${cost:.4f} exceeds critical ${THRESHOLDS.per_invoice_critical}"
+                    comment=f"Cost ${cost:.4f} exceeds critical ${THRESHOLDS.per_request_critical}"
                 )
                 alert_cost_breach("critical", cost, trace.trace_id)
 
-            elif cost > THRESHOLDS.per_invoice_warning:
+            elif cost > THRESHOLDS.per_request_warning:
                 generation.score(
                     name="cost_alert",
                     value="warning",
                     data_type="CATEGORICAL",
-                    comment=f"Cost ${cost:.4f} exceeds warning ${THRESHOLDS.per_invoice_warning}"
+                    comment=f"Cost ${cost:.4f} exceeds warning ${THRESHOLDS.per_request_warning}"
                 )
                 alert_cost_breach("warning", cost, trace.trace_id)
 
-            elif cost > THRESHOLDS.per_invoice_target:
+            elif cost > THRESHOLDS.per_request_target:
                 generation.score(
                     name="cost_alert",
                     value="above_target",
                     data_type="CATEGORICAL",
-                    comment=f"Cost ${cost:.4f} above target ${THRESHOLDS.per_invoice_target}"
+                    comment=f"Cost ${cost:.4f} above target ${THRESHOLDS.per_request_target}"
                 )
 
         trace.update(
@@ -152,31 +152,31 @@ def alert_cost_breach(level: str, cost: float, trace_id: str):
 def select_model_by_budget(remaining_budget: float) -> str:
     """Select model based on remaining budget."""
     if remaining_budget > 50:
-        return "gemini-1.5-pro"  # Best quality
+        return "your-model-name"  # Best quality
     elif remaining_budget > 10:
-        return "gemini-1.5-flash"  # Balance
+        return "your-model-name"  # Balance
     else:
-        return "gemini-1.5-flash"  # Budget mode
+        return "your-model-name"  # Budget mode
 ```
 
 ## Configuration
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `per_invoice_target` | $0.003 | Project requirement |
-| `per_invoice_warning` | $0.005 | Warning threshold |
-| `per_invoice_critical` | $0.010 | Critical threshold |
+| `per_request_target` | $0.010 | Project requirement |
+| `per_request_warning` | $0.020 | Warning threshold |
+| `per_request_critical` | $0.050 | Critical threshold |
 | `daily_budget` | $100 | Daily spending cap |
 
 ## Example Usage
 
 ```python
 # Process with cost monitoring
-result = process_with_cost_monitoring(image_bytes)
+result = process_with_cost_monitoring(input_data)
 print(f"Cost: ${result['cost']:.4f}")
 
 # Check if within budget
-if result['cost'] <= THRESHOLDS.per_invoice_target:
+if result['cost'] <= THRESHOLDS.per_request_target:
     print("Within budget")
 ```
 

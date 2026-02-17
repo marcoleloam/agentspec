@@ -1,6 +1,6 @@
 # Crew Coordination Pattern
 
-> **Purpose**: Orchestrating multiple crews for pipeline monitoring
+> **Purpose**: Orchestrating multiple specialized crews for system monitoring
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
@@ -21,68 +21,68 @@ import json
 
 # ============ SPECIALIZED CREWS ============
 
-# --- Cloud Run Monitoring Crew ---
-cloud_run_agent = Agent(
-    role="Cloud Run Specialist",
-    goal="Monitor Cloud Run service health and performance",
-    backstory="Expert in Cloud Run deployments, scaling, and errors.",
-    llm="gemini/gemini-1.5-flash",
+# --- Service Monitoring Crew ---
+service_agent = Agent(
+    role="Service Specialist",
+    goal="Monitor service health and performance",
+    backstory="Expert in service deployments, scaling, and errors.",
+    llm="openai/gpt-4o-mini",
     max_iter=10
 )
 
-cloud_run_task = Task(
-    description="Analyze Cloud Run logs at {log_path}. Check for OOM, cold starts, and timeouts.",
-    expected_output="Cloud Run health report with issues and metrics",
-    agent=cloud_run_agent
+service_task = Task(
+    description="Analyze service logs at {log_path}. Check for OOM, cold starts, and timeouts.",
+    expected_output="Service health report with issues and metrics",
+    agent=service_agent
 )
 
-cloud_run_crew = Crew(
-    agents=[cloud_run_agent],
-    tasks=[cloud_run_task],
+service_crew = Crew(
+    agents=[service_agent],
+    tasks=[service_task],
     process=Process.sequential,
     verbose=False
 )
 
-# --- Pub/Sub Monitoring Crew ---
-pubsub_agent = Agent(
-    role="Pub/Sub Specialist",
+# --- Messaging Monitoring Crew ---
+messaging_agent = Agent(
+    role="Messaging Specialist",
     goal="Monitor message delivery and subscription health",
-    backstory="Expert in Pub/Sub patterns, dead letters, and backlog management.",
-    llm="gemini/gemini-1.5-flash",
+    backstory="Expert in messaging patterns, dead letters, and backlog management.",
+    llm="openai/gpt-4o-mini",
     max_iter=10
 )
 
-pubsub_task = Task(
-    description="Analyze Pub/Sub logs at {log_path}. Check for delivery failures and backlog.",
-    expected_output="Pub/Sub health report with delivery metrics",
-    agent=pubsub_agent
+messaging_task = Task(
+    description="Analyze messaging logs at {log_path}. Check for delivery failures and backlog.",
+    expected_output="Messaging health report with delivery metrics",
+    agent=messaging_agent
 )
 
-pubsub_crew = Crew(
-    agents=[pubsub_agent],
-    tasks=[pubsub_task],
+messaging_crew = Crew(
+    agents=[messaging_agent],
+    tasks=[messaging_task],
     process=Process.sequential,
     verbose=False
 )
 
-# --- BigQuery Monitoring Crew ---
-bigquery_agent = Agent(
-    role="BigQuery Specialist",
-    goal="Monitor query performance and slot utilization",
-    backstory="Expert in BigQuery optimization, costs, and troubleshooting.",
-    llm="gemini/gemini-1.5-flash",
+# --- Database Monitoring Crew ---
+database_agent = Agent(
+    role="Database Specialist",
+    goal="Monitor query performance and resource utilization",
+    backstory="Expert in database optimization, costs, and troubleshooting.",
+    llm="openai/gpt-4o-mini",
     max_iter=10
 )
 
-bigquery_task = Task(
-    description="Analyze BigQuery logs at {log_path}. Check for slow queries and errors.",
-    expected_output="BigQuery health report with performance metrics",
-    agent=bigquery_agent
+database_task = Task(
+    description="Analyze database logs at {log_path}. Check for slow queries and errors.",
+    expected_output="Database health report with performance metrics",
+    agent=database_agent
 )
 
-bigquery_crew = Crew(
-    agents=[bigquery_agent],
-    tasks=[bigquery_task],
+database_crew = Crew(
+    agents=[database_agent],
+    tasks=[database_task],
     process=Process.sequential,
     verbose=False
 )
@@ -93,9 +93,9 @@ class CrewCoordinator:
 
     def __init__(self):
         self.crews = {
-            "cloud_run": cloud_run_crew,
-            "pubsub": pubsub_crew,
-            "bigquery": bigquery_crew
+            "service": service_crew,
+            "messaging": messaging_crew,
+            "database": database_crew
         }
         self.results = {}
 
@@ -149,9 +149,9 @@ coordinator = CrewCoordinator()
 
 # Run all monitoring crews in parallel
 results = coordinator.run_parallel({
-    "cloud_run": {"log_path": "/tmp/logs/cloud-run.json"},
-    "pubsub": {"log_path": "/tmp/logs/pubsub.json"},
-    "bigquery": {"log_path": "/tmp/logs/bigquery.json"}
+    "service": {"log_path": "/tmp/logs/service-a.json"},
+    "messaging": {"log_path": "/tmp/logs/messaging.json"},
+    "database": {"log_path": "/tmp/logs/database.json"}
 })
 
 # Aggregate results
@@ -187,7 +187,7 @@ aggregation_agent = Agent(
 
 aggregation_task = Task(
     description="Combine these reports into unified status: {crew_results}",
-    expected_output="Single pipeline health report",
+    expected_output="Single system health report",
     agent=aggregation_agent
 )
 ```

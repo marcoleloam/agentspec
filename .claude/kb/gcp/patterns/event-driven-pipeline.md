@@ -1,6 +1,6 @@
 # Event-Driven Pipeline Pattern
 
-> **Purpose**: Decouple invoice processing stages using GCS, Pub/Sub, and Cloud Run
+> **Purpose**: Decouple data processing stages using GCS, Pub/Sub, and Cloud Run
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
@@ -13,47 +13,44 @@
 ## Implementation
 
 ```python
-# Stage 1: TIFF Converter (triggered by GCS upload)
+# Stage 1: File Converter (triggered by GCS upload)
 import functions_framework
 from google.cloud import storage, pubsub_v1
-from PIL import Image
 import io
 import json
 
 @functions_framework.cloud_event
-def convert_tiff_to_png(cloud_event):
-    """Convert TIFF invoice to PNG and publish event."""
+def convert_file_format(cloud_event):
+    """Convert uploaded file and publish event."""
     data = cloud_event.data
 
     bucket_name = data["bucket"]
     file_name = data["name"]
 
-    if not file_name.endswith(".tiff"):
+    if not file_name.endswith(".pdf"):
         return
 
-    # Download TIFF
+    # Download source file
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(file_name)
-    tiff_bytes = blob.download_as_bytes()
+    file_bytes = blob.download_as_bytes()
 
-    # Convert to PNG
-    image = Image.open(io.BytesIO(tiff_bytes))
-    png_buffer = io.BytesIO()
-    image.save(png_buffer, format="PNG")
+    # Process/convert file
+    processed_bytes = process_file(file_bytes)
 
-    # Upload PNG to processed bucket
-    output_bucket = storage_client.bucket("invoices-processed")
-    output_name = file_name.replace(".tiff", ".png")
+    # Upload to processed bucket
+    output_bucket = storage_client.bucket("data-processed")
+    output_name = file_name.replace(".pdf", "_processed.json")
     output_blob = output_bucket.blob(output_name)
-    output_blob.upload_from_string(png_buffer.getvalue(), content_type="image/png")
+    output_blob.upload_from_string(processed_bytes, content_type="application/json")
 
     # Publish event for next stage
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path("my-project", "invoice-converted")
+    topic_path = publisher.topic_path("your-project-id", "data-converted")
 
     message = json.dumps({
-        "bucket": "invoices-processed",
+        "bucket": "data-processed",
         "name": output_name,
         "original": file_name
     }).encode()
@@ -67,50 +64,50 @@ def convert_tiff_to_png(cloud_event):
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `trigger_bucket` | invoices-input | GCS bucket for uploads |
-| `output_bucket` | invoices-processed | Destination for converted files |
-| `pubsub_topic` | invoice-converted | Topic for next stage |
+| `trigger_bucket` | data-input | GCS bucket for uploads |
+| `output_bucket` | data-processed | Destination for converted files |
+| `pubsub_topic` | data-converted | Topic for next stage |
 | `max_instances` | 50 | Scaling limit per stage |
 | `timeout` | 300s | Per-request timeout |
 
 ## Example Usage
 
 ```bash
-# Deploy TIFF converter with GCS trigger
-gcloud run deploy tiff-converter \
+# Deploy file converter with GCS trigger
+gcloud run deploy file-converter \
   --source . \
-  --function convert_tiff_to_png \
+  --function convert_file_format \
   --region us-central1 \
-  --service-account tiff-converter@project.iam.gserviceaccount.com
+  --service-account file-converter@project.iam.gserviceaccount.com
 
 # Create Eventarc trigger for GCS
-gcloud eventarc triggers create tiff-upload-trigger \
+gcloud eventarc triggers create data-upload-trigger \
   --location us-central1 \
-  --destination-run-service tiff-converter \
+  --destination-run-service file-converter \
   --event-filters="type=google.cloud.storage.object.v1.finalized" \
-  --event-filters="bucket=invoices-input" \
+  --event-filters="bucket=data-input" \
   --service-account eventarc@project.iam.gserviceaccount.com
 ```
 
 ## Pipeline Flow
 
 ```
-[GCS: invoices-input]
+[GCS: data-input]
         |
         v (Eventarc trigger)
-[Cloud Run: tiff-converter]
+[Cloud Run: file-converter]
         |
-        v (Pub/Sub: invoice-converted)
-[Cloud Run: invoice-classifier]
+        v (Pub/Sub: data-converted)
+[Cloud Run: data-classifier]
         |
-        v (Pub/Sub: invoice-classified)
-[Cloud Run: invoice-extractor]
+        v (Pub/Sub: data-classified)
+[Cloud Run: data-processor]
         |
-        v (Pub/Sub: invoice-extracted)
+        v (Pub/Sub: data-processed)
 [Cloud Run: bigquery-writer]
         |
         v
-[BigQuery: invoices.extracted_data]
+[BigQuery: analytics.processed_data]
 ```
 
 ## Error Handling
@@ -118,8 +115,8 @@ gcloud eventarc triggers create tiff-upload-trigger \
 ```python
 # Dead-letter queue configuration (Terraform)
 resource "google_pubsub_subscription" "with_dlq" {
-  name  = "invoice-converted-sub"
-  topic = google_pubsub_topic.invoice_converted.name
+  name  = "data-converted-sub"
+  topic = google_pubsub_topic.data_converted.name
 
   push_config {
     push_endpoint = google_cloud_run_service.classifier.status[0].url

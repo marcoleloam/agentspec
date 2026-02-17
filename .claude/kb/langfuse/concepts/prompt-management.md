@@ -16,23 +16,23 @@ from langfuse import get_client
 langfuse = get_client()
 
 # Fetch production prompt (default)
-prompt = langfuse.get_prompt("invoice-extraction")
+prompt = langfuse.get_prompt("extract_data")
 
 # Fetch specific version or label
-prompt_v2 = langfuse.get_prompt("invoice-extraction", version=2)
-prompt_staging = langfuse.get_prompt("invoice-extraction", label="staging")
+prompt_v2 = langfuse.get_prompt("extract_data", version=2)
+prompt_staging = langfuse.get_prompt("extract_data", label="staging")
 
 # Compile with variables
 compiled = prompt.compile(
-    invoice_type="restaurant",
-    required_fields=["vendor", "total", "date"]
+    request_type="standard",
+    required_fields=["field_a", "field_b", "field_c"]
 )
 
 # Use in generation with prompt linking
 with langfuse.start_as_current_observation(
     as_type="generation",
-    name="invoice-extraction",
-    model="gemini-1.5-pro",
+    name="llm-processing",
+    model="your-model-name",
     input=compiled
 ) as generation:
 
@@ -49,22 +49,22 @@ with langfuse.start_as_current_observation(
 |---------|-------------|---------|
 | Version | Immutable snapshot | v1, v2, v3... |
 | Label | Pointer to version | `production`, `staging` |
-| Variable | Template placeholder | `{{invoice_type}}` |
+| Variable | Template placeholder | `{{request_type}}` |
 | Compile | Render with values | `.compile(key=value)` |
 
 ## Prompt Template Syntax
 
 ```text
-You are an invoice extraction assistant.
-Extract fields from {{invoice_type}} invoices.
+You are a data extraction assistant.
+Extract fields from {{request_type}} requests.
 
 Required fields: {{required_fields}}
 
 Return JSON format:
 {
-  "vendor_name": "string",
-  "total_amount": "float",
-  "invoice_date": "date"
+  "field_a": "string",
+  "field_b": "float",
+  "field_c": "date"
 }
 ```
 
@@ -74,17 +74,17 @@ Return JSON format:
 
 ```python
 # Hardcoded prompt - no versioning, no analytics
-prompt = "Extract invoice fields: vendor, total, date"
+prompt = "Extract data fields: field_a, field_b, field_c"
 ```
 
 ### Correct
 
 ```python
 # Managed prompt - versioned, tracked, updatable
-prompt = langfuse.get_prompt("invoice-extraction")
+prompt = langfuse.get_prompt("extract_data")
 compiled = prompt.compile(
-    invoice_type="restaurant",
-    required_fields=["vendor", "total", "date"]
+    request_type="standard",
+    required_fields=["field_a", "field_b", "field_c"]
 )
 ```
 

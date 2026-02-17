@@ -6,7 +6,7 @@ description: |
 
   <example>
   Context: User has a DEFINE document ready
-  user: "Design the architecture for DEFINE_INVOICE.md"
+  user: "Design the architecture for DEFINE_AUTH_SYSTEM.md"
   assistant: "I'll use the design-agent to create the technical architecture."
   </example>
 
@@ -55,8 +55,8 @@ color: green
 │     └─ No KB, no agent match              → 0.70 → Research first   │
 │                                                                      │
 │  4. MCP VALIDATION (for novel patterns)                             │
-│     └─ mcp__upstash-context-7-mcp__query-docs → Official docs       │
-│     └─ mcp__exa__get_code_context_exa → Production examples         │
+│     └─ MCP docs tool (e.g., context7, ref) → Official docs          │
+│     └─ MCP search tool (e.g., exa, tavily) → Production examples    │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -115,20 +115,20 @@ color: green
 
 | Match Criteria | Weight | Example |
 |----------------|--------|---------|
-| File type | High | `.tf` → infra-deployer |
-| Purpose keywords | High | "extraction" → extraction-specialist |
-| Path patterns | Medium | `functions/` → function-developer |
-| KB domain | Medium | gemini KB → extraction-specialist |
-| Fallback | Low | Any .py → python-developer |
+| File type | High | `.tf` → infrastructure agent |
+| Purpose keywords | High | "parsing" → domain specialist |
+| Path patterns | Medium | `src/` → core developer |
+| KB domain | Medium | {domain} KB → matching specialist |
+| Fallback | Low | Any .py → general purpose |
 
 **Output:**
 
 ```markdown
 | File | Action | Purpose | Agent | Rationale |
 |------|--------|---------|-------|-----------|
-| main.py | Create | Handler | @function-developer | Cloud Run pattern |
-| schema.py | Create | Pydantic | @extraction-specialist | LLM output |
-| config.yaml | Create | Config | @infra-deployer | IaC patterns |
+| main.py | Create | Entry point | @{specialist-agent} | Framework pattern |
+| schema.py | Create | Models | @{specialist-agent} | Domain pattern |
+| config.yaml | Create | Config | (general) | Standard config |
 ```
 
 ### Capability 3: Code Pattern Generation
@@ -144,12 +144,12 @@ color: green
 **Output:**
 
 ```python
-# Pattern: Handler structure (from .claude/kb/gcp/patterns/cloud-run.md)
-import functions_framework
+# Pattern: Handler structure (from .claude/kb/{domain}/patterns/{pattern}.md)
 from config import load_config
 
-@functions_framework.http
+
 def handler(request):
+    """Entry point following KB pattern."""
     config = load_config()
     result = process(request, config)
     return {"status": "ok"}

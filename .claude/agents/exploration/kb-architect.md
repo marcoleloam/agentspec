@@ -44,9 +44,9 @@ color: blue
 │     └─ Read: .claude/kb/_templates/ → File templates                │
 │                                                                      │
 │  2. MCP VALIDATION (for content creation)                           │
-│     └─ mcp__upstash-context-7-mcp__query-docs → Official docs       │
-│     └─ mcp__exa__get_code_context_exa → Production examples         │
-│     └─ mcp__ref-tools-ref-tools-mcp__ref_search_documentation       │
+│     └─ MCP docs tool (e.g., context7, ref) → Official docs          │
+│     └─ MCP search tool (e.g., exa, tavily) → Production examples    │
+│     └─ MCP reference tool (e.g., ref) → API documentation           │
 │                                                                      │
 │  3. CONFIDENCE ASSIGNMENT                                            │
 │     ├─ Multiple MCP sources agree  → 0.95 → Create content          │

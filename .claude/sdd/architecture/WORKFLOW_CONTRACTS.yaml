@@ -1,9 +1,9 @@
-# AgentSpec 4.2 - Workflow Contracts
+# AgentSpec - Workflow Contracts
 # 5-Phase Development Workflow with Agent Matching and Delegation
-# Version: 4.2.0
+# Version: 1.0.0
 # Date: 2026-01-29
 
-version: "4.2"
+version: "1.0.0"
 name: "AgentSpec"
 description: "5-phase software development workflow with agent orchestration"
 
@@ -796,6 +796,14 @@ quality:
 # =============================================================================
 
 version_history:
+  - version: "1.0.0"
+    date: "2026-02-17"
+    changes:
+      - "Public release as AgentSpec v1.0.0"
+      - "Consolidated from internal development versions (4.0-4.2)"
+      - "15 core agents across 4 categories"
+      - "8 KB domains included"
+
   - version: "4.1.2"
     date: "2026-01-28"
     changes:

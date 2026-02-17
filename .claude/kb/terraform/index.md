@@ -65,18 +65,13 @@
 
 ---
 
-## Project Context
+## Example Use Cases
 
-This KB supports the GenAI Invoice Processing Pipeline infrastructure:
-
-| Component | Terraform Module |
-|-----------|------------------|
-| 4 Cloud Run services | patterns/cloud-run-module.md |
-| 4 Pub/Sub topics | patterns/pubsub-module.md |
-| 4 GCS buckets | patterns/gcs-module.md |
-| 1 BigQuery dataset | patterns/bigquery-module.md |
-| Service accounts | patterns/iam-module.md |
-| State management | patterns/remote-state.md |
+| Use Case | Key Files |
+|----------|-----------|
+| **GCP Module Patterns** | patterns/cloud-run-module.md, patterns/gcs-module.md |
+| **State Management** | patterns/remote-state.md, concepts/state.md |
+| **IAM & Security** | patterns/iam-module.md, concepts/resources.md |
 
 ---
 

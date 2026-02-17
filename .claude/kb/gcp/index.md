@@ -64,15 +64,10 @@
 
 ---
 
-## Project Context
+## Example Use Cases
 
-This KB supports the GenAI Invoice Processing Pipeline:
-
-| Component | GCP Service |
-|-----------|-------------|
-| Input storage | GCS (invoices-input) |
-| Processed storage | GCS (invoices-processed) |
-| Event bus | Pub/Sub (4 topics) |
-| Processing | Cloud Run (4 functions) |
-| Data warehouse | BigQuery |
-| Secrets | Secret Manager (Gemini API, LangFuse) |
+| Use Case | Key Files |
+| -------- | --------- |
+| **Event-Driven Pipelines** | patterns/event-driven-pipeline.md |
+| **Multi-Bucket Workflows** | patterns/multi-bucket-pipeline.md, concepts/gcs.md |
+| **Serverless Scaling** | patterns/cloud-run-scaling.md, concepts/cloud-run.md |

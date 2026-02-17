@@ -8,7 +8,7 @@
 
 Modules are containers for multiple resources that are used together. A module consists of a collection of `.tf` files in a directory. Modules are the main way to package and reuse resource configurations.
 
-## Module Structure
+## The Pattern
 
 ```text
 modules/
@@ -98,13 +98,13 @@ output "service_name" {
 ### Local Module
 
 ```hcl
-module "tiff_converter" {
+module "file_converter" {
   source = "./modules/cloud-run-service"
 
-  service_name = "tiff-to-png-converter"
+  service_name = "file-converter"
   project_id   = var.project_id
   region       = var.region
-  image        = "gcr.io/${var.project_id}/tiff-converter:latest"
+  image        = "gcr.io/${var.project_id}/file-converter:latest"
 }
 ```
 
@@ -115,7 +115,7 @@ module "pubsub" {
   source  = "terraform-google-modules/pubsub/google"
   version = "~> 7.0"
 
-  topic      = "invoice-uploaded"
+  topic      = "data-uploaded"
   project_id = var.project_id
 }
 ```

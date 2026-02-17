@@ -29,8 +29,8 @@ def handle_gcs_event(cloud_event: CloudEvent):
     event_type = cloud_event["type"]
 
     # Filter by file extension
-    if not file_name.lower().endswith((".tiff", ".tif")):
-        print(f"Skipping non-TIFF file: {file_name}")
+    if not file_name.lower().endswith((".pdf", ".json")):
+        print(f"Skipping unsupported file: {file_name}")
         return
 
     # Filter by prefix
@@ -49,13 +49,13 @@ def handle_gcs_event(cloud_event: CloudEvent):
     file_content = blob.download_as_bytes()
 
     # Process the file
-    result = process_invoice(file_content, file_name)
+    result = process_record(file_content, file_name)
 
     return {"status": "processed", "file": file_name}
 
 
-def process_invoice(content: bytes, filename: str) -> dict:
-    """Invoice processing logic."""
+def process_record(content: bytes, filename: str) -> dict:
+    """Record processing logic."""
     # Convert, classify, extract...
     pass
 ```
@@ -64,7 +64,7 @@ def process_invoice(content: bytes, filename: str) -> dict:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `bucket` | invoices-input | Watched bucket |
+| `bucket` | data-input | Watched bucket |
 | `event_type` | finalized | Trigger on object creation |
 | `service_region` | us-central1 | Cloud Run region |
 | `trigger_region` | us-central1 | Eventarc trigger region |
@@ -73,19 +73,19 @@ def process_invoice(content: bytes, filename: str) -> dict:
 
 ```bash
 # Create Eventarc trigger for GCS events
-gcloud eventarc triggers create invoice-upload-trigger \
+gcloud eventarc triggers create data-upload-trigger \
   --location=us-central1 \
-  --destination-run-service=tiff-converter \
+  --destination-run-service=file-converter \
   --destination-run-region=us-central1 \
   --event-filters="type=google.cloud.storage.object.v1.finalized" \
-  --event-filters="bucket=my-project-invoices-input" \
-  --service-account=eventarc-trigger@my-project.iam.gserviceaccount.com
+  --event-filters="bucket=your-project-id-data-input" \
+  --service-account=eventarc-trigger@your-project-id.iam.gserviceaccount.com
 
 # List existing triggers
 gcloud eventarc triggers list --location=us-central1
 
 # Delete trigger
-gcloud eventarc triggers delete invoice-upload-trigger --location=us-central1
+gcloud eventarc triggers delete data-upload-trigger --location=us-central1
 ```
 
 ## Terraform Configuration
@@ -114,7 +114,7 @@ resource "google_project_iam_member" "gcs_pubsub" {
 
 # Eventarc trigger
 resource "google_eventarc_trigger" "gcs_trigger" {
-  name     = "invoice-upload-trigger"
+  name     = "data-upload-trigger"
   location = "us-central1"
 
   matching_criteria {
@@ -142,13 +142,13 @@ resource "google_eventarc_trigger" "gcs_trigger" {
 
 ```json
 {
-  "bucket": "my-project-invoices-input",
-  "name": "invoices/2026/01/invoice-001.tiff",
+  "bucket": "your-project-id-data-input",
+  "name": "uploads/2026/01/document-001.pdf",
   "metageneration": "1",
   "timeCreated": "2026-01-25T10:30:00.000Z",
   "updated": "2026-01-25T10:30:00.000Z",
   "size": "1048576",
-  "contentType": "image/tiff"
+  "contentType": "application/pdf"
 }
 ```
 
@@ -156,7 +156,7 @@ resource "google_eventarc_trigger" "gcs_trigger" {
 
 | Goal | Filter Method |
 |------|---------------|
-| Only TIFF files | Check `name.endswith(".tiff")` in code |
+| Only PDF files | Check `name.endswith(".pdf")` in code |
 | Specific folder | Add `bucket` + prefix filtering |
 | Ignore temp files | Check `not name.startswith("temp/")` |
 | Multiple buckets | Create separate triggers per bucket |

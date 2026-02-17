@@ -67,7 +67,7 @@
 
 | Use Case | Choose |
 |----------|--------|
-| TIFF to PNG conversion | Cloud Run + GCS trigger |
+| File format conversion | Cloud Run + GCS trigger |
 | Fan-out processing | Pub/Sub + multiple subscribers |
 | Structured data storage | BigQuery |
 | Unstructured storage | GCS |

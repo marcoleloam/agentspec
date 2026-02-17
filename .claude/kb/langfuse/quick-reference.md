@@ -69,7 +69,7 @@
 
 | Do Not | Do |
 |--------|-----|
-| Forget `flush()` in Lambda/Cloud Run | Call `langfuse.flush()` before exit |
+| Forget `flush()` in serverless functions | Call `langfuse.flush()` before exit |
 | Hardcode prompts | Use `get_prompt()` with labels |
 | Skip user_id | Track users for analytics |
 | Ignore costs | Set up cost alerting |

@@ -6,9 +6,9 @@
 
 ## Overview
 
-Gemini is Google's multimodal LLM family capable of processing text, images, PDFs, video, and audio. For invoice extraction, the Flash variants offer the best cost-performance ratio with native vision capabilities that eliminate the need for separate OCR preprocessing.
+Gemini is Google's multimodal LLM family capable of processing text, images, PDFs, video, and audio. For document processing, the Flash variants offer the best cost-performance ratio with native vision capabilities that eliminate the need for separate OCR preprocessing.
 
-## Model Hierarchy (January 2026)
+## The Pattern
 
 ```text
 gemini-3-pro-preview     <- Cutting-edge (preview)
@@ -22,9 +22,9 @@ gemini-2.5-flash-lite    <- Highest throughput, lowest cost
 ## Quick Reference
 
 | Model | Context | Output Max | Use Case |
-|-------|---------|------------|----------|
+| ----- | ------- | ---------- | -------- |
 | `gemini-2.5-flash-lite` | 1M tokens | 64K | High-volume batch processing |
-| `gemini-2.5-flash` | 1M tokens | 64K | Invoice extraction (primary) |
+| `gemini-2.5-flash` | 1M tokens | 64K | Document extraction (primary) |
 | `gemini-2.5-pro` | 1M tokens | 64K | Complex document analysis |
 
 ## Multimodal Capabilities
@@ -47,7 +47,7 @@ supported_inputs = [
 ## Key Features for Document Extraction
 
 | Feature | Description |
-|---------|-------------|
+| ------- | ----------- |
 | Native Vision | Process images without separate OCR |
 | PDF Understanding | Extract text + interpret visual elements |
 | Structured Output | Guarantee JSON schema adherence |
@@ -66,14 +66,14 @@ model = "gemini-1.5-flash"  # DEPRECATED - returns 404
 
 ```python
 # Use current model names
-model = "gemini-2.5-flash"  # Recommended for invoice extraction
+model = "gemini-2.5-flash"  # Recommended for document extraction
 ```
 
 ## Performance Benchmarks
 
 | Task | Gemini 2.5 | GPT-4V | Claude 3 |
-|------|------------|--------|----------|
-| Scanned invoice accuracy | 94% | 91% | 90% |
+| ---- | ---------- | ------ | -------- |
+| Document extraction accuracy | 94% | 91% | 90% |
 | Processing speed | Fast | Medium | Medium |
 | Cost per 1K docs | $0.15 | $0.30 | $0.25 |
 

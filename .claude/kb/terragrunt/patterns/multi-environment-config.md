@@ -58,7 +58,7 @@ inputs = {
 # infrastructure/environments/dev/env.hcl
 locals {
   environment = "dev"
-  project_id  = "invoice-processing-dev"
+  project_id  = "myapp-dev"
   region      = "us-central1"
 
   # Dev: minimal resources
@@ -77,7 +77,7 @@ locals {
 # infrastructure/environments/prod/env.hcl
 locals {
   environment = "prod"
-  project_id  = "invoice-processing-prod"
+  project_id  = "myapp-prod"
   region      = "us-central1"
 
   # Prod: scaled resources
@@ -115,7 +115,7 @@ terraform {
 }
 
 inputs = {
-  service_name  = "invoice-processor"
+  service_name  = "data-processor"
   min_instances = include.env.locals.cloud_run_min_instances
   max_instances = include.env.locals.cloud_run_max_instances
   memory        = include.env.locals.cloud_run_memory

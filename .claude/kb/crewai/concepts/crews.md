@@ -13,7 +13,7 @@ A Crew is a team of agents working together to accomplish related tasks. Crews d
 ```python
 from crewai import Crew, Process
 
-# DataOps Monitoring Crew
+# Monitoring Crew
 monitoring_crew = Crew(
     agents=[triage_agent, root_cause_agent, reporter_agent],
     tasks=[triage_task, analysis_task, report_task],

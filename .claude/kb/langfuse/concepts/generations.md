@@ -17,20 +17,20 @@ langfuse = get_client()
 
 with langfuse.start_as_current_observation(
     as_type="generation",
-    name="invoice-extraction",
-    model="gemini-1.5-pro",
+    name="llm-processing",
+    model="your-model-name",
     model_parameters={
         "temperature": 0.1,
         "max_tokens": 1024
     },
     input=[
-        {"role": "system", "content": "Extract invoice fields..."},
-        {"role": "user", "content": "Invoice image attached"}
+        {"role": "system", "content": "Extract data fields..."},
+        {"role": "user", "content": "Document attached"}
     ]
 ) as generation:
 
     # Call your LLM
-    response = call_gemini_api(prompt)
+    response = call_llm_api(prompt)
 
     # Update with output and usage
     generation.update(
@@ -47,7 +47,7 @@ with langfuse.start_as_current_observation(
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `model` | string | Model identifier (e.g., "gemini-1.5-pro") |
+| `model` | string | Model identifier (e.g., "your-model-name") |
 | `model_parameters` | dict | Temperature, max_tokens, etc. |
 | `input` | list/string | Prompt or message array |
 | `output` | string/dict | Model response |
@@ -85,7 +85,7 @@ with langfuse.start_as_current_observation(
 with langfuse.start_as_current_observation(
     as_type="generation",
     name="llm-call",
-    model="gemini-1.5-pro"  # Required for auto-cost
+    model="your-model-name"  # Required for auto-cost
 ) as gen:
     gen.update(
         output="response",

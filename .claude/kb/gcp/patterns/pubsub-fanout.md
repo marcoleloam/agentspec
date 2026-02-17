@@ -14,14 +14,14 @@
 
 ```hcl
 # Terraform: Fan-out infrastructure
-resource "google_pubsub_topic" "invoice_extracted" {
-  name = "invoice-extracted"
+resource "google_pubsub_topic" "data_processed" {
+  name = "data-processed"
 }
 
 # Subscription 1: Write to BigQuery
 resource "google_pubsub_subscription" "to_bigquery" {
-  name  = "invoice-extracted-to-bigquery"
-  topic = google_pubsub_topic.invoice_extracted.name
+  name  = "data-processed-to-bigquery"
+  topic = google_pubsub_topic.data_processed.name
 
   push_config {
     push_endpoint = google_cloud_run_service.bigquery_writer.status[0].url
@@ -35,8 +35,8 @@ resource "google_pubsub_subscription" "to_bigquery" {
 
 # Subscription 2: Send to audit system
 resource "google_pubsub_subscription" "to_audit" {
-  name  = "invoice-extracted-to-audit"
-  topic = google_pubsub_topic.invoice_extracted.name
+  name  = "data-processed-to-audit"
+  topic = google_pubsub_topic.data_processed.name
 
   push_config {
     push_endpoint = google_cloud_run_service.audit_logger.status[0].url
@@ -50,8 +50,8 @@ resource "google_pubsub_subscription" "to_audit" {
 
 # Subscription 3: Direct BigQuery subscription (no code)
 resource "google_pubsub_subscription" "to_bigquery_direct" {
-  name  = "invoice-extracted-to-bq-direct"
-  topic = google_pubsub_topic.invoice_extracted.name
+  name  = "data-processed-to-bq-direct"
+  topic = google_pubsub_topic.data_processed.name
 
   bigquery_config {
     table          = "${var.project_id}.audit.raw_events"
@@ -76,25 +76,25 @@ resource "google_pubsub_subscription" "to_bigquery_direct" {
 from google.cloud import pubsub_v1
 import json
 
-def publish_extraction_result(project_id: str, invoice_data: dict):
+def publish_extraction_result(project_id: str, record_data: dict):
     """Publish extraction result - all subscribers receive copy."""
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(project_id, "invoice-extracted")
+    topic_path = publisher.topic_path(project_id, "data-processed")
 
     message = json.dumps({
-        "invoice_id": invoice_data["invoice_id"],
-        "vendor_name": invoice_data["vendor_name"],
-        "total_amount": invoice_data["total_amount"],
+        "record_id": record_data["record_id"],
+        "supplier_name": record_data["supplier_name"],
+        "total_amount": record_data["total_amount"],
         "extracted_at": datetime.utcnow().isoformat(),
-        "confidence": invoice_data["confidence"]
+        "confidence": record_data["confidence"]
     }).encode()
 
     # Each subscriber gets their own copy
     future = publisher.publish(
         topic_path,
         message,
-        event_type="invoice.extracted",
-        source="invoice-extractor"
+        event_type="record.processed",
+        source="data-processor"
     )
 
     return future.result()
@@ -102,7 +102,7 @@ def publish_extraction_result(project_id: str, invoice_data: dict):
 # Consumer 1: BigQuery writer
 @functions_framework.cloud_event
 def write_to_bigquery(cloud_event):
-    """Write extracted invoice to warehouse."""
+    """Write extracted record to warehouse."""
     data = json.loads(base64.b64decode(cloud_event.data["message"]["data"]))
     insert_to_bigquery(data)
 
@@ -111,19 +111,19 @@ def write_to_bigquery(cloud_event):
 def log_to_audit(cloud_event):
     """Log extraction event for compliance."""
     data = json.loads(base64.b64decode(cloud_event.data["message"]["data"]))
-    log_audit_event("invoice_extracted", data)
+    log_audit_event("record_processed", data)
 ```
 
 ## Fan-Out Topology
 
 ```
                     ┌──────────────────────┐
-                    │   invoice-extractor  │
+                    │    data-processor    │
                     └──────────┬───────────┘
                                │ publish
                                v
               ┌────────────────────────────────┐
-              │  Topic: invoice-extracted      │
+              │  Topic: data-processed         │
               └────────────────┬───────────────┘
                                │
         ┌──────────────────────┼──────────────────────┐
@@ -142,12 +142,12 @@ def log_to_audit(cloud_event):
 
 ```hcl
 resource "google_pubsub_topic" "dlq" {
-  name = "invoice-extracted-dlq"
+  name = "data-processed-dlq"
 }
 
 resource "google_pubsub_subscription" "with_dlq" {
-  name  = "invoice-extracted-to-bigquery"
-  topic = google_pubsub_topic.invoice_extracted.name
+  name  = "data-processed-to-bigquery"
+  topic = google_pubsub_topic.data_processed.name
 
   dead_letter_policy {
     dead_letter_topic     = google_pubsub_topic.dlq.id

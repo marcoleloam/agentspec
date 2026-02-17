@@ -99,12 +99,12 @@ crew = Crew(
 )
 ```
 
-## DataOps Use Case
+## Example Use Case
 
-| Memory Type | DataOps Application |
-|-------------|---------------------|
+| Memory Type | Application |
+|-------------|-------------|
 | STM | Triage results passed to Root Cause agent |
-| LTM | "BigQuery quota errors happen on Mondays" |
+| LTM | "Database quota errors happen during peak hours" |
 | Entity | Track service names, error patterns |
 
 ## Related

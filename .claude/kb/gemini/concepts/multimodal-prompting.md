@@ -8,17 +8,17 @@
 
 Gemini's native multimodal capabilities allow processing text and images simultaneously. For document extraction, this eliminates the need for separate OCR preprocessing. Each image consumes 258-1290 tokens depending on resolution.
 
-## Basic Image + Text Request
+## The Pattern
 
 ```python
 from google import genai
 from google.genai import types
 import base64
 
-client = genai.Client(vertexai=True, project="my-project", location="us-central1")
+client = genai.Client(vertexai=True, project="your-project-id", location="us-central1")
 
 # Load image
-with open("invoice.png", "rb") as f:
+with open("document.png", "rb") as f:
     image_data = base64.b64encode(f.read()).decode("utf-8")
 
 response = client.models.generate_content(
@@ -26,7 +26,7 @@ response = client.models.generate_content(
     contents=[
         types.Content(
             parts=[
-                types.Part(text="Extract all line items from this invoice as JSON."),
+                types.Part(text="Extract all line items from this document as JSON."),
                 types.Part(
                     inline_data=types.Blob(
                         mime_type="image/png",
@@ -48,11 +48,11 @@ response = client.models.generate_content(
     contents=[
         types.Content(
             parts=[
-                types.Part(text="Extract the invoice total."),
+                types.Part(text="Extract the document total."),
                 types.Part(
                     file_data=types.FileData(
-                        mime_type="image/tiff",
-                        file_uri="gs://bucket/invoices/invoice-001.tiff"
+                        mime_type="application/pdf",
+                        file_uri="gs://bucket/documents/sample-001.pdf"
                     )
                 )
             ]
@@ -64,7 +64,7 @@ response = client.models.generate_content(
 ## Quick Reference
 
 | Input Type | Tokens | Notes |
-|------------|--------|-------|
+| ---------- | ------ | ----- |
 | Image (any size) | 258-1290 | Higher res = more tokens |
 | PDF page | ~258 per page | Native understanding |
 | Video (per second) | 258 | 1 fps sample rate |
@@ -72,7 +72,7 @@ response = client.models.generate_content(
 ## Best Practices for Documents
 
 | Practice | Reason |
-|----------|--------|
+| -------- | ------ |
 | Use PNG over JPEG | Better text clarity |
 | Resize to 1024px max | Reduces token cost |
 | Put text prompt first | Better instruction following |
@@ -104,4 +104,4 @@ contents = [
 ## Related
 
 - [structured-output.md](structured-output.md)
-- [../patterns/invoice-extraction.md](../patterns/invoice-extraction.md)
+- [../patterns/document-extraction.md](../patterns/document-extraction.md)

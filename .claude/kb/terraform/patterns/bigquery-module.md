@@ -19,7 +19,7 @@ modules/bigquery/
 ├── outputs.tf
 ├── versions.tf
 └── schemas/
-    └── invoice_extracted.json
+    └── processed_records.json
 ```
 
 ## Implementation
@@ -111,28 +111,28 @@ output "full_table_ids" {
 ## Example Usage
 
 ```hcl
-module "invoice_intelligence" {
+module "app_analytics" {
   source = "./modules/bigquery"
 
-  dataset_id  = "invoice_intelligence"
+  dataset_id  = "app_analytics"
   project_id  = var.project_id
   location    = "US"
-  description = "Invoice extraction and analytics data"
+  description = "Data processing and analytics"
 
   tables = [
     {
-      table_id    = "extracted_invoices"
-      description = "Extracted invoice data from LLM"
-      schema_file = "${path.module}/schemas/invoice_extracted.json"
-      clustering  = ["vendor_name", "invoice_date"]
+      table_id    = "processed_records"
+      description = "Processed records from data pipeline"
+      schema_file = "${path.module}/schemas/processed_records.json"
+      clustering  = ["source_name", "record_date"]
       time_partitioning = {
         type  = "DAY"
-        field = "extracted_at"
+        field = "processed_at"
       }
     },
     {
-      table_id    = "processing_logs"
-      description = "Invoice processing audit logs"
+      table_id    = "pipeline_logs"
+      description = "Pipeline audit logs"
       schema_file = "${path.module}/schemas/processing_log.json"
       time_partitioning = {
         type = "DAY"
@@ -151,7 +151,7 @@ module "invoice_intelligence" {
 }
 ```
 
-## Related
+## See Also
 
 - [IAM Module](./iam-module.md)
 - [GCS Module](./gcs-module.md)

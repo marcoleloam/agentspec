@@ -16,41 +16,41 @@
 
 ```
 agentspec/
-├── .claude/                 # Claude Code integration (symlinks to root)
-│   ├── agents -> ../agents
-│   ├── commands -> ../commands
-│   ├── sdd -> ../sdd
-│   └── kb -> ../kb
+├── .claude/                 # Claude Code integration
+│   ├── agents/              # 15 specialized agents
+│   │   ├── workflow/        # 6 SDD phase agents
+│   │   ├── code-quality/    # 4 code excellence agents
+│   │   ├── communication/   # 3 explanation agents
+│   │   └── exploration/     # 2 codebase agents
+│   │
+│   ├── commands/            # Slash commands
+│   │   ├── workflow/        # SDD commands
+│   │   ├── core/            # Utility commands
+│   │   ├── knowledge/       # KB commands
+│   │   └── review/          # Review commands
+│   │
+│   ├── sdd/                 # SDD framework
+│   │   ├── architecture/    # Framework design
+│   │   ├── templates/       # Document templates
+│   │   ├── features/        # Active development
+│   │   ├── reports/         # Build reports
+│   │   └── archive/         # Shipped features
+│   │
+│   └── kb/                  # Knowledge Base (8 domains)
+│       ├── _templates/      # KB domain templates
+│       ├── pydantic/        # Data validation patterns
+│       ├── gcp/             # Google Cloud Platform
+│       ├── gemini/          # Gemini AI patterns
+│       ├── langfuse/        # LLM observability
+│       ├── terraform/       # Infrastructure as Code
+│       ├── terragrunt/      # Multi-environment IaC
+│       ├── crewai/          # Multi-agent orchestration
+│       └── openrouter/      # LLM routing
 │
 ├── .claude-plugin/          # Plugin manifest
 │   └── plugin.json
 │
-├── agents/                  # 18 specialized agents
-│   ├── workflow/            # 6 SDD phase agents
-│   ├── code-quality/        # 6 code excellence agents
-│   ├── communication/       # 3 explanation agents
-│   └── exploration/         # 2 codebase agents
-│
-├── commands/                # 14 slash commands
-│   ├── workflow/            # SDD commands
-│   ├── core/                # Utility commands
-│   ├── knowledge/           # KB commands
-│   └── review/              # Review commands
-│
-├── sdd/                     # SDD framework
-│   ├── architecture/        # Framework design
-│   ├── templates/           # Document templates
-│   ├── examples/            # Example workflow
-│   ├── features/            # Active development
-│   ├── reports/             # Build reports
-│   └── archive/             # Shipped features
-│
-├── kb/                      # Knowledge Base
-│   ├── _templates/          # KB domain templates
-│   └── pydantic/            # Example domain
-│
-├── docs/                    # Documentation
-└── examples/                # Usage examples
+└── docs/                    # Documentation
 ```
 
 ---
@@ -118,14 +118,18 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 | Command | Purpose |
 |---------|---------|
-| `/brainstorm` | Explore ideas |
-| `/define` | Capture requirements |
-| `/design` | Create architecture |
-| `/build` | Execute implementation |
-| `/ship` | Archive completed work |
-| `/iterate` | Update existing docs |
+| `/brainstorm` | Explore ideas (Phase 0) |
+| `/define` | Capture requirements (Phase 1) |
+| `/design` | Create architecture (Phase 2) |
+| `/build` | Execute implementation (Phase 3) |
+| `/ship` | Archive completed work (Phase 4) |
+| `/iterate` | Update existing docs (Cross-phase) |
+| `/create-pr` | Create pull request |
 | `/create-kb` | Create KB domain |
 | `/review` | Code review |
+| `/memory` | Save session insights |
+| `/sync-context` | Update CLAUDE.md |
+| `/readme-maker` | Generate README |
 
 ---
 
@@ -134,14 +138,14 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | File | Purpose |
 |------|---------|
 | `.claude-plugin/plugin.json` | Plugin manifest for Claude Code |
-| `sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
-| `sdd/templates/*.md` | Document templates |
-| `kb/_templates/*.template` | KB domain templates |
+| `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
+| `.claude/sdd/templates/*.md` | Document templates |
+| `.claude/kb/_templates/*.template` | KB domain templates |
 
 ---
 
 ## Version
 
 - **Version:** 1.0.0
-- **Status:** Development
-- **Last Updated:** 2026-02-03
+- **Status:** Release
+- **Last Updated:** 2026-02-17

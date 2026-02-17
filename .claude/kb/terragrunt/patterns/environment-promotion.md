@@ -105,7 +105,7 @@ if [[ "$ENV" == "prod" ]]; then
   echo "Checking prerequisites..."
 
   # Verify dev was applied first
-  DEV_STATE=$(gsutil cat gs://invoice-processing-dev-tfstate/environments/dev/cloud-run/default.tfstate 2>/dev/null)
+  DEV_STATE=$(gsutil cat gs://myapp-dev-tfstate/environments/dev/cloud-run/default.tfstate 2>/dev/null)
   if [[ -z "$DEV_STATE" ]]; then
     echo "ERROR: Dev environment not deployed. Deploy dev first."
     exit 1

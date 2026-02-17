@@ -8,7 +8,7 @@
 
 Vertex AI is Google Cloud's managed ML platform. The new google-genai SDK provides a unified interface for both Vertex AI and the Gemini Developer API, with the `vertexai=True` flag determining which backend to use.
 
-## SDK Installation
+## The Pattern
 
 ```bash
 # Install the new unified SDK
@@ -68,14 +68,14 @@ client = genai.Client(
 ## Required IAM Permissions
 
 | Role | Purpose |
-|------|---------|
+| ---- | ------- |
 | `roles/aiplatform.user` | Invoke Gemini models |
 | `roles/storage.objectViewer` | Read images from GCS |
 
 ## Quick Reference
 
 | Config | Value | Notes |
-|--------|-------|-------|
+| ------ | ----- | ----- |
 | Default region | `us-central1` | Best availability |
 | Backup regions | `europe-west4`, `asia-northeast1` | For geo-redundancy |
 | API endpoint | Automatic | SDK handles routing |

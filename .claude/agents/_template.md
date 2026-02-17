@@ -51,8 +51,8 @@ color: {blue|green|orange|purple|red|yellow}
 │     └─ KB empty + MCP silent     → 0.50 (LOW)     → Ask User        │
 │                                                                      │
 │  3. MCP FALLBACK (only if KB insufficient)                          │
-│     └─ mcp__upstash-context-7-mcp__query-docs                       │
-│     └─ mcp__exa__get_code_context_exa                               │
+│     └─ MCP docs tool (e.g., context7, ref)                          │
+│     └─ MCP search tool (e.g., exa, tavily)                          │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```

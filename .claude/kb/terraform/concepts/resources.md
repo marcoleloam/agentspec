@@ -8,13 +8,13 @@
 
 Resources are the most important element in Terraform. Each resource block describes one or more infrastructure objects (VMs, networks, buckets). Data sources allow Terraform to query existing infrastructure or external APIs.
 
-## Resources
+## The Pattern
 
 ### Basic Syntax
 
 ```hcl
-resource "google_storage_bucket" "invoices_input" {
-  name          = "invoices-input-${var.project_id}"
+resource "google_storage_bucket" "data_input" {
+  name          = "data-input-${var.project_id}"
   location      = var.region
   force_destroy = false
 
@@ -39,9 +39,9 @@ resource "google_storage_bucket" "invoices_input" {
 
 ```hcl
 resource "google_pubsub_topic" "pipeline" {
-  for_each = toset(["uploaded", "converted", "classified", "extracted"])
+  for_each = toset(["ingested", "transformed", "validated", "processed"])
 
-  name    = "invoice-${each.key}"
+  name    = "data-${each.key}"
   project = var.project_id
 
   depends_on = [google_project_service.pubsub]
@@ -100,7 +100,7 @@ resource "google_pubsub_subscription" "processor" {
 ### Explicit (When Needed)
 
 ```hcl
-resource "google_cloud_run_service" "extractor" {
+resource "google_cloud_run_service" "processor" {
   depends_on = [
     google_project_service.run,
     google_project_service.secretmanager
@@ -116,7 +116,7 @@ resource "google_cloud_run_service" "extractor" {
 ```hcl
 # Hardcoded project ID
 resource "google_storage_bucket" "bad" {
-  name = "my-bucket-my-project-123"
+  name = "my-bucket-your-project-id"
 }
 ```
 

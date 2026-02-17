@@ -28,13 +28,13 @@ class LineItem(BaseModel):
     total: float
 
 
-class Invoice(BaseModel):
-    """Pydantic model for invoice validation."""
-    invoice_id: str
-    vendor_name: str
-    invoice_date: str
-    total_amount: float
-    line_items: List[LineItem] = []
+class Document(BaseModel):
+    """Pydantic model for document validation."""
+    document_id: str
+    source_name: str
+    created_date: str
+    total_value: float
+    items: List[LineItem] = []
 
 
 def create_json_schema_from_pydantic(model: type[BaseModel]) -> dict:
@@ -77,23 +77,23 @@ class StructuredExtractor:
         # Parse and return
         return json.loads(response.text)
 
-    def extract_invoice(self, image_content: types.Content) -> Invoice:
-        """Extract invoice with Pydantic validation."""
-        schema = create_json_schema_from_pydantic(Invoice)
+    def extract_document(self, image_content: types.Content) -> Document:
+        """Extract document data with Pydantic validation."""
+        schema = create_json_schema_from_pydantic(Document)
 
         raw_data = self.extract_with_schema(
-            prompt="Extract all invoice information from this document.",
+            prompt="Extract all document information from this file.",
             content=image_content,
             schema=schema
         )
 
         # Validate with Pydantic
-        return Invoice(**raw_data)
+        return Document(**raw_data)
 
 
 # Using with Pydantic models (recommended)
-def extract_validated(extractor: StructuredExtractor, image_path: str) -> Invoice:
-    """Extract and validate invoice data."""
+def extract_validated(extractor: StructuredExtractor, image_path: str) -> Document:
+    """Extract and validate document data."""
     import base64
 
     with open(image_path, "rb") as f:
@@ -107,13 +107,13 @@ def extract_validated(extractor: StructuredExtractor, image_path: str) -> Invoic
         ]
     )
 
-    return extractor.extract_invoice(content)
+    return extractor.extract_document(content)
 ```
 
 ## Configuration
 
 | Setting | Default | Description |
-|---------|---------|-------------|
+| ------- | ------- | ----------- |
 | `response_mime_type` | `"application/json"` | Required for JSON mode |
 | `response_schema` | JSON Schema dict | Defines output structure |
 | `temperature` | `0.2` | Low for consistent structure |
@@ -125,19 +125,19 @@ def extract_validated(extractor: StructuredExtractor, image_path: str) -> Invoic
 good_schema = {
     "type": "object",
     "properties": {
-        "invoice_id": {"type": "string"},
+        "document_id": {"type": "string"},
         "total": {"type": "number"}
     },
-    "required": ["invoice_id", "total"]  # Ensures these are always present
+    "required": ["document_id", "total"]  # Ensures these are always present
 }
 
 # DO: Add descriptions for clarity
 better_schema = {
     "type": "object",
     "properties": {
-        "invoice_date": {
+        "created_date": {
             "type": "string",
-            "description": "Invoice date in YYYY-MM-DD format"
+            "description": "Document date in YYYY-MM-DD format"
         }
     }
 }
@@ -149,12 +149,12 @@ better_schema = {
 ## Example Usage
 
 ```python
-extractor = StructuredExtractor(project_id="my-project")
+extractor = StructuredExtractor(project_id="your-project-id")
 
 # With Pydantic validation
-invoice = extract_validated(extractor, "invoice.png")
-print(f"Vendor: {invoice.vendor_name}")
-print(f"Total: ${invoice.total_amount:.2f}")
+document = extract_validated(extractor, "document.png")
+print(f"Source: {document.source_name}")
+print(f"Total: ${document.total_value:.2f}")
 
 # Direct schema usage
 custom_schema = {
@@ -171,5 +171,5 @@ result = extractor.extract_with_schema(
 
 ## See Also
 
-- [invoice-extraction.md](invoice-extraction.md)
+- [document-extraction.md](document-extraction.md)
 - [../concepts/structured-output.md](../concepts/structured-output.md)

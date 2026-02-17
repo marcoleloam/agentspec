@@ -6,13 +6,13 @@ description: |
 
   <example>
   Context: User has a DESIGN document ready
-  user: "Build the feature from DESIGN_INVOICE.md"
+  user: "Build the feature from DESIGN_AUTH_SYSTEM.md"
   assistant: "I'll use the build-agent to execute the implementation."
   </example>
 
   <example>
   Context: User wants to implement a designed feature
-  user: "Implement the invoice processing pipeline"
+  user: "Implement the user authentication system"
   assistant: "Let me invoke the build-agent to build from the design."
   </example>
 
@@ -204,8 +204,8 @@ PRE-FLIGHT CHECK
 
 | Task | Agent | Status | Notes |
 |------|-------|--------|-------|
-| main.py | @function-developer | ✅ | Cloud Run patterns |
-| schema.py | @extraction-specialist | ✅ | Pydantic + Gemini |
+| main.py | @{specialist-agent} | ✅ | Framework patterns |
+| schema.py | @{specialist-agent} | ✅ | Domain patterns |
 | utils.py | (direct) | ✅ | DESIGN patterns |
 
 ## Verification

@@ -1,12 +1,12 @@
 # Log Analysis Agent Pattern
 
-> **Purpose**: Custom tools for reading and parsing GCS log exports
+> **Purpose**: Custom tools for reading and parsing log exports
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
 
-- Analyzing Cloud Logging exports stored in GCS
-- Parsing structured JSON logs from Cloud Run, Pub/Sub, BigQuery
+- Analyzing log exports stored in object storage
+- Parsing structured JSON logs from services, messaging systems, and databases
 - Filtering high-volume logs to find relevant events
 - Building agents that need access to infrastructure logs
 
@@ -21,14 +21,14 @@ from google.cloud import storage
 import json
 
 # ============ GCS LOG READER TOOL ============
-@tool("Read GCS Logs")
-def read_gcs_logs(bucket: str, prefix: str, max_files: int = 10) -> str:
-    """Read log files from GCS bucket with given prefix.
-    Use for analyzing Cloud Logging exports.
+@tool("Read Storage Logs")
+def read_storage_logs(bucket: str, prefix: str, max_files: int = 10) -> str:
+    """Read log files from storage bucket with given prefix.
+    Use for analyzing log exports.
 
     Args:
-        bucket: GCS bucket name (e.g., 'project-logs-export')
-        prefix: Path prefix (e.g., 'cloud-run/2026/01/25/')
+        bucket: Storage bucket name (e.g., 'logs-export')
+        prefix: Path prefix (e.g., 'service-a/2026/01/25/')
         max_files: Maximum files to read (default: 10)
 
     Returns:
@@ -81,26 +81,26 @@ class LogFilterTool(BaseTool):
 log_analysis_agent = Agent(
     role="Log Analysis Engineer",
     goal="Extract actionable insights from infrastructure logs",
-    backstory="""You are an expert at analyzing GCP logs. You've seen
-    every type of Cloud Run crash, Pub/Sub backlog, and BigQuery timeout.
+    backstory="""You are an expert at analyzing infrastructure logs. You've seen
+    every type of service crash, messaging backlog, and database timeout.
     You quickly identify patterns and separate signal from noise.""",
-    tools=[read_gcs_logs, LogFilterTool()],
-    llm="gemini/gemini-1.5-pro",
+    tools=[read_storage_logs, LogFilterTool()],
+    llm="openai/gpt-4o",
     max_iter=15,
     verbose=True
 )
 
 # ============ ANALYSIS TASK ============
 log_analysis_task = Task(
-    description="""Analyze logs from GCS bucket '{bucket}' with prefix '{prefix}'.
+    description="""Analyze logs from storage bucket '{bucket}' with prefix '{prefix}'.
 
     Steps:
-    1. Read logs using Read GCS Logs tool
+    1. Read logs using Read Storage Logs tool
     2. Filter to ERROR and CRITICAL using Filter Logs tool
     3. Identify patterns (recurring errors, spike times, affected services)
     4. Summarize findings with counts and examples
 
-    Focus on: Cloud Run failures, Pub/Sub delivery issues, BigQuery errors""",
+    Focus on: service failures, message delivery issues, database errors""",
     expected_output="""Analysis report:
     ## Summary
     - Total events analyzed: N
@@ -143,20 +143,20 @@ analysis_crew = Crew(
 
 # Run analysis
 result = analysis_crew.kickoff(inputs={
-    "bucket": "invoice-pipeline-logs",
-    "prefix": "cloud-run/2026/01/25/"
+    "bucket": "application-logs",
+    "prefix": "service-a/2026/01/25/"
 })
 
 print(result)
 ```
 
-## GCP Log Structure
+## Log Structure
 
 | Field | Description | Example |
 |-------|-------------|---------|
 | `severity` | Log level | `ERROR` |
 | `timestamp` | ISO timestamp | `2026-01-25T10:30:00Z` |
-| `resource.type` | GCP service | `cloud_run_revision` |
+| `resource.type` | Service identifier | `web_service` |
 | `textPayload` | Log message | `Connection timeout` |
 | `jsonPayload` | Structured data | `{"error": "..."}` |
 

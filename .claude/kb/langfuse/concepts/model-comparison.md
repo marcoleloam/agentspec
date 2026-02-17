@@ -18,8 +18,8 @@ langfuse = get_client()
 
 # A/B test between models
 models = [
-    {"name": "gemini-1.5-pro", "weight": 0.5},
-    {"name": "gemini-1.5-flash", "weight": 0.5}
+    {"name": "your-model-name", "weight": 0.5},
+    {"name": "your-model-name", "weight": 0.5}
 ]
 
 def select_model():
@@ -36,7 +36,7 @@ selected_model = select_model()
 
 with langfuse.start_as_current_observation(
     as_type="generation",
-    name="invoice-extraction",
+    name="llm-processing",
     model=selected_model,
     metadata={
         "experiment": "model-comparison-v1",
@@ -53,7 +53,7 @@ with langfuse.start_as_current_observation(
 
     # Score for comparison
     generation.score(
-        name="extraction_accuracy",
+        name="output_accuracy",
         value=evaluate_accuracy(result),
         data_type="NUMERIC"
     )
@@ -85,7 +85,7 @@ with langfuse.start_as_current_observation(
 # No experiment tracking - hard to compare later
 with langfuse.start_as_current_observation(
     as_type="generation",
-    model="gemini-1.5-pro"
+    model="your-model-name"
 ) as gen:
     pass
 ```
@@ -96,22 +96,22 @@ with langfuse.start_as_current_observation(
 # Tag for experiment analysis
 with langfuse.start_as_current_observation(
     as_type="generation",
-    model="gemini-1.5-pro",
+    model="your-model-name",
     metadata={
-        "experiment": "invoice-model-test",
+        "experiment": "model-comparison-test",
         "variant": "pro"
     }
 ) as gen:
     gen.score(name="accuracy", value=0.95)
 ```
 
-## Invoice Processing Comparison
+## Model Comparison Example
 
-| Model | Cost/Invoice | Latency P95 | Accuracy |
+| Model | Cost/Request | Latency P95 | Accuracy |
 |-------|--------------|-------------|----------|
-| gemini-1.5-pro | $0.003 | 2.5s | 95% |
-| gemini-1.5-flash | $0.001 | 1.2s | 88% |
-| gpt-4o | $0.004 | 3.0s | 94% |
+| Model A (high quality) | $0.010 | 2.5s | 95% |
+| Model B (efficient) | $0.003 | 1.2s | 88% |
+| Model C (alternative) | $0.012 | 3.0s | 94% |
 
 ## Analytics Queries
 
@@ -126,10 +126,10 @@ with langfuse.start_as_current_observation(
 
 | Priority | Choose |
 |----------|--------|
-| Cost-sensitive | gemini-1.5-flash |
-| Accuracy-critical | gemini-1.5-pro |
+| Cost-sensitive | Efficient/smaller model |
+| Accuracy-critical | High-quality model |
 | Balanced | Analyze A/B results |
-| Low latency | gemini-1.5-flash |
+| Low latency | Efficient/smaller model |
 
 ## Related
 

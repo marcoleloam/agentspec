@@ -17,25 +17,25 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing_extensions import Self
 from datetime import date
 
-class Invoice(BaseModel):
-    invoice_id: str
-    invoice_date: date
+class Order(BaseModel):
+    order_id: str
+    order_date: date
     due_date: date
     subtotal: float
     tax_amount: float
     total_amount: float
 
-    @field_validator("invoice_id", mode="after")
+    @field_validator("order_id", mode="after")
     @classmethod
-    def validate_invoice_id(cls, v: str) -> str:
-        if not v.startswith("INV-"):
-            raise ValueError("Invoice ID must start with 'INV-'")
+    def validate_order_id(cls, v: str) -> str:
+        if not v.startswith("ORD-"):
+            raise ValueError("Order ID must start with 'ORD-'")
         return v.upper()
 
     @model_validator(mode="after")
     def validate_dates_and_totals(self) -> Self:
-        if self.due_date < self.invoice_date:
-            raise ValueError("Due date cannot be before invoice date")
+        if self.due_date < self.order_date:
+            raise ValueError("Due date cannot be before order date")
         expected = round(self.subtotal + self.tax_amount, 2)
         if abs(self.total_amount - expected) > 0.01:
             raise ValueError(f"Total mismatch: {self.total_amount} != {expected}")

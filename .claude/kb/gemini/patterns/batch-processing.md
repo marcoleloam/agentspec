@@ -5,7 +5,7 @@
 
 ## When to Use
 
-- Processing 100+ invoices in a batch
+- Processing 100+ documents in a batch
 - Nightly ETL jobs for document extraction
 - Cost-optimized bulk operations
 - Parallel processing requirements
@@ -36,8 +36,8 @@ class BatchResult:
     error: Optional[str] = None
 
 
-class BatchInvoiceProcessor:
-    """Process large batches of invoices with rate limiting and retries."""
+class BatchDocumentProcessor:
+    """Process large batches of documents with rate limiting and retries."""
 
     def __init__(
         self,
@@ -58,11 +58,11 @@ class BatchInvoiceProcessor:
         self.schema = {
             "type": "object",
             "properties": {
-                "invoice_id": {"type": "string"},
-                "vendor_name": {"type": "string"},
-                "invoice_date": {"type": "string"},
-                "total_amount": {"type": "number"},
-                "line_items": {
+                "document_id": {"type": "string"},
+                "source_name": {"type": "string"},
+                "created_date": {"type": "string"},
+                "total_value": {"type": "number"},
+                "items": {
                     "type": "array",
                     "items": {
                         "type": "object",
@@ -74,11 +74,11 @@ class BatchInvoiceProcessor:
                     }
                 }
             },
-            "required": ["invoice_id", "vendor_name", "total_amount"]
+            "required": ["document_id", "source_name", "total_value"]
         }
 
     async def process_batch(self, file_paths: List[str]) -> List[BatchResult]:
-        """Process a batch of invoice files."""
+        """Process a batch of document files."""
         tasks = [self._process_single(path) for path in file_paths]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -120,7 +120,7 @@ class BatchInvoiceProcessor:
 
         content = types.Content(
             parts=[
-                types.Part(text="Extract all invoice information."),
+                types.Part(text="Extract all document information."),
                 types.Part(
                     inline_data=types.Blob(mime_type=mime_type, data=image_data)
                 )
@@ -145,14 +145,14 @@ class BatchInvoiceProcessor:
                }.get(suffix, "image/png")
 
 
-async def run_batch(invoice_dir: str, project_id: str):
-    """Example: Process all invoices in a directory."""
-    processor = BatchInvoiceProcessor(project_id=project_id, max_concurrent=10)
+async def run_batch(document_dir: str, project_id: str):
+    """Example: Process all documents in a directory."""
+    processor = BatchDocumentProcessor(project_id=project_id, max_concurrent=10)
 
-    files = list(Path(invoice_dir).glob("*.png")) + \
-            list(Path(invoice_dir).glob("*.tiff"))
+    files = list(Path(document_dir).glob("*.png")) + \
+            list(Path(document_dir).glob("*.tiff"))
 
-    logger.info(f"Processing {len(files)} invoices...")
+    logger.info(f"Processing {len(files)} documents...")
     results = await processor.process_batch([str(f) for f in files])
 
     success = sum(1 for r in results if r.success)
@@ -164,7 +164,7 @@ async def run_batch(invoice_dir: str, project_id: str):
 ## Configuration
 
 | Setting | Default | Description |
-|---------|---------|-------------|
+| ------- | ------- | ----------- |
 | `model` | `gemini-2.5-flash-lite` | Lowest cost for batch |
 | `max_concurrent` | 10 | Parallel requests |
 | `temperature` | 0.2 | Consistent extraction |
@@ -175,20 +175,20 @@ async def run_batch(invoice_dir: str, project_id: str):
 import asyncio
 
 results = asyncio.run(run_batch(
-    invoice_dir="/data/invoices",
-    project_id="my-gcp-project"
+    document_dir="/data/documents",
+    project_id="your-project-id"
 ))
 
 # Save results
 for r in results:
     if r.success:
-        print(f"{r.file_path}: ${r.data['total_amount']}")
+        print(f"{r.file_path}: ${r.data['total_value']}")
     else:
         print(f"{r.file_path}: FAILED - {r.error}")
 ```
 
 ## See Also
 
-- [invoice-extraction.md](invoice-extraction.md)
+- [document-extraction.md](document-extraction.md)
 - [error-handling-retries.md](error-handling-retries.md)
 - [../concepts/token-limits-pricing.md](../concepts/token-limits-pricing.md)

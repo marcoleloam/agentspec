@@ -16,9 +16,9 @@ from pydantic import BaseModel, Field
 from typing import Type
 
 # Simple approach: @tool decorator
-@tool("Read GCS Log File")
-def read_gcs_logs(bucket: str, file_path: str) -> str:
-    """Read log file from GCS bucket. Use for analyzing Cloud Logging exports."""
+@tool("Read Log File")
+def read_log_file(bucket: str, file_path: str) -> str:
+    """Read log file from storage bucket. Use for analyzing log exports."""
     from google.cloud import storage
     client = storage.Client()
     bucket_obj = client.bucket(bucket)
@@ -81,7 +81,7 @@ def read_logs(path):
 # Clear description helps agent decide when to use
 @tool("Read Pipeline Logs")
 def read_pipeline_logs(log_path: str) -> str:
-    """Read Cloud Run or Pub/Sub logs from local path.
+    """Read service or messaging logs from local path.
     Use when analyzing pipeline failures or errors.
     Input: Full path to log file (e.g., /tmp/logs/run_123.log)
     Returns: Raw log content as string."""

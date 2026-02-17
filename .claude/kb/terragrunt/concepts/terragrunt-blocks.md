@@ -52,7 +52,7 @@ inputs = {
 ## Quick Reference
 
 | Block | Purpose | Required |
-|-------|---------|----------|
+| ----- | ------- | -------- |
 | `locals` | Define local variables | No |
 | `include` | Inherit parent config | Usually |
 | `dependency` | Module execution order | For deps |
@@ -77,7 +77,7 @@ locals {
   env        = local.env_config.locals.environment
 
   # Computed values
-  resource_prefix = "${local.env}-invoice"
+  resource_prefix = "${local.env}-app"
 }
 ```
 

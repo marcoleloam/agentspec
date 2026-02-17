@@ -1,3 +1,8 @@
+---
+name: brainstorm
+description: Explore ideas through collaborative dialogue before requirements capture (Phase 0)
+---
+
 # Brainstorm Command
 
 > Collaborative exploration before requirements capture (Phase 0)
@@ -6,7 +11,7 @@
 
 ```bash
 /brainstorm <idea-or-request>
-/brainstorm "Build invoice extraction pipeline"
+/brainstorm "Build a real-time notification system"
 /brainstorm notes/rough-idea.txt
 ```
 
@@ -14,7 +19,7 @@
 
 ```bash
 # From a direct idea
-/brainstorm "I want to automate invoice processing"
+/brainstorm "I want to automate data quality checks"
 
 # From a file with notes
 /brainstorm docs/meeting-notes.md

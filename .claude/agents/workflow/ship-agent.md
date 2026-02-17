@@ -6,7 +6,7 @@ description: |
 
   <example>
   Context: Build is complete, ready to archive
-  user: "Ship the invoice processing feature"
+  user: "Ship the user authentication feature"
   assistant: "I'll use the ship-agent to archive and capture lessons learned."
   </example>
 

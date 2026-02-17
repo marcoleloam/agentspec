@@ -6,7 +6,7 @@
 
 ## Overview
 
-BigQuery is a fully managed, serverless data warehouse that supports streaming inserts for real-time data ingestion. For invoice processing, extracted data flows from Cloud Run to BigQuery via streaming API, enabling immediate analytics on processed invoices.
+BigQuery is a fully managed, serverless data warehouse that supports streaming inserts for real-time data ingestion. For data processing, extracted records flow from Cloud Run to BigQuery via streaming API, enabling immediate analytics on processed data.
 
 ## The Pattern
 
@@ -14,20 +14,20 @@ BigQuery is a fully managed, serverless data warehouse that supports streaming i
 from google.cloud import bigquery
 from datetime import datetime
 
-def insert_invoice_data(project_id: str, dataset_id: str, table_id: str, invoice: dict):
-    """Stream invoice data to BigQuery."""
+def insert_record_data(project_id: str, dataset_id: str, table_id: str, record: dict):
+    """Stream record data to BigQuery."""
     client = bigquery.Client(project=project_id)
     table_ref = f"{project_id}.{dataset_id}.{table_id}"
 
     # Prepare row with schema-aligned fields
     row = {
-        "invoice_id": invoice["invoice_id"],
-        "vendor_name": invoice["vendor_name"],
-        "invoice_date": invoice["invoice_date"],
-        "total_amount": float(invoice["total_amount"]),
-        "line_items": invoice.get("line_items", []),
+        "record_id": record["record_id"],
+        "supplier_name": record["supplier_name"],
+        "record_date": record["record_date"],
+        "total_amount": float(record["total_amount"]),
+        "line_items": record.get("line_items", []),
         "processed_at": datetime.utcnow().isoformat(),
-        "source_file": invoice["source_file"]
+        "source_file": record["source_file"]
     }
 
     errors = client.insert_rows_json(table_ref, [row])
@@ -35,7 +35,7 @@ def insert_invoice_data(project_id: str, dataset_id: str, table_id: str, invoice
     if errors:
         raise RuntimeError(f"BigQuery insert failed: {errors}")
 
-    return row["invoice_id"]
+    return row["record_id"]
 ```
 
 ## Quick Reference
@@ -46,13 +46,13 @@ def insert_invoice_data(project_id: str, dataset_id: str, table_id: str, invoice
 | Batch load | Table partition | Use for historical data |
 | Query | Result set | SQL syntax |
 
-## Invoice Table Schema
+## Record Table Schema
 
 ```sql
-CREATE TABLE IF NOT EXISTS `project.invoices.extracted_data` (
-  invoice_id STRING NOT NULL,
-  vendor_name STRING,
-  invoice_date DATE,
+CREATE TABLE IF NOT EXISTS `your-project-id.analytics.processed_data` (
+  record_id STRING NOT NULL,
+  supplier_name STRING,
+  record_date DATE,
   total_amount NUMERIC,
   line_items ARRAY<STRUCT<
     description STRING,
@@ -64,15 +64,15 @@ CREATE TABLE IF NOT EXISTS `project.invoices.extracted_data` (
   source_file STRING,
   extraction_confidence FLOAT64
 )
-PARTITION BY invoice_date
-CLUSTER BY vendor_name;
+PARTITION BY record_date
+CLUSTER BY supplier_name;
 ```
 
 ## Partitioning Strategy
 
-| Strategy | Use Case | Invoice Pipeline |
-|----------|----------|------------------|
-| **Time-unit (DATE)** | Query by date range | Partition by `invoice_date` |
+| Strategy | Use Case | Data Pipeline |
+|----------|----------|---------------|
+| **Time-unit (DATE)** | Query by date range | Partition by `record_date` |
 | Ingestion time | When date unknown | Fallback option |
 | Integer range | ID-based queries | Not recommended |
 
@@ -122,13 +122,13 @@ def insert_with_dedup(client, table_ref: str, row: dict, insert_id: str):
 
 ```sql
 -- Good: Specific columns, partition filter
-SELECT invoice_id, vendor_name, total_amount
-FROM `project.invoices.extracted_data`
-WHERE invoice_date BETWEEN '2026-01-01' AND '2026-01-31'
-  AND vendor_name = 'Restaurant ABC';
+SELECT record_id, supplier_name, total_amount
+FROM `your-project-id.analytics.processed_data`
+WHERE record_date BETWEEN '2026-01-01' AND '2026-01-31'
+  AND supplier_name = 'Example Corp';
 
 -- Bad: SELECT *, no partition filter
-SELECT * FROM `project.invoices.extracted_data`;
+SELECT * FROM `your-project-id.analytics.processed_data`;
 ```
 
 ## Related

@@ -13,7 +13,7 @@
 | **Project** | AgentSpec - Spec-Driven Development Framework |
 | **Tagline** | Spec-Driven Development for AI-Native Teams |
 | **Business Problem** | Gap between unstructured "vibe coding" and stale traditional specifications |
-| **Solution** | 5-phase workflow with 40+ AI agents and curated knowledge bases |
+| **Solution** | 5-phase workflow with 15+ specialized AI agents and curated knowledge bases |
 | **Target Audience** | AI-native development teams using Claude Code |
 | **License** | MIT |
 
@@ -30,7 +30,7 @@ Traditional specs produce a task list. AgentSpec produces a **team assignment**.
 | Criterion | Score | Evidence |
 |-----------|-------|----------|
 | Architecture Clarity | 9/10 | Well-defined 5-phase pipeline with clear contracts |
-| Agent Coverage | 9/10 | 40+ agents across 8 categories |
+| Agent Coverage | 9/10 | 15 agents across 4 categories |
 | KB Grounding | 8/10 | 8 domains, MCP-validated patterns |
 | Documentation | 8/10 | Comprehensive but needs OSS polish |
 | Extensibility | 9/10 | Framework-agnostic agent discovery |
@@ -226,7 +226,7 @@ Glob(.claude/           agents:                 main.py → @function-developer
   agents/**/*.md)         function-developer:   schema.py → @extraction-specialist
        │                    keywords: [cloud    config.yaml → @infra-deployer
        ▼                      run, serverless]  test_main.py → @test-generator
-40+ agent files              role: "Cloud Run
+15 agent files              role: "Cloud Run
                               developer"
 ```
 
@@ -274,20 +274,16 @@ Build invokes matched specialists via the Task tool:
 
 ## The Agent Ecosystem
 
-AgentSpec leverages a rich ecosystem of 40+ specialized agents:
+AgentSpec leverages an ecosystem of 15+ specialized agents:
 
 ### By Category
 
 | Category | Count | Agents | Specialization |
 |----------|-------|--------|----------------|
 | **Workflow** | 6 | brainstorm, define, design, build, ship, iterate | SDD phases |
-| **Code Quality** | 6 | code-reviewer, code-cleaner, test-generator, dual-reviewer, python-developer, code-documenter | Quality assurance |
-| **Data Engineering** | 8 | spark-specialist, lakeflow-architect, medallion-architect, spark-troubleshooter, spark-performance-analyzer, spark-streaming-architect, lakeflow-expert, lakeflow-pipeline-builder | Data pipelines |
-| **AI/ML** | 4 | llm-specialist, extraction-specialist, genai-architect, ai-prompt-specialist | LLM systems |
-| **Infrastructure** | 4 | ci-cd-specialist, infra-deployer, aws-lambda-architect, lambda-builder | DevOps |
+| **Code Quality** | 4 | code-reviewer, code-cleaner, code-documenter, test-generator | Quality assurance |
 | **Communication** | 3 | adaptive-explainer, meeting-analyst, the-planner | Documentation |
 | **Exploration** | 2 | codebase-explorer, kb-architect | Analysis |
-| **Domain** | 5 | function-developer, pipeline-architect, dataops-builder, extraction-specialist, aws-deployer | Project-specific |
 
 ### Agent Structure
 
@@ -880,7 +876,6 @@ CONTENT
 | Knowledge Base | `.claude/kb/` |
 | Commands | `.claude/commands/workflow/` |
 | Templates | `.claude/sdd/templates/` |
-| Examples | `.claude/sdd/examples/` |
 | Archive | `.claude/sdd/archive/` |
 
 ---
@@ -889,6 +884,7 @@ CONTENT
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.0.0 | 2026-02-17 | Public release: Consolidated as AgentSpec v1.0.0; Fixed agent counts to match actual 15 core agents |
 | 4.3.0 | 2026-02-03 | Restructured with meeting-analyst + codebase-explorer + code-documenter frameworks; Removed Dev Loop to focus on SDD |
 | 4.2.0 | 2026-01-29 | Added Agent Matching + Delegation |
 | 4.1.2 | 2026-01-28 | Added Sample Collection to /brainstorm |
@@ -921,5 +917,5 @@ AgentSpec is designed for a future where:
 
 ---
 
-*Document Restructured: 2026-02-03*
+*Document Updated: 2026-02-17 | AgentSpec v1.0.0*
 *Frameworks Applied: Meeting Analyst (10-section), Codebase Explorer (Executive Summary), Code Documenter (Quality Checklists)*

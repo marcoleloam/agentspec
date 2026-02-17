@@ -17,12 +17,12 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date
 
-class Invoice(BaseModel):
-    """Invoice extraction model for LLM output validation."""
+class Order(BaseModel):
+    """Order extraction model for LLM output validation."""
 
-    invoice_id: str = Field(..., description="Unique invoice identifier")
-    vendor_name: str = Field(..., min_length=1)
-    invoice_date: date
+    order_id: str = Field(..., description="Unique order identifier")
+    supplier_name: str = Field(..., min_length=1)
+    order_date: date
     total_amount: float = Field(..., ge=0)
     currency: str = Field(default="USD", max_length=3)
     notes: Optional[str] = None
@@ -37,10 +37,10 @@ class Invoice(BaseModel):
 
 | Input | Output | Notes |
 |-------|--------|-------|
-| `{"invoice_id": "INV-001", ...}` | `Invoice(...)` | Dict to model |
-| `'{"invoice_id": "INV-001"}'` | `Invoice(...)` | JSON via `model_validate_json` |
-| `invoice.model_dump()` | `dict` | Model to dict |
-| `invoice.model_dump_json()` | `str` | Model to JSON string |
+| `{"order_id": "ORD-001", ...}` | `Order(...)` | Dict to model |
+| `'{"order_id": "ORD-001"}'` | `Order(...)` | JSON via `model_validate_json` |
+| `order.model_dump()` | `dict` | Model to dict |
+| `order.model_dump_json()` | `str` | Model to JSON string |
 
 ## Field Configuration
 
@@ -48,7 +48,7 @@ class Invoice(BaseModel):
 from pydantic import Field
 
 # Required field with description
-invoice_id: str = Field(..., description="Unique ID")
+order_id: str = Field(..., description="Unique ID")
 
 # Optional with default
 currency: str = Field(default="USD")
@@ -60,7 +60,7 @@ amount: float = Field(..., ge=0, le=1000000)
 name: str = Field(..., min_length=1, max_length=100)
 
 # Alias for JSON key mapping
-vendor: str = Field(..., alias="vendorName")
+supplier: str = Field(..., alias="supplierName")
 ```
 
 ## Common Mistakes
@@ -68,18 +68,18 @@ vendor: str = Field(..., alias="vendorName")
 ### Wrong
 
 ```python
-class Invoice(BaseModel):
+class Order(BaseModel):
     # Missing type hints - no validation!
-    invoice_id = ""
+    order_id = ""
     amount = 0.0
 ```
 
 ### Correct
 
 ```python
-class Invoice(BaseModel):
+class Order(BaseModel):
     # Type hints enable validation
-    invoice_id: str
+    order_id: str
     amount: float = Field(..., ge=0)
 ```
 
@@ -87,23 +87,23 @@ class Invoice(BaseModel):
 
 ```python
 # Instantiation
-invoice = Invoice(invoice_id="INV-001", vendor_name="Uber", ...)
+order = Order(order_id="ORD-001", supplier_name="Example Corp", ...)
 
 # From dict
-invoice = Invoice.model_validate({"invoice_id": "INV-001", ...})
+order = Order.model_validate({"order_id": "ORD-001", ...})
 
 # From JSON string (for LLM output)
-invoice = Invoice.model_validate_json('{"invoice_id": "INV-001", ...}')
+order = Order.model_validate_json('{"order_id": "ORD-001", ...}')
 
 # To dict
-data = invoice.model_dump()
-data = invoice.model_dump(exclude_none=True)  # Skip None fields
+data = order.model_dump()
+data = order.model_dump(exclude_none=True)  # Skip None fields
 
 # To JSON
-json_str = invoice.model_dump_json(indent=2)
+json_str = order.model_dump_json(indent=2)
 
 # JSON Schema (for LLM prompts)
-schema = Invoice.model_json_schema()
+schema = Order.model_json_schema()
 ```
 
 ## Related

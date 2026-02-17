@@ -42,20 +42,20 @@ EOF
 # infrastructure/environments/dev/env.hcl
 locals {
   environment = "dev"
-  project_id  = "invoice-processing-dev"
+  project_id  = "myapp-dev"
   region      = "us-central1"
 }
-# State bucket: invoice-processing-dev-tfstate
+# State bucket: myapp-dev-tfstate
 ```
 
 ```hcl
 # infrastructure/environments/prod/env.hcl
 locals {
   environment = "prod"
-  project_id  = "invoice-processing-prod"
+  project_id  = "myapp-prod"
   region      = "us-central1"
 }
-# State bucket: invoice-processing-prod-tfstate
+# State bucket: myapp-prod-tfstate
 ```
 
 ## Alternative: Single Bucket with Prefixes
@@ -114,14 +114,14 @@ remote_state {
 ## State Structure
 
 ```text
-# Dev bucket: invoice-processing-dev-tfstate
+# Dev bucket: myapp-dev-tfstate
 environments/dev/vpc/default.tfstate
 environments/dev/iam/default.tfstate
 environments/dev/pubsub/default.tfstate
 environments/dev/cloud-run/default.tfstate
 environments/dev/bigquery/default.tfstate
 
-# Prod bucket: invoice-processing-prod-tfstate
+# Prod bucket: myapp-prod-tfstate
 environments/prod/vpc/default.tfstate
 environments/prod/iam/default.tfstate
 environments/prod/pubsub/default.tfstate
@@ -134,7 +134,7 @@ environments/prod/bigquery/default.tfstate
 ```bash
 # Create state buckets (one-time setup)
 for ENV in dev prod; do
-  PROJECT="invoice-processing-${ENV}"
+  PROJECT="myapp-${ENV}"
   gsutil mb -p ${PROJECT} -l us-central1 gs://${PROJECT}-tfstate
   gsutil versioning set on gs://${PROJECT}-tfstate
 done

@@ -19,11 +19,11 @@
 | `int` | `count: int` | Auto-coerces "123" |
 | `float` | `amount: float` | Auto-coerces from int/str |
 | `bool` | `active: bool` | Coerces 1/0, "true"/"false" |
-| `date` | `invoice_date: date` | ISO format string coercion |
+| `date` | `order_date: date` | ISO format string coercion |
 | `Optional[T]` | `tax: Optional[float] = None` | Nullable with default |
 | `list[T]` | `items: list[Item]` | Typed list |
 | `Literal` | `status: Literal["a","b"]` | Constrained values |
-| `Enum` | `vendor: VendorType` | Enum class values |
+| `Enum` | `supplier: SupplierType` | Enum class values |
 
 ## Validator Decorators
 

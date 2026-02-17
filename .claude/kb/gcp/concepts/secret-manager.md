@@ -6,7 +6,7 @@
 
 ## Overview
 
-Secret Manager stores sensitive data like API keys with versioning, encryption, and access control. For the invoice pipeline, it secures Gemini API keys and LangFuse credentials. Cloud Run accesses secrets at runtime, avoiding hardcoded credentials.
+Secret Manager stores sensitive data like API keys with versioning, encryption, and access control. For the data pipeline, it secures Gemini API keys and LangFuse credentials. Cloud Run accesses secrets at runtime, avoiding hardcoded credentials.
 
 ## The Pattern
 
@@ -27,12 +27,12 @@ def get_secret(project_id: str, secret_id: str, version: str = "latest") -> str:
     return response.payload.data.decode("UTF-8")
 
 # Usage in Cloud Run function
-def process_with_llm(invoice_image: bytes) -> dict:
-    """Extract invoice data using Gemini."""
+def process_with_llm(document_image: bytes) -> dict:
+    """Extract record data using Gemini."""
     import google.generativeai as genai
 
     # Get API key from Secret Manager
-    api_key = get_secret("my-project", "gemini-api-key")
+    api_key = get_secret("your-project-id", "gemini-api-key")
     genai.configure(api_key=api_key)
 
     model = genai.GenerativeModel("gemini-1.5-flash")
@@ -47,13 +47,13 @@ def process_with_llm(invoice_image: bytes) -> dict:
 | Version number | Specific version | Use for rollback |
 | "latest" alias | Current version | Default behavior |
 
-## Invoice Pipeline Secrets
+## Data Pipeline Secrets
 
 | Secret | Purpose | Accessing Function |
 |--------|---------|-------------------|
-| `gemini-api-key` | Vertex AI / Gemini API | Invoice Extractor |
-| `langfuse-public-key` | LLMOps observability | Invoice Extractor |
-| `langfuse-secret-key` | LLMOps authentication | Invoice Extractor |
+| `gemini-api-key` | Vertex AI / Gemini API | Data Processor |
+| `langfuse-public-key` | LLMOps observability | Data Processor |
+| `langfuse-secret-key` | LLMOps authentication | Data Processor |
 
 ## Version Management
 
@@ -107,8 +107,8 @@ def get_api_key() -> str:
 
 ```yaml
 # Deploy with secret as environment variable
-gcloud run deploy invoice-extractor \
-  --image gcr.io/project/extractor \
+gcloud run deploy data-processor \
+  --image gcr.io/project/processor \
   --set-secrets="GEMINI_API_KEY=gemini-api-key:latest" \
   --set-secrets="LANGFUSE_PUBLIC_KEY=langfuse-public-key:latest"
 ```

@@ -153,15 +153,15 @@ output "dlq_topic_name" { value = var.enable_dead_letter ? google_pubsub_topic.d
 ## Example Usage
 
 ```hcl
-module "invoice_converted_topic" {
+module "data_converted_topic" {
   source = "./modules/pubsub"
 
-  topic_name = "invoice-converted"
+  topic_name = "data-converted"
   project_id = var.project_id
 
   subscriptions = [
     {
-      name                  = "invoice-classifier-sub"
+      name                  = "data-classifier-sub"
       push_endpoint         = module.classifier.service_url
       ack_deadline_seconds  = 60
       enable_dlq            = true
@@ -173,7 +173,7 @@ module "invoice_converted_topic" {
 }
 ```
 
-## Related
+## See Also
 
 - [Cloud Run Module](./cloud-run-module.md)
 - [GCS Module](./gcs-module.md)

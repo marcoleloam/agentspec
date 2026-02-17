@@ -19,10 +19,10 @@ from enum import Enum
 from datetime import date
 from decimal import Decimal
 
-class VendorType(str, Enum):
-    UBEREATS = "ubereats"
-    DOORDASH = "doordash"
-    GRUBHUB = "grubhub"
+class CategoryType(str, Enum):
+    CATEGORY_A = "category_a"
+    CATEGORY_B = "category_b"
+    CATEGORY_C = "category_c"
     OTHER = "other"
 
 class LineItem(BaseModel):
@@ -31,11 +31,11 @@ class LineItem(BaseModel):
     unit_price: Decimal = Field(..., ge=0)
     amount: Decimal = Field(..., ge=0)
 
-class Invoice(BaseModel):
-    invoice_id: str
-    vendor_name: str
-    vendor_type: VendorType
-    invoice_date: date
+class Order(BaseModel):
+    order_id: str
+    supplier_name: str
+    supplier_type: CategoryType
+    order_date: date
     due_date: Optional[date] = None
     currency: Literal["USD", "EUR", "GBP"] = "USD"
     line_items: list[LineItem] = Field(default_factory=list)
@@ -45,8 +45,8 @@ class Invoice(BaseModel):
 
 | Input | Output | Notes |
 |-------|--------|-------|
-| `"ubereats"` | `VendorType.UBEREATS` | Enum coercion |
-| `"2024-01-15"` | `date(2024, 1, 15)` | ISO date string |
+| `"category_a"` | `CategoryType.CATEGORY_A` | Enum coercion |
+| `"2026-01-15"` | `date(2026, 1, 15)` | ISO date string |
 | `"123.45"` | `Decimal("123.45")` | String to Decimal |
 | `None` | `None` | Optional field |
 
@@ -72,7 +72,7 @@ notes: Optional[str] = None
 currency: str = "USD"
 
 # Required (no default)
-invoice_id: str
+order_id: str
 
 # Factory default for mutable types
 items: list[str] = Field(default_factory=list)
@@ -83,16 +83,16 @@ items: list[str] = Field(default_factory=list)
 ```python
 from enum import Enum
 
-class VendorType(str, Enum):
+class CategoryType(str, Enum):
     """Inherit from str for JSON serialization."""
-    UBEREATS = "ubereats"
-    DOORDASH = "doordash"
+    CATEGORY_A = "category_a"
+    CATEGORY_B = "category_b"
     OTHER = "other"
 
 # Usage in model
-vendor_type: VendorType
+supplier_type: CategoryType
 
-# Accepts: "ubereats", VendorType.UBEREATS
+# Accepts: "category_a", CategoryType.CATEGORY_A
 ```
 
 ## Literal Types
@@ -128,10 +128,10 @@ items: list[str] = Field(default_factory=list)
 # 123 (int), "123" (str), 123.0 (float)
 
 # All valid for date field:
-# date(2024, 1, 15), "2024-01-15", datetime(2024, 1, 15)
+# date(2026, 1, 15), "2026-01-15", datetime(2026, 1, 15)
 
 # Enum accepts string value:
-# "ubereats" -> VendorType.UBEREATS
+# "category_a" -> CategoryType.CATEGORY_A
 ```
 
 ## Related

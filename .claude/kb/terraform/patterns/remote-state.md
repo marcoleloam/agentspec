@@ -95,8 +95,8 @@ output "state_bucket_name" {
 # backend.tf (in each environment)
 terraform {
   backend "gcs" {
-    bucket = "tf-state-myproject-123"
-    prefix = "invoice-pipeline/prod"
+    bucket = "tf-state-your-project-id"
+    prefix = "app-pipeline/prod"
   }
 }
 ```
@@ -106,13 +106,13 @@ terraform {
 ```text
 environments/
 ├── dev/
-│   ├── backend.tf    # prefix = "invoice-pipeline/dev"
+│   ├── backend.tf    # prefix = "app-pipeline/dev"
 │   └── main.tf
 ├── staging/
-│   ├── backend.tf    # prefix = "invoice-pipeline/staging"
+│   ├── backend.tf    # prefix = "app-pipeline/staging"
 │   └── main.tf
 └── prod/
-    ├── backend.tf    # prefix = "invoice-pipeline/prod"
+    ├── backend.tf    # prefix = "app-pipeline/prod"
     └── main.tf
 ```
 
@@ -129,9 +129,9 @@ remote_state {
     if_exists = "overwrite"
   }
   config = {
-    project  = "myproject-123"
+    project  = "your-project-id"
     location = "us-central1"
-    bucket   = "tf-state-myproject-123"
+    bucket   = "tf-state-your-project-id"
     prefix   = "${path_relative_to_include()}/terraform.tfstate"
   }
 }
@@ -144,12 +144,12 @@ include "root" {
 }
 
 terraform {
-  source = "../../modules/invoice-pipeline"
+  source = "../../modules/app-pipeline"
 }
 
 inputs = {
   environment = "prod"
-  project_id  = "myproject-123"
+  project_id  = "your-project-id"
 }
 ```
 
@@ -167,7 +167,7 @@ terraform force-unlock LOCK_ID
 ```hcl
 data "terraform_remote_state" "network" {
   backend = "gcs"
-  config = { bucket = "tf-state-myproject-123", prefix = "network/prod" }
+  config = { bucket = "tf-state-your-project-id", prefix = "network/prod" }
 }
 # Use: data.terraform_remote_state.network.outputs.vpc_connector_id
 ```
@@ -182,7 +182,7 @@ data "terraform_remote_state" "network" {
 | Restrict bucket access | Security |
 | Use lifecycle rules | Cost control |
 
-## Related
+## See Also
 
 - [State Concept](../concepts/state.md)
 - [Workspaces Concept](../concepts/workspaces.md)

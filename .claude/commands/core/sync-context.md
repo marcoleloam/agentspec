@@ -63,12 +63,10 @@ Grep("@lambda_handler")      # Lambda patterns
 Glob(".claude/agents/**/*.md")
 
 # Categorize by folder
-- workflow/      → SDD pipeline agents
-- code-quality/  → Review, clean, test
-- data-engineering/ → Spark, Lakeflow
-- aws/           → Lambda, deployer
-- ai-ml/         → LLM, prompts
-- domain/        → Project-specific
+- workflow/       → SDD pipeline agents (brainstorm, define, design, build, ship, iterate)
+- code-quality/   → Review, clean, test, document
+- communication/  → Explainer, meeting analyst, planner
+- exploration/    → Codebase explorer, KB architect
 ```
 
 ### Step 4: Merge Updates

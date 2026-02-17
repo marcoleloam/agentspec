@@ -142,18 +142,18 @@ module "pipeline_iam" {
 
   service_accounts = [
     {
-      account_id   = "tiff-converter"
-      display_name = "TIFF to PNG Converter"
+      account_id   = "file-converter"
+      display_name = "File Converter"
       roles        = ["roles/storage.objectViewer", "roles/storage.objectCreator", "roles/pubsub.publisher"]
     },
     {
-      account_id   = "data-extractor"
-      display_name = "Data Extractor"
+      account_id   = "data-processor"
+      display_name = "Data Processor"
       roles        = ["roles/storage.objectViewer", "roles/pubsub.publisher", "roles/secretmanager.secretAccessor"]
     },
     {
       account_id   = "bigquery-writer"
-      display_name = "BigQuery Writer"
+      display_name = "Data Writer"
       roles        = ["roles/bigquery.dataEditor"]
     }
   ]
@@ -172,7 +172,7 @@ module "pipeline_iam" {
 | Access Secrets | `roles/secretmanager.secretAccessor` |
 | Use Vertex AI | `roles/aiplatform.user` |
 
-## Related
+## See Also
 
 - [Cloud Run Module](./cloud-run-module.md)
 - [Pub/Sub Module](./pubsub-module.md)

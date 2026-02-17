@@ -1,3 +1,8 @@
+---
+name: build
+description: Execute implementation with on-the-fly task generation (Phase 3)
+---
+
 # Build Command
 
 > Execute implementation with on-the-fly task generation (Phase 3)
@@ -11,7 +16,7 @@
 ## Examples
 
 ```bash
-/build .claude/sdd/features/DESIGN_CLOUD_RUN_FUNCTIONS.md
+/build .claude/sdd/features/DESIGN_NOTIFICATION_SYSTEM.md
 /build DESIGN_USER_AUTH.md
 ```
 

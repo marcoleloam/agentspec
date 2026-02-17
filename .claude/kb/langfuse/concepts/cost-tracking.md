@@ -17,9 +17,9 @@ langfuse = get_client()
 
 with langfuse.start_as_current_observation(
     as_type="generation",
-    name="invoice-extraction",
-    model="gemini-1.5-pro",
-    input="Extract invoice fields from this image..."
+    name="llm-processing",
+    model="your-model-name",
+    input="Extract data fields from this document..."
 ) as generation:
 
     response = call_llm()
@@ -91,14 +91,14 @@ generation.update(
 # - output_price: 0.003
 ```
 
-## Invoice Processing Cost Example
+## Cost Tracking Example
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Target cost | $0.003/invoice | Project requirement |
-| Avg input tokens | 1,500 | Image + prompt |
+| Target cost | $0.01/request | Project requirement |
+| Avg input tokens | 1,500 | Prompt tokens |
 | Avg output tokens | 200 | JSON response |
-| Gemini 1.5 Pro | ~$0.002 | Within budget |
+| Model cost | ~$0.002 | Within budget |
 
 ## Metrics Available
 

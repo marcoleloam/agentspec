@@ -56,11 +56,10 @@
 
 ---
 
-## Project Integration
+## Example Use Cases
 
-| Use Case | Pattern | Target |
-|----------|---------|--------|
-| Invoice extraction | python-sdk-integration | Cloud Run function |
-| Cost monitoring | cost-alerting | $0.003/invoice threshold |
-| Quality tracking | quality-feedback-loops | 90% accuracy target |
-| Latency monitoring | dashboard-metrics | P95 < 3s target |
+| Use Case | Key Files |
+|----------|-----------|
+| **SDK Integration** | patterns/python-sdk-integration.md, concepts/traces-spans.md |
+| **Cost Management** | patterns/cost-alerting.md, concepts/cost-tracking.md |
+| **Quality Monitoring** | patterns/quality-feedback-loops.md, concepts/scoring.md |

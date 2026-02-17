@@ -1,6 +1,6 @@
 # LLM Output Validation Pattern
 
-> **Purpose**: Robust validation of JSON responses from LLMs like Gemini
+> **Purpose**: Robust validation of JSON responses from LLMs
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
@@ -24,10 +24,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class VendorType(str, Enum):
-    UBEREATS = "ubereats"
-    DOORDASH = "doordash"
-    GRUBHUB = "grubhub"
+class CategoryType(str, Enum):
+    CATEGORY_A = "category_a"
+    CATEGORY_B = "category_b"
+    CATEGORY_C = "category_c"
     OTHER = "other"
 
 
@@ -38,13 +38,13 @@ class LineItem(BaseModel):
     amount: Decimal = Field(..., ge=0)
 
 
-class InvoiceExtraction(BaseModel):
-    """Schema for LLM invoice extraction output."""
+class OrderExtraction(BaseModel):
+    """Schema for LLM order extraction output."""
 
-    invoice_id: str
-    vendor_name: str
-    vendor_type: VendorType = VendorType.OTHER
-    invoice_date: date
+    order_id: str
+    supplier_name: str
+    supplier_type: CategoryType = CategoryType.OTHER
+    order_date: date
     due_date: Optional[date] = None
     subtotal: Decimal = Field(..., ge=0)
     tax_amount: Decimal = Field(default=Decimal("0"), ge=0)
@@ -59,9 +59,9 @@ class InvoiceExtraction(BaseModel):
     def normalize_currency(cls, v: str) -> str:
         return v.upper().strip()
 
-    @field_validator("vendor_name", mode="before")
+    @field_validator("supplier_name", mode="before")
     @classmethod
-    def clean_vendor_name(cls, v):
+    def clean_supplier_name(cls, v):
         if isinstance(v, str):
             return v.strip()
         return v
@@ -70,9 +70,9 @@ class InvoiceExtraction(BaseModel):
 def validate_llm_output(
     llm_response: str,
     strict: bool = True
-) -> tuple[Optional[InvoiceExtraction], list[dict]]:
+) -> tuple[Optional[OrderExtraction], list[dict]]:
     """
-    Validate LLM JSON output against invoice schema.
+    Validate LLM JSON output against order schema.
 
     Args:
         llm_response: Raw JSON string from LLM
@@ -102,8 +102,8 @@ def validate_llm_output(
 
     # Step 3: Validate with Pydantic
     try:
-        invoice = InvoiceExtraction.model_validate(data)
-        return invoice, []
+        order = OrderExtraction.model_validate(data)
+        return order, []
     except ValidationError as e:
         errors = e.errors()
         if strict:
@@ -114,11 +114,11 @@ def validate_llm_output(
         return _attempt_recovery(data, errors), errors
 
 
-def _attempt_recovery(data: dict, errors: list) -> Optional[InvoiceExtraction]:
+def _attempt_recovery(data: dict, errors: list) -> Optional[OrderExtraction]:
     """Attempt to recover by applying defaults for missing/invalid fields."""
     # Set defaults for non-critical fields
     defaults = {
-        "vendor_type": "other",
+        "supplier_type": "other",
         "tax_amount": "0",
         "currency": "USD",
         "line_items": [],
@@ -129,18 +129,18 @@ def _attempt_recovery(data: dict, errors: list) -> Optional[InvoiceExtraction]:
             data[key] = default
 
     try:
-        return InvoiceExtraction.model_validate(data)
+        return OrderExtraction.model_validate(data)
     except ValidationError:
         return None
 ```
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `strict` | `True` | Fail on any validation error |
-| `currency` | `"USD"` | Default currency if missing |
-| `vendor_type` | `"other"` | Default vendor classification |
+| Setting          | Default   | Description                      |
+| ---------------- | --------- | -------------------------------- |
+| `strict`         | `True`    | Fail on any validation error     |
+| `currency`       | `"USD"`   | Default currency if missing      |
+| `supplier_type`  | `"other"` | Default supplier classification  |
 
 ## Example Usage
 
@@ -148,24 +148,24 @@ def _attempt_recovery(data: dict, errors: list) -> Optional[InvoiceExtraction]:
 # Raw LLM response (may include markdown)
 llm_response = '''```json
 {
-    "invoice_id": "INV-2024-001",
-    "vendor_name": "UberEats",
-    "vendor_type": "ubereats",
-    "invoice_date": "2024-01-15",
+    "order_id": "ORD-2026-001",
+    "supplier_name": "Vendor Alpha",
+    "supplier_type": "category_a",
+    "order_date": "2026-01-15",
     "subtotal": 125.50,
     "tax_amount": 10.04,
     "total_amount": 135.54,
     "line_items": [
-        {"description": "Food delivery", "quantity": 1, "unit_price": 125.50, "amount": 125.50}
+        {"description": "Product delivery", "quantity": 1, "unit_price": 125.50, "amount": 125.50}
     ]
 }
 ```'''
 
-invoice, errors = validate_llm_output(llm_response)
+order, errors = validate_llm_output(llm_response)
 
-if invoice:
-    print(f"Validated: {invoice.invoice_id} - ${invoice.total_amount}")
-    # Safe to insert into BigQuery
+if order:
+    print(f"Validated: {order.order_id} - ${order.total_amount}")
+    # Safe to persist to storage
 else:
     print(f"Validation failed: {errors}")
 ```

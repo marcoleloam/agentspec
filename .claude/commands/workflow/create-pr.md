@@ -1,3 +1,8 @@
+---
+name: create-pr
+description: Create pull request with conventional commits and structured descriptions
+---
+
 # Create PR Command
 
 > Automate professional pull request creation with conventional commits and structured descriptions
@@ -132,19 +137,19 @@ Use Conventional Commits format:
 
 <body - what changed and why>
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **Examples:**
 
 ```text
-feat(parser): add support for MDI v3 header format
+feat(auth): add OAuth2 token refresh flow
 
-- Implement MDI v3 detection in header parser
-- Add backward compatibility for v1/v2 formats
-- Update validation rules for new field structure
+- Implement OAuth2 token refresh with PKCE
+- Add backward compatibility for session-based auth
+- Update validation rules for new token format
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 ### Step 4: Ask Clarifying Questions
@@ -312,8 +317,8 @@ BRANCH
 | `kb` | `.claude/kb/**` |
 | `sdd` | `.claude/sdd/**` |
 | `commands` | `.claude/commands/**` |
-| `parser` | `src/parsers/**` |
-| `pipeline` | `src/pipelines/**` |
+| `handlers` | `src/handlers/**` |
+| `services` | `src/services/**` |
 | `api` | `src/api/**` |
 | `infra` | `terraform/**`, `infrastructure/**` |
 | `ci` | `.github/**` |
@@ -327,11 +332,11 @@ BRANCH
 ```bash
 /create-pr
 
-# Detected: New files in src/parsers/
-# Suggested: feat(parser): add MDI v3 support
+# Detected: New files in src/handlers/
+# Suggested: feat(auth): add OAuth2 refresh support
 
-→ Created branch: feat/mdi-v3-support
-→ Committed: feat(parser): add MDI v3 header detection
+→ Created branch: feat/oauth2-refresh
+→ Committed: feat(auth): add OAuth2 token refresh
 → PR: https://github.com/org/repo/pull/42
 ```
 
@@ -395,8 +400,6 @@ BRANCH
 ## Related
 
 - Review Command: `.claude/commands/review/review.md`
-- Dual Reviewer Agent: `.claude/agents/code-quality/dual-reviewer.md`
-- CodeRabbit Config: `.coderabbit.yaml`
-- Template: `.github/PULL_REQUEST_TEMPLATE.md`
+- Code Reviewer Agent: `.claude/agents/code-quality/code-reviewer.md`
 - Workflow: `.claude/sdd/_index.md`
 - Agents: `.claude/agents/workflow/`

@@ -8,7 +8,7 @@
 
 Variables make Terraform configurations flexible and reusable. Input variables accept values from outside, local values simplify expressions, and outputs expose values to other configurations or users.
 
-## Input Variables
+## The Pattern
 
 ### Declaration
 
@@ -76,7 +76,7 @@ variable "cloud_run_services" {
 
 ```hcl
 # terraform.tfvars
-project_id  = "my-gcp-project"
+project_id  = "your-project-id"
 region      = "us-central1"
 environment = "prod"
 ```
@@ -84,7 +84,7 @@ environment = "prod"
 ### Command Line
 
 ```bash
-terraform apply -var="project_id=my-project" -var-file="prod.tfvars"
+terraform apply -var="project_id=your-project-id" -var-file="prod.tfvars"
 ```
 
 ## Local Values
@@ -105,12 +105,12 @@ locals {
   }
 
   # Service list
-  pipeline_stages = ["uploaded", "converted", "classified", "extracted"]
+  pipeline_stages = ["ingested", "transformed", "validated", "processed"]
 }
 
 # Usage
-resource "google_storage_bucket" "invoices" {
-  name   = "${local.bucket_prefix}-invoices"
+resource "google_storage_bucket" "data" {
+  name   = "${local.bucket_prefix}-data"
   labels = local.common_labels
 }
 ```

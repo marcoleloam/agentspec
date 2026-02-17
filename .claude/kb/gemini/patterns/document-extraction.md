@@ -1,13 +1,13 @@
-# Invoice Extraction Pattern
+# Document Extraction Pattern
 
-> **Purpose**: Extract structured data from invoice images using Gemini vision
+> **Purpose**: Extract structured data from document images using Gemini vision
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
 
-- Processing TIFF/PNG invoice images
+- Processing TIFF/PNG/PDF document images
 - Extracting vendor, line items, totals from documents
-- Building automated invoice intelligence pipelines
+- Building automated document intelligence pipelines
 - Replacing manual data entry workflows
 
 ## Implementation
@@ -20,22 +20,22 @@ import json
 from pathlib import Path
 
 
-class InvoiceExtractor:
-    """Extract structured data from invoice images using Gemini."""
+class DocumentExtractor:
+    """Extract structured data from document images using Gemini."""
 
-    INVOICE_SCHEMA = {
+    DOCUMENT_SCHEMA = {
         "type": "object",
         "properties": {
-            "invoice_id": {"type": "string", "description": "Unique invoice number"},
-            "vendor_name": {"type": "string", "description": "Restaurant or vendor name"},
+            "document_id": {"type": "string", "description": "Unique document number"},
+            "source_name": {"type": "string", "description": "Organization or entity name"},
             "vendor_address": {"type": "string"},
-            "invoice_date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+            "created_date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
             "due_date": {"type": "string"},
             "subtotal": {"type": "number"},
             "tax_amount": {"type": "number"},
-            "total_amount": {"type": "number", "description": "Final amount due"},
+            "total_value": {"type": "number", "description": "Final amount due"},
             "currency": {"type": "string", "default": "USD"},
-            "line_items": {
+            "items": {
                 "type": "array",
                 "items": {
                     "type": "object",
@@ -49,13 +49,13 @@ class InvoiceExtractor:
                 }
             }
         },
-        "required": ["invoice_id", "vendor_name", "invoice_date", "total_amount"]
+        "required": ["document_id", "source_name", "created_date", "total_value"]
     }
 
-    EXTRACTION_PROMPT = """Extract all invoice information from this document image.
+    EXTRACTION_PROMPT = """Extract all document information from this document image.
 
 Instructions:
-- Extract the invoice number, vendor details, dates, and all line items
+- Extract the document number, source details, dates, and all line items
 - Convert dates to YYYY-MM-DD format
 - Extract numeric values without currency symbols
 - If a field is not visible, omit it from the response
@@ -70,7 +70,7 @@ Instructions:
         self.model = "gemini-2.5-flash"
 
     def extract(self, image_path: str) -> dict:
-        """Extract invoice data from an image file."""
+        """Extract document data from an image file."""
         # Load and encode image
         image_data = self._load_image(image_path)
         mime_type = self._get_mime_type(image_path)
@@ -94,7 +94,7 @@ Instructions:
             contents=[content],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=self.INVOICE_SCHEMA,
+                response_schema=self.DOCUMENT_SCHEMA,
                 temperature=0.3,  # Low temp for accuracy
             )
         )
@@ -120,24 +120,24 @@ Instructions:
 ## Configuration
 
 | Setting | Default | Description |
-|---------|---------|-------------|
-| `model` | `gemini-2.5-flash` | Best cost/quality for invoices |
+| ------- | ------- | ----------- |
+| `model` | `gemini-2.5-flash` | Best cost/quality for documents |
 | `temperature` | `0.3` | Low for consistent extraction |
 | `response_mime_type` | `application/json` | Enable structured output |
 
 ## Example Usage
 
 ```python
-extractor = InvoiceExtractor(project_id="my-gcp-project")
+extractor = DocumentExtractor(project_id="your-project-id")
 
-result = extractor.extract("invoices/ubereats-001.tiff")
+result = extractor.extract("documents/sample-vendor-001.pdf")
 print(result)
 # {
-#   "invoice_id": "INV-2026-001",
-#   "vendor_name": "Joe's Pizza",
-#   "invoice_date": "2026-01-20",
-#   "total_amount": 45.99,
-#   "line_items": [...]
+#   "document_id": "DOC-2026-001",
+#   "source_name": "Example Corp",
+#   "created_date": "2026-01-20",
+#   "total_value": 45.99,
+#   "items": [...]
 # }
 ```
 

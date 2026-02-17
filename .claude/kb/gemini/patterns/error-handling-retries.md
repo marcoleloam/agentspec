@@ -108,7 +108,7 @@ class RobustGeminiClient:
 ## Configuration
 
 | Setting | Default | Description |
-|---------|---------|-------------|
+| ------- | ------- | ----------- |
 | `max_retries` | 3 | Maximum retry attempts |
 | `base_delay` | 1.0s | Initial backoff delay |
 | `max_delay` | 60.0s | Maximum backoff delay |
@@ -117,13 +117,13 @@ class RobustGeminiClient:
 ## Example Usage
 
 ```python
-client = RobustGeminiClient(project_id="my-project")
+client = RobustGeminiClient(project_id="your-project-id")
 
 try:
     result = client.extract_with_fallback(
-        prompt="Extract invoice data.",
+        prompt="Extract structured data.",
         content=image_content,
-        schema=invoice_schema
+        schema=document_schema
     )
 except SafetyBlockError as e:
     print(f"Safety block: {e.blocked_categories}")

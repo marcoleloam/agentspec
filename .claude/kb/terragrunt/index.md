@@ -71,10 +71,10 @@
 
 ---
 
-## Project Context
+## Example Use Cases
 
-This KB supports the GenAI Invoice Processing Pipeline infrastructure:
-- Multi-environment GCP deployment (dev/prod)
-- Module dependencies: VPC -> Pub/Sub -> Cloud Run -> BigQuery
-- Remote state in GCS with per-environment buckets
-- DRY configuration across cloud-run, pubsub, gcs, bigquery, iam modules
+| Use Case | Key Files |
+| -------- | --------- |
+| **Multi-Environment Setup** | patterns/multi-environment-config.md |
+| **DRY Configuration** | patterns/dry-hierarchies.md, concepts/root-configuration.md |
+| **Dependency Management** | patterns/dependency-management.md, concepts/dependency-graphs.md |

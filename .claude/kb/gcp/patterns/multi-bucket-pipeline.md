@@ -15,27 +15,27 @@
 ```hcl
 # Terraform: Multi-bucket infrastructure
 locals {
-  project_id = "my-invoice-project"
+  project_id = "your-project-id"
   region     = "us-central1"
 
   buckets = {
     input = {
-      name            = "invoices-input"
+      name            = "data-input"
       lifecycle_days  = 30
       storage_class   = "STANDARD"
     }
     processed = {
-      name            = "invoices-processed"
+      name            = "data-processed"
       lifecycle_days  = 90
       storage_class   = "STANDARD"
     }
     archive = {
-      name            = "invoices-archive"
+      name            = "data-archive"
       lifecycle_days  = 365
       storage_class   = "COLDLINE"
     }
     failed = {
-      name            = "invoices-failed"
+      name            = "data-failed"
       lifecycle_days  = 90
       storage_class   = "STANDARD"
     }
@@ -70,10 +70,10 @@ resource "google_storage_bucket" "pipeline" {
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `input_bucket` | invoices-input | Raw TIFF uploads |
-| `processed_bucket` | invoices-processed | Converted PNGs |
-| `archive_bucket` | invoices-archive | Completed processing |
-| `failed_bucket` | invoices-failed | Manual review queue |
+| `input_bucket` | data-input | Raw file uploads |
+| `processed_bucket` | data-processed | Processed files |
+| `archive_bucket` | data-archive | Completed processing |
+| `failed_bucket` | data-failed | Manual review queue |
 
 ## Example Usage
 
@@ -103,7 +103,7 @@ def move_to_bucket(source_bucket: str, source_name: str,
 def handle_processing_result(bucket: str, name: str, success: bool, error: str = None):
     """Route file based on processing outcome."""
     if success:
-        return move_to_bucket(bucket, name, "invoices-archive")
+        return move_to_bucket(bucket, name, "data-archive")
     else:
         # Add error metadata before moving to failed bucket
         storage_client = storage.Client()
@@ -111,15 +111,15 @@ def handle_processing_result(bucket: str, name: str, success: bool, error: str =
         blob.metadata = {"error": error, "failed_at": datetime.utcnow().isoformat()}
         blob.patch()
 
-        return move_to_bucket(bucket, name, "invoices-failed")
+        return move_to_bucket(bucket, name, "data-failed")
 ```
 
 ## Bucket Responsibilities
 
 | Bucket | Trigger | Next Stage | Retention |
 |--------|---------|------------|-----------|
-| input | External upload | TIFF converter | 30 days |
-| processed | TIFF converter output | Classifier, Extractor | 90 days |
+| input | External upload | File converter | 30 days |
+| processed | File converter output | Classifier, Data Processor | 90 days |
 | archive | Successful completion | None | 365 days |
 | failed | Processing error | Manual review | 90 days |
 

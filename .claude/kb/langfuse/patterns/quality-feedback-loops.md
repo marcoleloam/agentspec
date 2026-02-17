@@ -7,7 +7,7 @@
 
 - Collecting user feedback on LLM outputs
 - Implementing LLM-as-Judge automated evaluation
-- Tracking accuracy against the 90% target
+- Tracking accuracy against the target accuracy threshold
 
 ## Implementation
 
@@ -36,7 +36,7 @@ def evaluate_extraction_quality(trace_id: str, extraction_result: dict, ground_t
         as_type="generation", name="llm-judge-evaluation",
         model="gemini-1.5-flash", metadata={"purpose": "evaluation"}
     ) as judge:
-        eval_prompt = f"""Evaluate invoice extraction accuracy.
+        eval_prompt = f"""Evaluate data extraction accuracy.
         Result: {json.dumps(extraction_result)}
         {"Ground Truth:" + json.dumps(ground_truth) if ground_truth else ""}
         Score 0-1: completeness, accuracy, format, overall. Return JSON."""
@@ -52,8 +52,8 @@ def evaluate_extraction_quality(trace_id: str, extraction_result: dict, ground_t
         return scores
 
 def calculate_field_accuracy(extraction: dict, ground_truth: dict) -> float:
-    """Calculate field-level accuracy for invoice extraction."""
-    fields = ["vendor_name", "invoice_date", "total_amount", "invoice_id"]
+    """Calculate field-level accuracy for data extraction."""
+    fields = ["supplier_name", "record_date", "total_amount", "record_id"]
     return sum(1 for f in fields if extraction.get(f) == ground_truth.get(f)) / len(fields)
 
 def process_with_quality_tracking(image_bytes: bytes, ground_truth: dict = None):
@@ -62,7 +62,7 @@ def process_with_quality_tracking(image_bytes: bytes, ground_truth: dict = None)
         with langfuse.start_as_current_observation(
             as_type="generation", name="extraction", model="gemini-1.5-pro"
         ) as gen:
-            result = extract_invoice(image_bytes)
+            result = extract_record(image_bytes)
             gen.update(output=result)
 
         if ground_truth:
@@ -79,16 +79,16 @@ def process_with_quality_tracking(image_bytes: bytes, ground_truth: dict = None)
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Judge model | gemini-1.5-flash | Cheaper model for evaluation |
-| Accuracy target | 0.90 | Project requirement |
+| Setting         | Default         | Description                  |
+|-----------------|-----------------|------------------------------|
+| Judge model     | your-model-name | Cheaper model for evaluation |
+| Accuracy target | 0.90            | Target accuracy threshold    |
 
 ## Example Usage
 
 ```python
 record_user_feedback(trace_id="trace-123", feedback_type="thumbs", feedback_value=True)
-scores = evaluate_extraction_quality("trace-123", {"vendor": "UberEats", "total": 42.50})
+scores = evaluate_extraction_quality("trace-123", {"vendor": "Example Platform", "total": 42.50})
 ```
 
 ## See Also

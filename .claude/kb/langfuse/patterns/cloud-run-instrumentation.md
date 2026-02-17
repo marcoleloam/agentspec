@@ -8,14 +8,14 @@
 - Deploying LLM-powered Cloud Run functions
 - Event-driven processing (Pub/Sub triggered)
 - HTTP-triggered serverless endpoints
-- Invoice processing pipeline functions
+- LLM processing pipeline functions
 
 ## Implementation
 
 ```python
 """
 Cloud Run Function with Langfuse Instrumentation
-GCS -> Pub/Sub -> Cloud Run -> Gemini -> BigQuery
+GCS -> Pub/Sub -> Cloud Run -> LLM -> BigQuery
 """
 import os
 import json
@@ -27,10 +27,10 @@ langfuse = get_client()
 
 
 @functions_framework.cloud_event
-def process_invoice_event(cloud_event):
+def process_request_event(cloud_event):
     """
-    Pub/Sub triggered invoice processing with full observability.
-    Triggered when new invoice uploaded to GCS.
+    Pub/Sub triggered LLM processing with full observability.
+    Triggered when new document uploaded to GCS.
     """
     # Extract event data
     data = json.loads(cloud_event.data["message"]["data"])
@@ -41,7 +41,7 @@ def process_invoice_event(cloud_event):
     try:
         with langfuse.start_as_current_observation(
             as_type="span",
-            name="cloud-run-invoice-processor",
+            name="cloud-run-processor",
             trace_id=trace_id,  # Link to upstream trace
             metadata={
                 "bucket": bucket,
@@ -62,13 +62,13 @@ def process_invoice_event(cloud_event):
             # Extract with LLM
             with langfuse.start_as_current_observation(
                 as_type="generation",
-                name="gemini-extraction",
-                model="gemini-1.5-pro",
+                name="llm-extraction",
+                model="your-model-name",
                 model_parameters={"temperature": 0.1, "max_tokens": 1024}
             ) as generation:
 
-                prompt = langfuse.get_prompt("invoice-extraction")
-                result = call_gemini_vision(prompt.compile(), image_bytes)
+                prompt = langfuse.get_prompt("extract_data")
+                result = call_llm_vision(prompt.compile(), image_bytes)
 
                 generation.update(
                     output=result.text,
@@ -81,7 +81,7 @@ def process_invoice_event(cloud_event):
 
                 # Score extraction quality
                 generation.score(
-                    name="extraction_accuracy",
+                    name="output_accuracy",
                     value=calculate_confidence(result),
                     data_type="NUMERIC"
                 )
@@ -95,7 +95,7 @@ def process_invoice_event(cloud_event):
                 write_to_bigquery(parsed)
                 bq_span.update(output={"rows_written": 1})
 
-            trace.update(output={"status": "success", "invoice_id": parsed.get("invoice_id")})
+            trace.update(output={"status": "success", "record_id": parsed.get("record_id")})
 
     except Exception as e:
         # Log error to trace
@@ -114,7 +114,7 @@ def process_invoice_event(cloud_event):
 
 
 @functions_framework.http
-def process_invoice_http(request):
+def process_record_http(request):
     """HTTP-triggered variant for synchronous processing."""
 
     user_id = request.headers.get("X-User-ID", "anonymous")
@@ -123,14 +123,14 @@ def process_invoice_http(request):
     try:
         with langfuse.start_as_current_observation(
             as_type="span",
-            name="http-invoice-processor",
+            name="http-data-processor",
             user_id=user_id,
             session_id=request.headers.get("X-Session-ID"),
             metadata={"request_id": request_id}
         ) as trace:
 
             # Process...
-            result = process_invoice(request.data)
+            result = process_record(request.data)
             trace.update(output=result)
 
             return json.dumps(result), 200

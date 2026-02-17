@@ -1,52 +1,52 @@
-# Invoice Extraction JSON Schema
+# Order Extraction JSON Schema
 # MCP Validated: 2026-01-25
 # Use this schema in LLM system prompts to guide extraction output format
 
 $schema: "https://json-schema.org/draft/2020-12/schema"
-title: InvoiceExtraction
-description: Schema for LLM invoice extraction output from delivery platform invoices
+title: OrderExtraction
+description: Schema for LLM order extraction output from structured documents
 type: object
 
 required:
-  - invoice_id
-  - vendor_name
-  - invoice_date
+  - order_id
+  - supplier_name
+  - order_date
   - subtotal
   - total_amount
 
 properties:
-  invoice_id:
+  order_id:
     type: string
-    description: Unique invoice identifier (e.g., INV-2024-001)
+    description: Unique order identifier (e.g., ORD-2026-001)
     minLength: 1
     examples:
-      - "INV-2024-001"
-      - "UE-12345"
+      - "ORD-2026-001"
+      - "DOC-12345"
 
-  vendor_name:
+  supplier_name:
     type: string
-    description: Restaurant or vendor name
+    description: Supplier or organization name
     minLength: 1
     examples:
-      - "Pizza Palace"
-      - "Burger Joint"
+      - "Example Vendor"
+      - "Sample Supplier"
 
-  vendor_type:
+  supplier_type:
     type: string
-    description: Delivery platform type
+    description: Category type
     enum:
-      - ubereats
-      - doordash
-      - grubhub
+      - category_a
+      - category_b
+      - category_c
       - other
     default: other
 
-  invoice_date:
+  order_date:
     type: string
     format: date
-    description: Invoice issue date (YYYY-MM-DD format)
+    description: Order issue date (YYYY-MM-DD format)
     examples:
-      - "2024-01-15"
+      - "2026-01-15"
 
   due_date:
     type: string
@@ -54,7 +54,7 @@ properties:
     description: Payment due date (YYYY-MM-DD format)
     nullable: true
     examples:
-      - "2024-02-15"
+      - "2026-02-15"
 
   subtotal:
     type: number
@@ -91,7 +91,7 @@ properties:
 
   total_amount:
     type: number
-    description: Total invoice amount
+    description: Total order amount
     minimum: 0
     examples:
       - 108.00
@@ -109,7 +109,7 @@ properties:
 
   line_items:
     type: array
-    description: Individual line items on the invoice
+    description: Individual line items on the order
     default: []
     items:
       type: object
@@ -138,11 +138,11 @@ properties:
           minimum: 0
 
 examples:
-  - invoice_id: "INV-2024-001"
-    vendor_name: "Pizza Palace"
-    vendor_type: "ubereats"
-    invoice_date: "2024-01-15"
-    due_date: "2024-02-15"
+  - order_id: "ORD-2026-001"
+    supplier_name: "Example Vendor"
+    supplier_type: "category_a"
+    order_date: "2026-01-15"
+    due_date: "2026-02-15"
     subtotal: 100.00
     tax_amount: 8.00
     commission_rate: 0.15
@@ -150,11 +150,11 @@ examples:
     total_amount: 123.00
     currency: "USD"
     line_items:
-      - description: "Large Pepperoni Pizza"
+      - description: "Premium Widget"
         quantity: 2
         unit_price: 25.00
         amount: 50.00
-      - description: "Delivery Fee"
+      - description: "Service Fee"
         quantity: 1
         unit_price: 5.00
         amount: 5.00

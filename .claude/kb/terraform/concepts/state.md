@@ -8,7 +8,7 @@
 
 Terraform state is a JSON file that maps configuration to real-world resources. It tracks resource IDs, dependencies, and metadata. Without state, Terraform cannot know which resources it manages.
 
-## State Purpose
+## The Pattern
 
 | Function | Description |
 |----------|-------------|
@@ -45,7 +45,7 @@ terraform {
 # backend.tf
 terraform {
   backend "gcs" {
-    bucket = "tf-state-myproject"
+    bucket = "tf-state-your-project-id"
     prefix = "env/prod"
   }
 }
@@ -84,7 +84,7 @@ GCS backend provides automatic state locking to prevent concurrent modifications
 ```hcl
 terraform {
   backend "gcs" {
-    bucket = "tf-state-myproject"
+    bucket = "tf-state-your-project-id"
     prefix = "env/prod"
     # Locking is automatic via GCS
   }
@@ -120,7 +120,7 @@ Access outputs from other configurations:
 data "terraform_remote_state" "network" {
   backend = "gcs"
   config = {
-    bucket = "tf-state-myproject"
+    bucket = "tf-state-your-project-id"
     prefix = "network/prod"
   }
 }

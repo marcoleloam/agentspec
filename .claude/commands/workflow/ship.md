@@ -1,3 +1,8 @@
+---
+name: ship
+description: Archive completed feature with lessons learned (Phase 4)
+---
+
 # Ship Command
 
 > Archive completed feature with lessons learned (Phase 4)
@@ -11,7 +16,7 @@
 ## Examples
 
 ```bash
-/ship .claude/sdd/features/DEFINE_CLOUD_RUN_FUNCTIONS.md
+/ship .claude/sdd/features/DEFINE_NOTIFICATION_SYSTEM.md
 /ship DEFINE_USER_AUTH.md
 ```
 

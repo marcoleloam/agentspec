@@ -18,10 +18,10 @@ langfuse = get_client()
 # Create a trace with context manager
 with langfuse.start_as_current_observation(
     as_type="span",
-    name="process-invoice",
+    name="process-request",
     user_id="user-123",
     session_id="session-456",
-    metadata={"source": "cloud-run"}
+    metadata={"source": "api-server"}
 ) as root_span:
 
     # Nested span for preprocessing
@@ -29,17 +29,17 @@ with langfuse.start_as_current_observation(
         as_type="span",
         name="preprocess"
     ) as preprocess_span:
-        preprocess_span.update(output="Preprocessed invoice image")
+        preprocess_span.update(output="Preprocessed input document")
 
     # Nested generation for LLM call
     with langfuse.start_as_current_observation(
         as_type="generation",
         name="extract-fields",
-        model="gemini-1.5-pro"
+        model="your-model-name"
     ) as gen:
-        gen.update(output={"vendor": "UberEats", "total": 42.50})
+        gen.update(output={"result": "processed", "score": 0.95})
 
-    root_span.update(output="Invoice processed successfully")
+    root_span.update(output="Request processed successfully")
 ```
 
 ## Quick Reference

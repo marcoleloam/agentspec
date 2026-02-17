@@ -23,7 +23,7 @@ terraform {
 }
 
 inputs = {
-  network_name = "invoice-network"
+  network_name = "app-network"
   subnet_cidr  = "10.0.0.0/24"
 }
 ```
@@ -68,7 +68,7 @@ terraform {
 }
 
 inputs = {
-  topic_name        = "invoice-uploads"
+  topic_name        = "data-uploads"
   service_account   = dependency.iam.outputs.pubsub_service_account
 }
 ```
@@ -108,7 +108,7 @@ terraform {
 }
 
 inputs = {
-  service_name      = "invoice-processor"
+  service_name      = "data-processor"
   network_name      = dependency.vpc.outputs.network_name
   subnetwork_name   = dependency.vpc.outputs.subnetwork_name
   topic_id          = dependency.pubsub.outputs.topic_id

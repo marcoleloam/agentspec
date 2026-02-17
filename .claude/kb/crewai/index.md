@@ -1,6 +1,6 @@
 # CrewAI Knowledge Base
 
-> **Purpose**: Multi-agent AI orchestration for autonomous DataOps monitoring and self-healing pipelines
+> **Purpose**: Multi-agent AI orchestration for autonomous automated monitoring and self-healing systems
 > **MCP Validated**: 2026-01-25
 
 ## Quick Navigation
@@ -68,12 +68,10 @@
 
 ---
 
-## Project Context
+## Example Use Cases
 
-This KB supports the GenAI Invoice Processing Pipeline's DataOps monitoring:
-
-```
-Cloud Logging -> GCS Export -> CrewAI Triage -> Root Cause -> Reporter -> Slack
-```
-
-The three-agent architecture enables autonomous monitoring and self-healing capabilities.
+| Use Case | Key Files |
+|----------|-----------|
+| **Incident Triage** | patterns/triage-investigation-report.md |
+| **Automated Alerting** | patterns/slack-integration.md, patterns/escalation-workflow.md |
+| **System Monitoring** | patterns/log-analysis-agent.md, patterns/circuit-breaker.md |

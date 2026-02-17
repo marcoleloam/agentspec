@@ -60,7 +60,7 @@ generate "provider" { ... }
 # Environment-specific variables
 locals {
   environment = "dev"
-  project_id  = "invoice-processing-dev"
+  project_id  = "myapp-dev"
   region      = "us-central1"
 
   # Resource sizing for dev
@@ -88,7 +88,7 @@ terraform {
 }
 
 inputs = {
-  service_name  = "invoice-processor"
+  service_name  = "data-processor"
   min_instances = include.env.locals.cloud_run_min_instances
   max_instances = include.env.locals.cloud_run_max_instances
   memory        = include.env.locals.cloud_run_memory
@@ -98,7 +98,7 @@ inputs = {
 ## Quick Reference
 
 | Level | File | Contains |
-|-------|------|----------|
+| ----- | ---- | -------- |
 | Root | `terragrunt.hcl` | Backend, providers, shared inputs |
 | _env | `_env/*.hcl` | Shared module configs (optional) |
 | Environment | `env.hcl` | Project, region, sizing |

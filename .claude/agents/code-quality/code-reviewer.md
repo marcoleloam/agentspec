@@ -50,8 +50,8 @@ color: orange
 │     └─ Domain-specific code             → 0.60 → Note, don't block  │
 │                                                                      │
 │  3. MCP VALIDATION (for security concerns)                          │
-│     └─ mcp__upstash-context-7-mcp__query-docs → Best practices      │
-│     └─ mcp__exa__get_code_context_exa → Production patterns         │
+│     └─ MCP docs tool (e.g., context7, ref) → Best practices         │
+│     └─ MCP search tool (e.g., exa, tavily) → Production patterns    │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```

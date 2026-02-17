@@ -90,7 +90,7 @@ class MultiProviderExtractor:
 ## Configuration
 
 | Setting | Value | Description |
-|---------|-------|-------------|
+| ------- | ----- | ----------- |
 | Primary provider | Vertex AI | Lower cost, better integration |
 | Fallback provider | OpenRouter | Multi-model access |
 | Timeout | 30s per provider | Prevent hanging |
@@ -102,15 +102,15 @@ import os
 import base64
 
 extractor = MultiProviderExtractor(
-    gcp_project="my-project",
+    gcp_project="your-project-id",
     openrouter_api_key=os.environ["OPENROUTER_API_KEY"]
 )
 
-with open("invoice.png", "rb") as f:
+with open("document.png", "rb") as f:
     image_data = base64.b64encode(f.read()).decode()
 
 result = extractor.extract(
-    prompt="Extract invoice data.",
+    prompt="Extract structured data.",
     image_data=image_data,
     mime_type="image/png",
     schema={"type": "object", "properties": {"total": {"type": "number"}}}

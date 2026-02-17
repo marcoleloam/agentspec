@@ -83,37 +83,37 @@ class PromptRegistry:
         return list(self.prompts.get(task_name, {}).keys())
 
 
-# Pre-defined invoice prompts
-INVOICE_V1 = PromptVersion(
+# Pre-defined extraction prompts
+EXTRACTION_V1 = PromptVersion(
     version="v1.0",
     description="Basic extraction",
-    prompt_text="Extract invoice data: invoice_id, vendor_name, date, total.",
+    prompt_text="Extract document data: document_id, source_name, date, total.",
     schema={"type": "object", "properties": {
-        "invoice_id": {"type": "string"}, "vendor_name": {"type": "string"},
-        "invoice_date": {"type": "string"}, "total_amount": {"type": "number"}
-    }, "required": ["invoice_id", "total_amount"]}
+        "document_id": {"type": "string"}, "source_name": {"type": "string"},
+        "created_date": {"type": "string"}, "total_value": {"type": "number"}
+    }, "required": ["document_id", "total_value"]}
 )
 
-INVOICE_V2 = PromptVersion(
+EXTRACTION_V2 = PromptVersion(
     version="v2.0",
     description="With line items",
-    prompt_text="""Extract all invoice information.
+    prompt_text="""Extract all document information.
 - Convert dates to YYYY-MM-DD
 - Include line items with descriptions, quantities, totals""",
     schema={"type": "object", "properties": {
-        "invoice_id": {"type": "string"}, "vendor_name": {"type": "string"},
-        "total_amount": {"type": "number"},
-        "line_items": {"type": "array", "items": {"type": "object", "properties": {
+        "document_id": {"type": "string"}, "source_name": {"type": "string"},
+        "total_value": {"type": "number"},
+        "items": {"type": "array", "items": {"type": "object", "properties": {
             "description": {"type": "string"}, "quantity": {"type": "number"},
             "total": {"type": "number"}}}}
-    }, "required": ["invoice_id", "total_amount"]}
+    }, "required": ["document_id", "total_value"]}
 )
 ```
 
 ## Configuration
 
 | Setting | Description |
-|---------|-------------|
+| ------- | ----------- |
 | `registry_path` | JSON file for prompt persistence |
 | `version` | Semantic version string (v1.0, v2.0) |
 | `content_hash` | Auto-generated change detection hash |
@@ -125,13 +125,13 @@ registry = PromptRegistry(".prompts/registry.json")
 
 # Register new prompt
 registry.register(
-    task_name="invoice_extraction",
-    prompt_text="Extract invoice data...",
+    task_name="document_extraction",
+    prompt_text="Extract document data...",
     schema={"type": "object", ...}
 )
 
 # Get active prompt
-prompt = registry.get_active("invoice_extraction")
+prompt = registry.get_active("document_extraction")
 response = client.models.generate_content(
     model=prompt.model,
     contents=[content],
@@ -144,5 +144,5 @@ response = client.models.generate_content(
 
 ## See Also
 
-- [invoice-extraction.md](invoice-extraction.md)
+- [document-extraction.md](document-extraction.md)
 - [structured-json-output.md](structured-json-output.md)

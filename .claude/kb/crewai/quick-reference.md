@@ -42,7 +42,7 @@
 | Long-term | SQLite3 | Learning across sessions |
 | Entity | ChromaDB (RAG) | People, places, concepts tracking |
 
-## Severity Classification (DataOps)
+## Severity Classification
 
 | Level | Action | SLA |
 |-------|--------|-----|

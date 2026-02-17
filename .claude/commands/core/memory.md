@@ -5,7 +5,7 @@ description: Save valuable insights from the current session to storage
 
 # Memory Command
 
-Save session insights to `.claude/storage/` for future reference.
+Save session insights to `.claude/storage/` for future reference (directory is auto-created on first use).
 
 ## Usage
 

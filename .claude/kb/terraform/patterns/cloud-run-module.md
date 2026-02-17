@@ -127,13 +127,13 @@ output "service_id" {
 ## Example Usage
 
 ```hcl
-module "tiff_converter" {
+module "file_converter" {
   source = "./modules/cloud-run"
 
-  service_name          = "tiff-to-png-converter"
+  service_name          = "file-converter"
   project_id            = var.project_id
   region                = var.region
-  image                 = "gcr.io/${var.project_id}/tiff-converter:v1"
+  image                 = "gcr.io/${var.project_id}/file-converter:v1"
   service_account_email = google_service_account.converter.email
 
   memory        = "1Gi"
@@ -149,14 +149,14 @@ module "tiff_converter" {
 
   secrets = [
     {
-      name        = "LANGFUSE_SECRET_KEY"
-      secret_name = google_secret_manager_secret.langfuse.secret_id
+      name        = "OBSERVABILITY_SECRET_KEY"
+      secret_name = google_secret_manager_secret.observability.secret_id
     }
   ]
 }
 ```
 
-## Related
+## See Also
 
 - [Pub/Sub Module](./pubsub-module.md)
 - [IAM Module](./iam-module.md)

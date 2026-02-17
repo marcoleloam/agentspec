@@ -13,15 +13,15 @@ Agents are the fundamental building blocks of CrewAI. Each agent is a role-playi
 ```python
 from crewai import Agent
 
-# DataOps Triage Agent Example
+# Triage Agent Example
 triage_agent = Agent(
     role="Log Triage Specialist",
     goal="Classify and prioritize log events by severity",
     backstory="""You are an expert DevOps engineer with 10 years
     of experience monitoring cloud infrastructure. You excel at
     quickly identifying critical issues from log noise.""",
-    tools=[log_reader_tool, gcs_tool],
-    llm="gemini/gemini-1.5-flash",
+    tools=[log_reader_tool, storage_tool],
+    llm="openai/gpt-4o-mini",
     allow_delegation=False,
     max_iter=15,
     max_retry_limit=2,
@@ -62,7 +62,7 @@ agent = Agent(
     role="Root Cause Analyst",
     goal="Identify the root cause of pipeline failures and suggest fixes",
     backstory="""You are a senior SRE specializing in data pipelines.
-    You've debugged hundreds of Cloud Run, Pub/Sub, and BigQuery issues.
+    You've debugged hundreds of infrastructure and service issues.
     You approach problems methodically, checking logs, metrics, and
     recent deployments to find the underlying cause.""",
     tools=[log_reader_tool, metrics_tool],
@@ -70,7 +70,7 @@ agent = Agent(
 )
 ```
 
-## Agent Types for DataOps
+## Agent Types
 
 | Agent | Role | Goal |
 |-------|------|------|

@@ -62,7 +62,7 @@ resource "google_storage_bucket" "bucket" {
       condition {
         age                   = lifecycle_rule.value.condition_age
         num_newer_versions    = lifecycle_rule.value.condition_num_newer
-        matches_prefix        = lifecycle_rule.value.condition_prefix
+        matches_prefix        = lookup(lifecycle_rule.value, "condition_prefix", [])
       }
     }
   }
@@ -122,10 +122,10 @@ output "bucket_self_link" {
 
 ```hcl
 # Input bucket with notifications
-module "invoices_input" {
+module "data_input" {
   source = "./modules/gcs"
 
-  bucket_name = "invoices-input-${var.project_id}"
+  bucket_name = "data-input-${var.project_id}"
   project_id  = var.project_id
   location    = "US"
 
@@ -146,10 +146,10 @@ module "invoices_input" {
 }
 
 # Processed bucket with archival lifecycle
-module "invoices_processed" {
+module "data_processed" {
   source = "./modules/gcs"
 
-  bucket_name = "invoices-processed-${var.project_id}"
+  bucket_name = "data-processed-${var.project_id}"
   project_id  = var.project_id
 
   lifecycle_rules = [
@@ -160,7 +160,7 @@ module "invoices_processed" {
 }
 ```
 
-## Related
+## See Also
 
 - [Pub/Sub Module](./pubsub-module.md)
 - [Cloud Run Module](./cloud-run-module.md)

@@ -26,7 +26,7 @@ hierarchical_crew = Crew(
     agents=[triage_agent, root_cause_agent, reporter_agent],
     tasks=[complex_task],
     process=Process.hierarchical,
-    manager_llm="gemini/gemini-1.5-pro",  # Or manager_agent
+    manager_llm="openai/gpt-4o",  # Or manager_agent
     verbose=True
 )
 ```
@@ -101,11 +101,11 @@ complex_crew = Crew(
     agents=[triage, root_cause, reporter, escalation],
     tasks=[incident_response_task],
     process=Process.hierarchical,
-    manager_llm="gemini/gemini-1.5-pro"
+    manager_llm="openai/gpt-4o"
 )
 ```
 
-## DataOps Recommendation
+## Recommendation
 
 | Scenario | Process | Reason |
 |----------|---------|--------|

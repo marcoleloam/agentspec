@@ -6,12 +6,12 @@
 
 ## Overview
 
-Gemini includes configurable safety filters that can block content based on harm categories. For document extraction tasks, you may need to adjust these settings since invoices and business documents are typically safe content that might occasionally trigger false positives.
+Gemini includes configurable safety filters that can block content based on harm categories. For document extraction tasks, you may need to adjust these settings since business documents are typically safe content that might occasionally trigger false positives.
 
-## Harm Categories
+## The Pattern
 
 | Category | Description |
-|----------|-------------|
+| -------- | ----------- |
 | `HARM_CATEGORY_HATE_SPEECH` | Discriminatory content |
 | `HARM_CATEGORY_HARASSMENT` | Bullying, threatening content |
 | `HARM_CATEGORY_SEXUALLY_EXPLICIT` | Sexual content |
@@ -21,7 +21,7 @@ Gemini includes configurable safety filters that can block content based on harm
 ## Block Thresholds
 
 | Threshold | Blocks |
-|-----------|--------|
+| --------- | ------ |
 | `BLOCK_NONE` | Nothing blocked (use carefully) |
 | `BLOCK_ONLY_HIGH` | Only high probability |
 | `BLOCK_MEDIUM_AND_ABOVE` | Medium and high probability |
@@ -35,7 +35,7 @@ Gemini includes configurable safety filters that can block content based on harm
 from google import genai
 from google.genai import types
 
-client = genai.Client(vertexai=True, project="my-project", location="us-central1")
+client = genai.Client(vertexai=True, project="your-project-id", location="us-central1")
 
 # Configure safety for document extraction
 safety_settings = [
@@ -91,11 +91,11 @@ def extract_with_safety_check(content):
     return response.text
 ```
 
-## Recommended Settings for Invoice Processing
+## Quick Reference
 
 | Category | Setting | Reason |
-|----------|---------|--------|
-| Hate Speech | BLOCK_ONLY_HIGH | Invoices rarely contain |
+| -------- | ------- | ------ |
+| Hate Speech | BLOCK_ONLY_HIGH | Business documents rarely contain |
 | Harassment | BLOCK_ONLY_HIGH | Business documents safe |
 | Sexually Explicit | BLOCK_MEDIUM_AND_ABOVE | Standard protection |
 | Dangerous | BLOCK_ONLY_HIGH | Product names may trigger |

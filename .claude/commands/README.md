@@ -21,7 +21,6 @@ Slash commands for the SDD workflow.
 | `/memory` | Save session insights |
 | `/sync-context` | Update CLAUDE.md |
 | `/readme-maker` | Generate README |
-| `/telemetry` | View usage stats |
 
 ## Knowledge Commands
 

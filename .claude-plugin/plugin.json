@@ -5,10 +5,10 @@
   "description": "Spec-Driven Development (SDD) framework for Claude Code - Transform ideas into shipped features through a 5-phase AI-powered workflow",
   "author": "AgentSpec Contributors",
   "license": "MIT",
-  "homepage": "https://github.com/YOUR_ORG/agentspec",
+  "homepage": "https://github.com/agentspec/agentspec",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_ORG/agentspec.git"
+    "url": "https://github.com/agentspec/agentspec.git"
   },
   "keywords": [
     "claude-code",

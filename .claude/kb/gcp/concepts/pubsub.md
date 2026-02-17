@@ -15,8 +15,8 @@ Cloud Pub/Sub is a fully managed messaging service that decouples publishers fro
 from google.cloud import pubsub_v1
 import json
 
-def publish_invoice_event(project_id: str, topic_id: str, data: dict):
-    """Publish invoice processing event to Pub/Sub."""
+def publish_processing_event(project_id: str, topic_id: str, data: dict):
+    """Publish data processing event to Pub/Sub."""
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_id)
 
@@ -27,7 +27,7 @@ def publish_invoice_event(project_id: str, topic_id: str, data: dict):
     future = publisher.publish(
         topic_path,
         message_bytes,
-        source="invoice-processor",
+        source="data-processor",
         content_type="application/json"
     )
 
@@ -49,19 +49,19 @@ def callback(message):
 | Subscription pull | Messages batch | Max 1000 messages per pull |
 | Push subscription | HTTP POST | To Cloud Run endpoint |
 
-## Invoice Pipeline Topics
+## Data Pipeline Topics
 
 | Topic | Purpose | Publisher | Subscriber |
 |-------|---------|-----------|------------|
-| `invoice-uploaded` | New TIFF received | GCS Eventarc | TIFF converter |
-| `invoice-converted` | PNG ready | TIFF converter | Classifier |
-| `invoice-classified` | Type identified | Classifier | Extractor |
-| `invoice-extracted` | Data ready | Extractor | BigQuery writer |
+| `data-uploaded` | New file received | GCS Eventarc | File converter |
+| `data-converted` | File ready | File converter | Classifier |
+| `data-classified` | Type identified | Classifier | Data Processor |
+| `data-processed` | Data ready | Data Processor | BigQuery writer |
 
 ## Subscription Types
 
-| Type | Use Case | Invoice Pipeline |
-|------|----------|------------------|
+| Type | Use Case | Data Pipeline |
+|------|----------|---------------|
 | **Push** | Deliver to Cloud Run | Primary for functions |
 | **Pull** | Batch processing | Not used |
 | **BigQuery** | Direct to warehouse | Audit trail |
@@ -91,9 +91,9 @@ except Exception as e:
 
 ```yaml
 # Terraform configuration
-resource "google_pubsub_subscription" "invoice_sub" {
-  name  = "invoice-extracted-sub"
-  topic = google_pubsub_topic.invoice_extracted.name
+resource "google_pubsub_subscription" "data_sub" {
+  name  = "data-processed-sub"
+  topic = google_pubsub_topic.data_processed.name
 
   dead_letter_policy {
     dead_letter_topic     = google_pubsub_topic.dlq.id

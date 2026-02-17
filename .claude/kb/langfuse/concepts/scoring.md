@@ -18,16 +18,16 @@ langfuse = get_client()
 # Method 1: Score within context
 with langfuse.start_as_current_observation(
     as_type="generation",
-    name="invoice-extraction",
-    model="gemini-1.5-pro"
+    name="llm-processing",
+    model="your-model-name"
 ) as generation:
 
-    result = extract_invoice(image)
+    result = extract_data(document)
     generation.update(output=result)
 
     # Score the current observation
     generation.score(
-        name="extraction_accuracy",
+        name="output_accuracy",
         value=0.95,
         data_type="NUMERIC",
         comment="All fields extracted correctly"
@@ -46,7 +46,7 @@ langfuse.create_score(
     name="user_feedback",
     value=1,
     data_type="BOOLEAN",
-    comment="User confirmed extraction was correct"
+    comment="User confirmed output was correct"
 )
 ```
 
@@ -97,13 +97,13 @@ langfuse.create_score(
 )
 ```
 
-## Invoice Processing Scores
+## Scoring Example
 
 | Score Name | Type | Target | Description |
 |------------|------|--------|-------------|
-| `extraction_accuracy` | NUMERIC | >= 0.90 | Field extraction correctness |
-| `field_completeness` | NUMERIC | >= 0.95 | All required fields present |
-| `user_verification` | BOOLEAN | True | Manual verification result |
+| `output_accuracy` | NUMERIC | >= 0.90 | Output field correctness |
+| `response_completeness` | NUMERIC | >= 0.95 | All required fields present |
+| `user_feedback` | BOOLEAN | True | Manual verification result |
 | `confidence` | NUMERIC | >= 0.80 | Model confidence score |
 
 ## Analytics Metrics

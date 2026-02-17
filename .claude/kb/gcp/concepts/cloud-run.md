@@ -16,7 +16,7 @@ import functions_framework
 from cloudevents.http import CloudEvent
 
 @functions_framework.cloud_event
-def process_invoice(cloud_event: CloudEvent):
+def process_record(cloud_event: CloudEvent):
     """Triggered by Pub/Sub message."""
     import base64
     import json
@@ -28,8 +28,8 @@ def process_invoice(cloud_event: CloudEvent):
     bucket = message["bucket"]
     file_name = message["name"]
 
-    # Process the invoice
-    result = extract_invoice_data(bucket, file_name)
+    # Process the record
+    result = extract_record_data(bucket, file_name)
 
     return result
 ```
@@ -44,8 +44,8 @@ def process_invoice(cloud_event: CloudEvent):
 
 ## Key Configuration
 
-| Setting | Purpose | Invoice Pipeline |
-|---------|---------|------------------|
+| Setting | Purpose | Data Pipeline |
+|---------|---------|---------------|
 | `--min-instances` | Cold start prevention | 1 for critical functions |
 | `--max-instances` | Cost control | 10-100 based on load |
 | `--concurrency` | Requests per instance | 1 for CPU-heavy LLM calls |
@@ -67,7 +67,7 @@ gcloud run deploy my-service --image gcr.io/project/image
 # Using dedicated service account with least privilege
 gcloud run deploy my-service \
   --image gcr.io/project/image \
-  --service-account invoice-processor@project.iam.gserviceaccount.com \
+  --service-account data-processor@project.iam.gserviceaccount.com \
   --min-instances 1 \
   --max-instances 50 \
   --concurrency 1 \

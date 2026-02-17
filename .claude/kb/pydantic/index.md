@@ -19,7 +19,7 @@
 | File | Purpose |
 |------|---------|
 | [patterns/llm-output-validation.md](patterns/llm-output-validation.md) | Validating LLM JSON responses |
-| [patterns/extraction-schema.md](patterns/extraction-schema.md) | Invoice extraction schema definition |
+| [patterns/extraction-schema.md](patterns/extraction-schema.md) | Order extraction schema definition |
 | [patterns/error-handling.md](patterns/error-handling.md) | ValidationError handling and recovery |
 | [patterns/custom-validators.md](patterns/custom-validators.md) | Business rule validation logic |
 
@@ -27,7 +27,7 @@
 
 | File | Purpose |
 |------|---------|
-| [specs/invoice-schema.yaml](specs/invoice-schema.yaml) | Invoice extraction JSON schema |
+| [specs/order-schema.yaml](specs/order-schema.yaml) | Order extraction JSON schema |
 
 ---
 
@@ -60,17 +60,17 @@
 
 ## Agent Usage
 
-| Agent | Primary Files | Use Case |
-|-------|---------------|----------|
-| python-developer | patterns/extraction-schema.md | Define invoice models |
-| test-generator | patterns/error-handling.md | Test validation edge cases |
+| Agent          | Primary Files                 | Use Case                  |
+| -------------- | ----------------------------- | ------------------------- |
+| build-agent    | patterns/extraction-schema.md | Define order models       |
+| test-generator | patterns/error-handling.md    | Test validation edge cases |
 
 ---
 
-## Project Context
+## Example Use Cases
 
-This KB supports the GenAI Invoice Processing Pipeline:
-- Validating Gemini's JSON extraction output
-- Defining invoice extraction schema
-- Type coercion and default values
-- Error handling for malformed LLM responses
+| Use Case | Key Files |
+| -------- | --------- |
+| **LLM Output Validation** | concepts/validators.md, patterns/llm-output-validation.md |
+| **API Response Parsing** | concepts/base-model.md, patterns/extraction-schema.md |
+| **Data Pipeline Schemas** | concepts/nested-models.md, patterns/custom-validators.md |

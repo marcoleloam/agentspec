@@ -15,7 +15,7 @@
 ```python
 """
 Langfuse Python SDK Integration Pattern
-For GenAI Invoice Processing Pipeline
+For LLM-powered applications
 """
 import os
 from langfuse import get_client, Langfuse
@@ -48,40 +48,40 @@ if langfuse.auth_check():
 # BASIC TRACING
 # ============================================
 
-def process_invoice(image_bytes: bytes, user_id: str) -> dict:
-    """Process invoice with full observability."""
+def process_request(input_data: bytes, user_id: str) -> dict:
+    """Process request with full observability."""
 
     with langfuse.start_as_current_observation(
         as_type="span",
-        name="process-invoice",
+        name="process-request",
         user_id=user_id,
-        metadata={"source": "cloud-run", "version": "1.0"}
+        metadata={"source": "api-server", "version": "1.0"}
     ) as trace:
 
         # Step 1: Preprocess
         with langfuse.start_as_current_observation(
             as_type="span",
-            name="preprocess-image"
+            name="preprocess-input"
         ) as preprocess:
-            processed = preprocess_image(image_bytes)
+            processed = preprocess_input(input_data)
             preprocess.update(output={"size": len(processed)})
 
         # Step 2: LLM Extraction
         with langfuse.start_as_current_observation(
             as_type="generation",
             name="extract-fields",
-            model="gemini-1.5-pro",
+            model="your-model-name",
             model_parameters={"temperature": 0.1}
         ) as generation:
 
             # Fetch managed prompt
-            prompt = langfuse.get_prompt("invoice-extraction")
-            compiled = prompt.compile(invoice_type="restaurant")
+            prompt = langfuse.get_prompt("extract_data")
+            compiled = prompt.compile(request_type="standard")
 
             generation.update(input=compiled)
 
             # Call LLM
-            result = call_gemini(compiled, processed)
+            result = call_llm(compiled, processed)
 
             generation.update(
                 output=result.text,
@@ -104,7 +104,7 @@ def process_invoice(image_bytes: bytes, user_id: str) -> dict:
             as_type="span",
             name="validate-output"
         ) as validate:
-            validated = validate_extraction(result.text)
+            validated = validate_output(result.text)
             validate.update(output=validated)
 
         trace.update(output=validated)
@@ -132,11 +132,11 @@ def cleanup():
 ## Example Usage
 
 ```python
-# In Cloud Run function
+# In serverless function handler
 def main(request):
     try:
-        result = process_invoice(
-            image_bytes=request.data,
+        result = process_request(
+            input_data=request.data,
             user_id=request.headers.get("X-User-ID", "anonymous")
         )
         return {"status": "success", "data": result}

@@ -11,19 +11,19 @@ GCP IAM controls who (identity) can do what (role) on which resource. For server
 ## The Pattern
 
 ```bash
-# Create dedicated service account for invoice extractor
-gcloud iam service-accounts create invoice-extractor \
-  --display-name="Invoice Extractor Service Account"
+# Create dedicated service account for data processor
+gcloud iam service-accounts create data-processor \
+  --display-name="Data Processor Service Account"
 
 # Grant only required permissions
 PROJECT_ID=$(gcloud config get-value project)
-SA_EMAIL="invoice-extractor@${PROJECT_ID}.iam.gserviceaccount.com"
+SA_EMAIL="data-processor@${PROJECT_ID}.iam.gserviceaccount.com"
 
 # Read from GCS (processed bucket)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/storage.objectViewer" \
-  --condition="expression=resource.name.startsWith('projects/_/buckets/invoices-processed'),title=processed-bucket-only"
+  --condition="expression=resource.name.startsWith('projects/_/buckets/data-processed'),title=processed-bucket-only"
 
 # Write to BigQuery
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -47,13 +47,13 @@ gcloud secrets add-iam-policy-binding gemini-api-key \
 | Insert BigQuery | `roles/bigquery.dataEditor` | Dataset-level |
 | Access secrets | `roles/secretmanager.secretAccessor` | Secret-level |
 
-## Invoice Pipeline Service Accounts
+## Data Pipeline Service Accounts
 
 | Function | Service Account | Roles |
 |----------|-----------------|-------|
-| TIFF Converter | `tiff-converter@` | GCS read (input), GCS write (processed), Pub/Sub publish |
-| Classifier | `invoice-classifier@` | GCS read (processed), Pub/Sub publish |
-| Extractor | `invoice-extractor@` | GCS read, Secret Manager access, Pub/Sub publish |
+| File Converter | `file-converter@` | GCS read (input), GCS write (processed), Pub/Sub publish |
+| Classifier | `data-classifier@` | GCS read (processed), Pub/Sub publish |
+| Data Processor | `data-processor@` | GCS read, Secret Manager access, Pub/Sub publish |
 | BQ Writer | `bigquery-writer@` | BigQuery dataEditor, Pub/Sub subscribe |
 
 ## Common Mistakes
@@ -85,8 +85,8 @@ resource "google_storage_bucket_iam_member" "viewer" {
   member = "serviceAccount:${google_service_account.extractor.email}"
 
   condition {
-    title       = "only_png_files"
-    expression  = "resource.name.endsWith('.png')"
+    title       = "only_json_files"
+    expression  = "resource.name.endsWith('.json')"
   }
 }
 ```

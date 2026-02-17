@@ -22,7 +22,7 @@ import os
 
 # ============ SLACK ALERT TOOL ============
 class SlackAlertInput(BaseModel):
-    channel: str = Field(description="Slack channel (e.g., #dataops-alerts)")
+    channel: str = Field(description="Slack channel (e.g., #ops-alerts)")
     title: str = Field(description="Alert title/header")
     severity: str = Field(description="CRITICAL, ERROR, WARNING, INFO")
     message: str = Field(description="Alert body with details")
@@ -105,7 +105,7 @@ reporter_agent = Agent(
     and include clear next steps. You know how to format messages
     for maximum readability in Slack.""",
     tools=[SlackAlertTool()],
-    llm="gemini/gemini-1.5-flash",
+    llm="openai/gpt-4o-mini",
     max_iter=5,
     verbose=True
 )
@@ -136,7 +136,7 @@ incident_report_task = Task(
 |---------|-------|-------------|
 | `SLACK_WEBHOOK_URL` | env var | Incoming webhook URL |
 | `max_iter` | 5 | Low - simple formatting task |
-| `channel` | `#dataops-alerts` | Target channel |
+| `channel` | `#ops-alerts` | Target channel |
 
 ## Message Formatting
 
@@ -162,11 +162,11 @@ reporter_crew = Crew(
 
 result = reporter_crew.kickoff(inputs={
     "analysis_summary": """
-    - 3 Cloud Run instances crashed due to OOM
+    - 3 Service instances crashed due to OOM
     - Root cause: Batch size too large for memory limit
     - Fix: Reduce batch size or increase memory
     """,
-    "slack_channel": "#dataops-alerts"
+    "slack_channel": "#ops-alerts"
 })
 ```
 

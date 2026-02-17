@@ -1,6 +1,6 @@
 # Custom Validators Pattern
 
-> **Purpose**: Business rule validation for invoice extraction with custom logic
+> **Purpose**: Business rule validation for data extraction with custom logic
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
@@ -20,37 +20,37 @@ from enum import Enum
 from typing_extensions import Self
 import re
 
-class VendorType(str, Enum):
-    UBEREATS = "ubereats"
-    DOORDASH = "doordash"
+class CategoryType(str, Enum):
+    CATEGORY_A = "category_a"
+    CATEGORY_B = "category_b"
     OTHER = "other"
 
-VENDOR_PATTERNS = {
-    VendorType.UBEREATS: [r"uber\s*eats", r"uber"],
-    VendorType.DOORDASH: [r"door\s*dash", r"doordash"],
+CATEGORY_PATTERNS = {
+    CategoryType.CATEGORY_A: [r"category[\s_]*a", r"categorya"],
+    CategoryType.CATEGORY_B: [r"category[\s_]*b", r"categoryb"],
 }
 
-class InvoiceWithValidation(BaseModel):
-    invoice_id: str
-    vendor_name: str
-    vendor_type: VendorType = VendorType.OTHER
-    invoice_date: date
+class OrderWithValidation(BaseModel):
+    order_id: str
+    supplier_name: str
+    supplier_type: CategoryType = CategoryType.OTHER
+    order_date: date
     due_date: Optional[date] = None
     subtotal: Decimal = Field(..., ge=0)
     tax_amount: Decimal = Field(default=Decimal("0"), ge=0)
     total_amount: Decimal = Field(..., ge=0)
     currency: str = "USD"
 
-    @field_validator("invoice_id", mode="after")
+    @field_validator("order_id", mode="after")
     @classmethod
-    def normalize_invoice_id(cls, v: str) -> str:
+    def normalize_order_id(cls, v: str) -> str:
         v = v.strip().upper()
-        v = re.sub(r"^(INVOICE|INV|#)\s*[-:]?\s*", "INV-", v)
+        v = re.sub(r"^(ORDER|ORD|#)\s*[-:]?\s*", "ORD-", v)
         return v
 
-    @field_validator("vendor_name", mode="before")
+    @field_validator("supplier_name", mode="before")
     @classmethod
-    def clean_vendor_name(cls, v: Any) -> Any:
+    def clean_supplier_name(cls, v: Any) -> Any:
         if isinstance(v, str):
             v = " ".join(v.split()).title()
         return v
@@ -69,24 +69,24 @@ class InvoiceWithValidation(BaseModel):
         return round(v, 2)
 
     @model_validator(mode="after")
-    def auto_classify_vendor(self) -> Self:
-        if self.vendor_type == VendorType.OTHER:
-            name_lower = self.vendor_name.lower()
-            for vtype, patterns in VENDOR_PATTERNS.items():
+    def auto_classify_category(self) -> Self:
+        if self.supplier_type == CategoryType.OTHER:
+            name_lower = self.supplier_name.lower()
+            for ctype, patterns in CATEGORY_PATTERNS.items():
                 if any(re.search(p, name_lower) for p in patterns):
-                    self.vendor_type = vtype
+                    self.supplier_type = ctype
                     break
         return self
 
     @model_validator(mode="after")
     def validate_dates(self) -> Self:
         today = date.today()
-        if self.invoice_date > today:
-            raise ValueError("Invoice date cannot be in the future")
-        if self.invoice_date < today - timedelta(days=365):
-            raise ValueError("Invoice date is more than 1 year old")
-        if self.due_date and self.due_date < self.invoice_date:
-            raise ValueError("Due date must be after invoice date")
+        if self.order_date > today:
+            raise ValueError("Order date cannot be in the future")
+        if self.order_date < today - timedelta(days=365):
+            raise ValueError("Order date is more than 1 year old")
+        if self.due_date and self.due_date < self.order_date:
+            raise ValueError("Due date must be after order date")
         return self
 
     @model_validator(mode="after")
@@ -99,46 +99,46 @@ class InvoiceWithValidation(BaseModel):
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `tolerance` | `0.02` | Allowed difference in monetary calculations |
-| `max_invoice_age` | `365 days` | Maximum age for valid invoices |
+| Setting          | Default    | Description                                  |
+| ---------------- | ---------- | -------------------------------------------- |
+| `tolerance`      | `0.02`     | Allowed difference in monetary calculations  |
+| `max_order_age`  | `365 days` | Maximum age for valid orders                 |
 
 ## Example Usage
 
 ```python
 data = {
-    "invoice_id": "invoice #12345",
-    "vendor_name": "uber eats restaurant",
-    "vendor_type": "other",
-    "invoice_date": "2024-01-15",
+    "order_id": "order #12345",
+    "supplier_name": "category a systems",
+    "supplier_type": "other",
+    "order_date": "2026-01-15",
     "subtotal": "100.005",
     "tax_amount": "8.00",
     "total_amount": "108.01",
 }
 
-invoice = InvoiceWithValidation.model_validate(data)
-print(invoice.invoice_id)   # "INV-12345"
-print(invoice.vendor_name)  # "Uber Eats Restaurant"
-print(invoice.vendor_type)  # VendorType.UBEREATS
+order = OrderWithValidation.model_validate(data)
+print(order.order_id)       # "ORD-12345"
+print(order.supplier_name)  # "Category A Systems"
+print(order.supplier_type)  # CategoryType.CATEGORY_A
 
 # Context-aware validation
-class ContextAwareInvoice(BaseModel):
-    vendor_name: str
+class ContextAwareOrder(BaseModel):
+    supplier_name: str
 
-    @field_validator("vendor_name", mode="after")
+    @field_validator("supplier_name", mode="after")
     @classmethod
-    def validate_known_vendor(cls, v: str, info: ValidationInfo) -> str:
+    def validate_known_supplier(cls, v: str, info: ValidationInfo) -> str:
         context = info.context or {}
-        known = context.get("known_vendors", [])
+        known = context.get("known_suppliers", [])
         if known and v not in known:
-            raise ValueError(f"Unknown vendor: {v}")
+            raise ValueError(f"Unknown supplier: {v}")
         return v
 
 # Usage with context
-invoice = ContextAwareInvoice.model_validate(
-    {"vendor_name": "UberEats"},
-    context={"known_vendors": ["UberEats", "DoorDash"]}
+order = ContextAwareOrder.model_validate(
+    {"supplier_name": "Vendor Alpha"},
+    context={"known_suppliers": ["Vendor Alpha", "Vendor Beta"]}
 )
 ```
 

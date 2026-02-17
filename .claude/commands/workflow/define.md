@@ -1,3 +1,8 @@
+---
+name: define
+description: Capture and validate requirements in one pass (Phase 1)
+---
+
 # Define Command
 
 > Capture requirements and validate them in one pass (Phase 1)
@@ -12,11 +17,11 @@
 
 ```bash
 # From a BRAINSTORM document (recommended after /brainstorm)
-/define .claude/sdd/features/BRAINSTORM_INVOICE_PROCESSING.md
+/define .claude/sdd/features/BRAINSTORM_NOTIFICATION_SYSTEM.md
 
 # From meeting notes or raw input
 /define notes/meeting-notes.md
-/define "Build Cloud Run functions for invoice processing"
+/define "Build an API gateway for user management"
 /define docs/stakeholder-email.txt
 ```
 

@@ -62,8 +62,8 @@ domains:
       - name: custom-validators
         path: patterns/custom-validators.md
     specs:
-      - name: invoice-schema
-        path: specs/invoice-schema.yaml
+      - name: order-schema
+        path: specs/order-schema.yaml
 
   gcp:
     name: GCP Serverless Data Engineering
@@ -132,8 +132,8 @@ domains:
         path: concepts/safety-settings.md
         confidence: 0.95
     patterns:
-      - name: invoice-extraction
-        path: patterns/invoice-extraction.md
+      - name: document-extraction
+        path: patterns/document-extraction.md
       - name: structured-json-output
         path: patterns/structured-json-output.md
       - name: openrouter-fallback
@@ -271,7 +271,7 @@ domains:
 
   crewai:
     name: CrewAI
-    description: Multi-agent AI orchestration framework for autonomous DataOps monitoring and self-healing pipelines
+    description: Multi-agent AI orchestration framework for autonomous monitoring and self-healing pipelines
     path: crewai/
     mcp_validated: "2026-01-25"
     entry_points:

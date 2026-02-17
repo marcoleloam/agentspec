@@ -1,6 +1,6 @@
 # Triage-Investigation-Report Pattern
 
-> **Purpose**: Three-agent architecture for autonomous DataOps monitoring
+> **Purpose**: Three-agent architecture for autonomous automated monitoring
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
@@ -20,8 +20,8 @@ import os
 # ============ CUSTOM TOOLS ============
 @tool("Read Log File")
 def read_log_file(file_path: str) -> str:
-    """Read log file from local path or GCS.
-    Use for analyzing Cloud Run, Pub/Sub, or BigQuery logs."""
+    """Read log file from local path or storage.
+    Use for analyzing service, messaging, or database logs."""
     # Simplified - add GCS client for production
     with open(file_path) as f:
         return f.read()
@@ -39,11 +39,11 @@ def send_slack_alert(channel: str, message: str) -> str:
 triage_agent = Agent(
     role="Log Triage Specialist",
     goal="Classify log events by severity and filter noise",
-    backstory="""Expert DevOps engineer with deep knowledge of GCP
+    backstory="""Expert DevOps engineer with deep knowledge of infrastructure
     services. You quickly identify CRITICAL and ERROR events while
     filtering out routine INFO messages.""",
     tools=[read_log_file],
-    llm="gemini/gemini-1.5-flash",
+    llm="openai/gpt-4o-mini",
     max_iter=10,
     verbose=True
 )
@@ -52,10 +52,10 @@ root_cause_agent = Agent(
     role="Root Cause Analyst",
     goal="Identify root cause of errors and suggest fixes",
     backstory="""Senior SRE specializing in data pipelines. You've
-    debugged hundreds of Cloud Run, Pub/Sub, and BigQuery issues.
+    debugged hundreds of infrastructure and service issues.
     You find patterns and provide actionable recommendations.""",
     tools=[read_log_file],
-    llm="gemini/gemini-1.5-pro",
+    llm="openai/gpt-4o",
     max_iter=15,
     verbose=True
 )
@@ -67,7 +67,7 @@ reporter_agent = Agent(
     issues. You create actionable alerts with severity, impact,
     and recommended next steps.""",
     tools=[send_slack_alert],
-    llm="gemini/gemini-1.5-flash",
+    llm="openai/gpt-4o-mini",
     max_iter=5,
     verbose=True
 )
@@ -120,8 +120,8 @@ monitoring_crew = Crew(
 
 # ============ EXECUTION ============
 result = monitoring_crew.kickoff(inputs={
-    "log_path": "/tmp/logs/cloud-run-2026-01-25.json",
-    "slack_channel": "dataops-alerts"
+    "log_path": "/tmp/logs/service-2026-01-25.json",
+    "slack_channel": "ops-alerts"
 })
 ```
 
@@ -137,12 +137,12 @@ result = monitoring_crew.kickoff(inputs={
 ## Example Usage
 
 ```python
-# Triggered by Cloud Scheduler or Pub/Sub
+# Triggered by a scheduler or event trigger
 def handle_log_event(event, context):
     log_path = event["bucket"] + "/" + event["name"]
     result = monitoring_crew.kickoff(inputs={
         "log_path": log_path,
-        "slack_channel": "dataops-alerts"
+        "slack_channel": "ops-alerts"
     })
     return result
 ```

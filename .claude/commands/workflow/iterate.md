@@ -1,3 +1,8 @@
+---
+name: iterate
+description: Update any phase document when requirements or design change (Cross-Phase)
+---
+
 # Iterate Command
 
 > Update any phase document when requirements or design changes (Cross-Phase)
@@ -11,9 +16,9 @@
 ## Examples
 
 ```bash
-/iterate BRAINSTORM_CLOUD_RUN.md "Consider batch processing instead of real-time"
-/iterate DEFINE_CLOUD_RUN.md "Add support for PDF invoices, not just TIFF"
-/iterate DESIGN_CLOUD_RUN.md "Functions need to be self-contained, no shared common/"
+/iterate BRAINSTORM_SEARCH_API.md "Consider ElasticSearch instead of PostgreSQL full-text search"
+/iterate DEFINE_SEARCH_API.md "Add support for fuzzy matching, not just exact search"
+/iterate DESIGN_SEARCH_API.md "Services need to be self-contained, no shared common/"
 /iterate .claude/sdd/features/DEFINE_AUTH.md "Change from JWT to session-based auth"
 ```
 

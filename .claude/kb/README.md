@@ -44,7 +44,56 @@ Or manually:
 Data validation patterns for Python:
 
 - Concepts: BaseModel, Field types, Validators, Nested models
-- Patterns: LLM output validation, Error handling, Extraction schemas
+- Patterns: LLM output validation, Error handling, Extraction schemas, Custom validators
+
+### gcp/
+
+Google Cloud Platform serverless services:
+
+- Concepts: Cloud Run, Pub/Sub, GCS, BigQuery, IAM, Secret Manager
+- Patterns: Event-driven pipelines, Multi-bucket workflows, Pub/Sub fanout, Cloud Run scaling, GCS triggers
+
+### gemini/
+
+Google's multimodal LLM for document processing:
+
+- Concepts: Model capabilities, Multimodal prompting, Safety settings, Structured output, Token limits, Vertex AI
+- Patterns: Batch processing, Error handling, Document extraction, OpenRouter fallback, Prompt versioning, Structured JSON
+
+### langfuse/
+
+LLMOps observability for tracking calls, costs, and quality:
+
+- Concepts: Traces & spans, Generations, Cost tracking, Scoring, Prompt management, Model comparison
+- Patterns: SDK integration, Serverless instrumentation, Cost alerting, Dashboard metrics, Quality feedback, Trace linking
+
+### terraform/
+
+Infrastructure as Code for GCP with module patterns:
+
+- Concepts: Resources, Modules, Providers, State, Variables, Workspaces
+- Patterns: Cloud Run module, Pub/Sub module, GCS module, BigQuery module, IAM module, Remote state
+
+### terragrunt/
+
+Terraform wrapper for multi-environment orchestration:
+
+- Concepts: Terragrunt blocks, Root configuration, Environment hierarchy, Generate blocks, Dependencies, Hooks
+- Patterns: Multi-environment config, DRY hierarchies, Dependency management, State per environment, Environment promotion
+
+### crewai/
+
+Multi-agent AI orchestration for automated monitoring:
+
+- Concepts: Agents, Crews, Tasks, Tools, Memory, Processes
+- Patterns: Triage workflows, Log analysis, Escalation, Slack integration, Circuit breaker, Crew coordination
+
+### openrouter/
+
+Unified LLM API gateway with 400+ models:
+
+- Concepts: API basics, Authentication, Model selection, Streaming, Rate limits
+- Patterns: SDK integration, Cost optimization, Error handling, Provider routing, LangChain integration
 
 ## Best Practices
 

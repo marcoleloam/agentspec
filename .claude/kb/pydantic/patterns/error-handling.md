@@ -21,10 +21,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class InvoiceSchema(BaseModel):
-    invoice_id: str
-    vendor_name: str
-    invoice_date: date
+class OrderSchema(BaseModel):
+    order_id: str
+    supplier_name: str
+    order_date: date
     total_amount: Decimal = Field(..., ge=0)
 
 class ValidationResult:
@@ -114,23 +114,23 @@ def format_errors_for_user(errors: list[dict]) -> str:
 
 ```python
 # Basic validation
-result = validate_with_recovery(json_input=llm_response, model_class=InvoiceSchema)
+result = validate_with_recovery(json_input=llm_response, model_class=OrderSchema)
 
 if result.success:
-    invoice = result.data
+    order = result.data
 else:
     logger.error("Validation failed", extra=format_errors_for_logging(result.errors))
 
 # With fallback recovery
 result = validate_with_recovery(
     json_input=llm_response,
-    model_class=InvoiceSchema,
-    fallback_values={"vendor_name": "Unknown Vendor", "total_amount": Decimal("0")}
+    model_class=OrderSchema,
+    fallback_values={"supplier_name": "Unknown Supplier", "total_amount": Decimal("0")}
 )
 
 # Direct ValidationError handling
 try:
-    invoice = InvoiceSchema.model_validate_json(llm_response)
+    order = OrderSchema.model_validate_json(llm_response)
 except ValidationError as e:
     for error in e.errors():
         print(f"Field: {error['loc']}, Error: {error['msg']}")

@@ -19,10 +19,10 @@ triage_task = Task(
     each event by severity: CRITICAL, ERROR, WARNING, INFO.
 
     Focus on:
-    - Cloud Run failures
-    - Pub/Sub delivery issues
-    - BigQuery errors
-    - LLM API timeouts
+    - Service failures
+    - Message delivery issues
+    - Database errors
+    - External API timeouts
 
     Filter out routine INFO messages.""",
     expected_output="""JSON array of classified events:
@@ -72,7 +72,7 @@ task = Task(
 ```python
 # Specific instructions, clear output format
 task = Task(
-    description="""Read Cloud Run logs from {log_path}.
+    description="""Read service logs from {log_path}.
     For each ERROR or CRITICAL entry:
     1. Extract timestamp, service name, error message
     2. Identify if it's a transient or persistent issue

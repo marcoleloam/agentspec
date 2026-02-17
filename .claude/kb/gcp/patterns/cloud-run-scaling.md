@@ -1,6 +1,6 @@
 # Cloud Run Scaling Configuration
 
-> **Purpose**: Optimize Cloud Run autoscaling for invoice processing workloads
+> **Purpose**: Optimize Cloud Run autoscaling for data processing workloads
 > **MCP Validated**: 2026-01-25
 
 ## When to Use
@@ -14,17 +14,17 @@
 
 ```bash
 # Deploy with optimized scaling for LLM workloads
-gcloud run deploy invoice-extractor \
-  --image gcr.io/my-project/invoice-extractor:latest \
+gcloud run deploy data-processor \
+  --image gcr.io/your-project-id/data-processor:latest \
   --region us-central1 \
-  --service-account invoice-extractor@my-project.iam.gserviceaccount.com \
+  --service-account data-processor@your-project-id.iam.gserviceaccount.com \
   --min-instances 1 \
   --max-instances 50 \
   --concurrency 1 \
   --memory 2Gi \
   --cpu 2 \
   --timeout 300 \
-  --set-env-vars "GCP_PROJECT=my-project"
+  --set-env-vars "GCP_PROJECT=your-project-id"
 ```
 
 ## Configuration
@@ -42,14 +42,14 @@ gcloud run deploy invoice-extractor \
 
 ```hcl
 # Terraform: Cloud Run service with scaling
-resource "google_cloud_run_service" "invoice_extractor" {
-  name     = "invoice-extractor"
+resource "google_cloud_run_service" "data_processor" {
+  name     = "data-processor"
   location = "us-central1"
 
   template {
     spec {
       containers {
-        image = "gcr.io/${var.project_id}/invoice-extractor:latest"
+        image = "gcr.io/${var.project_id}/data-processor:latest"
 
         resources {
           limits = {
@@ -89,9 +89,9 @@ resource "google_cloud_run_service" "invoice_extractor" {
 
 | Function | Min | Max | Concurrency | Memory | Why |
 |----------|-----|-----|-------------|--------|-----|
-| TIFF Converter | 0 | 100 | 10 | 1Gi | CPU-bound, fast |
+| File Converter | 0 | 100 | 10 | 1Gi | CPU-bound, fast |
 | Classifier | 0 | 50 | 5 | 1Gi | Light LLM call |
-| Extractor | 1 | 30 | 1 | 2Gi | Heavy LLM, keep warm |
+| Data Processor | 1 | 30 | 1 | 2Gi | Heavy LLM, keep warm |
 | BQ Writer | 0 | 100 | 50 | 512Mi | I/O bound, fast |
 
 ## Cold Start Mitigation
@@ -148,7 +148,7 @@ SELECT
   jsonPayload.instance_id
 FROM `project.global._Default._AllLogs`
 WHERE resource.type = 'cloud_run_revision'
-  AND resource.labels.service_name = 'invoice-extractor'
+  AND resource.labels.service_name = 'data-processor'
   AND timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)
 ORDER BY timestamp DESC
 LIMIT 100;
