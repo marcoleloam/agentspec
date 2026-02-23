@@ -26,6 +26,6 @@
 ## See Also
 
 - **Agent**: `.claude/agents/exploration/kb-architect.md`
-- **Example**: `.claude/kb/pydantic/`
+- **Example**: `.claude/kb/{domain}/`
 - **Templates**: `.claude/kb/_templates/`
 - **Registry**: `.claude/kb/_index.yaml`

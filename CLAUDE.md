@@ -36,16 +36,10 @@ agentspec/
 │   │   ├── reports/         # Build reports
 │   │   └── archive/         # Shipped features
 │   │
-│   └── kb/                  # Knowledge Base (8 domains)
+│   └── kb/                  # Knowledge Base
 │       ├── _templates/      # KB domain templates
-│       ├── pydantic/        # Data validation patterns
-│       ├── gcp/             # Google Cloud Platform
-│       ├── gemini/          # Gemini AI patterns
-│       ├── langfuse/        # LLM observability
-│       ├── terraform/       # Infrastructure as Code
-│       ├── terragrunt/      # Multi-environment IaC
-│       ├── crewai/          # Multi-agent orchestration
-│       └── openrouter/      # LLM routing
+│       ├── _index.yaml      # Domain registry
+│       └── {domain}/        # User-created KB domains (via /create-kb)
 │
 ├── .claude-plugin/          # Plugin manifest
 │   └── plugin.json
@@ -83,8 +77,8 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | Task | Status | Description |
 |------|--------|-------------|
 | Sanitize agents | Pending | Remove project-specific references |
+| Clean KB domains | Done | Removed project-specific KB domains, kept framework scaffolding |
 | Create CLAUDE.md.template | Pending | Template for user projects |
-| Add more KB domains | Pending | React, TypeScript, etc. |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
 

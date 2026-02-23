@@ -393,9 +393,6 @@
 
 ## Version History
 
-| Version | Date | Changes |
-| ------- | ---- | ------- |
-| 1.0.0 | 2026-02-17 | Public release as AgentSpec v1.0.0 |
-| 4.2.0 | 2026-01-29 | Added Agent Matching (Design) + Agent Delegation (Build) |
-| 4.1.0 | 2026-01-27 | Added Phase 0: Brainstorm (optional exploratory phase) |
-| 4.0.0 | 2026-01-25 | Complete rewrite for 4-phase model |
+| Version | Date       | Changes                            |
+|---------|------------|------------------------------------|
+| 1.0.0   | 2026-02-17 | Public release as AgentSpec v1.0.0 |

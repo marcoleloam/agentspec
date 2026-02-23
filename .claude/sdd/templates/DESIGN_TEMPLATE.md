@@ -92,9 +92,9 @@
 
 | Agent | Files Assigned | Why This Agent |
 |-------|----------------|----------------|
-| @{agent-1} | 1, 3 | {Specialization match: e.g., "Cloud Run patterns"} |
-| @{agent-2} | 2 | {Specialization match: e.g., "Pydantic + LLM output"} |
-| @{agent-3} | 4 | {Specialization match: e.g., "pytest fixtures"} |
+| @{agent-1} | 1, 3 | {Specialization match: e.g., "API routing patterns"} |
+| @{agent-2} | 2 | {Specialization match: e.g., "data validation models"} |
+| @{agent-3} | 4 | {Specialization match: e.g., "test fixtures"} |
 | (general) | {if any} | {No specialist found - Build handles directly} |
 
 **Agent Discovery:**
@@ -158,8 +158,8 @@
 
 | Test Type | Scope | Files | Tools | Coverage Goal |
 |-----------|-------|-------|-------|---------------|
-| Unit | Functions | `test_*.py` | pytest | 80% |
-| Integration | API calls | `test_integration.py` | pytest + mocks | Key paths |
+| Unit | Functions | `{test files}` | {test framework} | 80% |
+| Integration | API calls | `{integration test files}` | {test framework + mocks} | Key paths |
 | E2E | Full flow | Manual | - | Happy path |
 
 ---
@@ -196,8 +196,8 @@
 
 | Aspect | Implementation |
 |--------|----------------|
-| Logging | {Approach: e.g., "Structured JSON to Cloud Logging"} |
-| Metrics | {Approach: e.g., "Custom metrics via Cloud Monitoring"} |
+| Logging | {Approach: e.g., "Structured JSON logging"} |
+| Metrics | {Approach: e.g., "Custom metrics via monitoring service"} |
 | Tracing | {Approach: e.g., "OpenTelemetry spans"} |
 
 ---

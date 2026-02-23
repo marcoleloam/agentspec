@@ -67,26 +67,26 @@
 
 ## Verification Results
 
-### Lint Check (ruff)
+### Lint Check
 
 ```text
-{Output from ruff check or "All checks passed"}
+{Output from linter (e.g., ruff, eslint, rubocop) or "All checks passed"}
 ```
 
 **Status:** ✅ Pass / ❌ Fail
 
-### Type Check (mypy)
+### Type Check
 
 ```text
-{Output from mypy or "All checks passed" or "N/A - not configured"}
+{Output from type checker (e.g., mypy, tsc) or "All checks passed" or "N/A - not configured"}
 ```
 
 **Status:** ✅ Pass / ❌ Fail / ⏭️ Skipped
 
-### Tests (pytest)
+### Tests
 
 ```text
-{Output from pytest or summary}
+{Output from test runner (e.g., pytest, jest, go test) or summary}
 ```
 
 | Test | Result |

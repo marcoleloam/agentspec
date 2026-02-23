@@ -356,10 +356,10 @@ BRANCH
 /create-pr --draft
 
 # Detected: Changes in .claude/kb/
-# Suggested: docs(kb): update langfuse integration patterns
+# Suggested: docs(kb): add redis caching patterns
 
-→ Created branch: docs/kb-langfuse-update
-→ Committed: docs(kb): update langfuse integration patterns
+→ Created branch: docs/kb-redis-patterns
+→ Committed: docs(kb): add redis caching patterns
 → Draft PR: https://github.com/org/repo/pull/44
 ```
 

@@ -94,7 +94,7 @@ Explicitly NOT included in this feature:
 | Aspect | Value | Notes |
 |--------|-------|-------|
 | **Deployment Location** | {src/ \| functions/ \| gen/ \| deploy/ \| custom path} | {Why this location} |
-| **KB Domains** | {pydantic, gcp, gemini, langfuse, terraform, crewai, openrouter} | {Which patterns to consult} |
+| **KB Domains** | {List domains from .claude/kb/ relevant to this feature} | {Which patterns to consult} |
 | **IaC Impact** | {New resources \| Modify existing \| None \| TBD} | {Terraform/Terragrunt changes needed} |
 
 **Why This Matters:**

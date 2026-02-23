@@ -276,10 +276,6 @@ AgentSpec provides Agent Matching (Design phase) and Agent Delegation (Build pha
 
 ## Version History
 
-| Version | Date | Changes |
-| ------- | ---- | ------- |
-| 1.0.0 | 2026-02-17 | Public release as AgentSpec v1.0.0 |
-| 4.2.0 | 2026-01-29 | Added Agent Matching (Design) + Agent Delegation (Build) |
-| 4.1.2 | 2026-01-28 | Added Sample Collection step to /brainstorm for LLM grounding |
-| 4.1.0 | 2026-01-27 | Added Phase 0: /brainstorm (optional exploratory phase) |
-| 4.0.0 | 2026-01-25 | Complete rewrite: 8→4 phases, single stream, inline decisions |
+| Version | Date       | Changes                            |
+|---------|------------|------------------------------------|
+| 1.0.0   | 2026-02-17 | Public release as AgentSpec v1.0.0 |

@@ -31,7 +31,7 @@ Traditional specs produce a task list. AgentSpec produces a **team assignment**.
 |-----------|-------|----------|
 | Architecture Clarity | 9/10 | Well-defined 5-phase pipeline with clear contracts |
 | Agent Coverage | 9/10 | 15 agents across 4 categories |
-| KB Grounding | 8/10 | 8 domains, MCP-validated patterns |
+| KB Grounding | 8/10 | MCP-validated patterns, extensible domain system |
 | Documentation | 8/10 | Comprehensive but needs OSS polish |
 | Extensibility | 9/10 | Framework-agnostic agent discovery |
 | Testability | 7/10 | Framework needs validation tests |
@@ -129,12 +129,13 @@ Traditional specs produce a task list. AgentSpec produces a **team assignment**.
 ```text
                            ┌─────────────────────────────────────┐
                            │         .claude/kb/                 │
-                           │  ┌─────┬─────┬─────┬─────┬────┐    │
-                           │  │pydnt│ gcp │gemin│terra│... │    │
-                           │  └──┬──┴──┬──┴──┬──┴──┬──┴────┘    │
-                           └─────┼─────┼─────┼─────┼────────────┘
-                                 │     │     │     │
-                                 ▼     ▼     ▼     ▼
+                           │  ┌──────────────────────────────┐   │
+                           │  │  User-created KB domains     │   │
+                           │  │  (via /create-kb)            │   │
+                           │  └──────────────┬───────────────┘   │
+                           └─────────────────┼───────────────────┘
+                                             │
+                                             ▼
 ┌──────────────┐          ┌──────────────────────────────┐
 │   DEFINE     │─────────▶│         KB Domains           │
 │              │          │    (from Technical Context)  │
@@ -209,9 +210,9 @@ Traditional specs assume the AI knows where to put files. AgentSpec explicitly a
 
 | Aspect | Value | Notes |
 |--------|-------|-------|
-| **Deployment Location** | functions/ | Cloud Run serverless |
-| **KB Domains** | pydantic, gcp, gemini | LLM extraction patterns |
-| **IaC Impact** | New resources | Terraform for Cloud Run + Pub/Sub |
+| **Deployment Location** | src/api/ | REST API service |
+| **KB Domains** | {your-domains} | Which patterns to consult |
+| **IaC Impact** | New resources | Infrastructure changes needed |
 ```
 
 ### 2. Agent Matching (Design Phase)
@@ -222,12 +223,12 @@ Design dynamically discovers available agents and matches them to tasks:
 Step 1: Discover        Step 2: Index           Step 3: Match
 ──────────────────      ─────────────           ─────────────
 
-Glob(.claude/           agents:                 main.py → @function-developer
-  agents/**/*.md)         function-developer:   schema.py → @extraction-specialist
-       │                    keywords: [cloud    config.yaml → @infra-deployer
-       ▼                      run, serverless]  test_main.py → @test-generator
-15 agent files              role: "Cloud Run
-                              developer"
+Glob(.claude/           agents:                 main.py → @backend-developer
+  agents/**/*.md)         backend-developer:    schema.py → @data-modeler
+       │                    keywords: [api,     config.yaml → @infra-deployer
+       ▼                      rest, backend]    test_main.py → @test-generator
+15 agent files              role: "Backend
+                              API developer"
 ```
 
 **Framework-Agnostic:** New agents added to `.claude/agents/` automatically become available for matching - zero configuration.
@@ -243,8 +244,8 @@ Build invokes matched specialists via the Task tool:
 │                                                                  │
 │  File Manifest:                                                  │
 │  ┌────────────────────────────────────────────────────────┐     │
-│  │ main.py    │ @function-developer  │ Cloud Run pattern │     │
-│  │ schema.py  │ @extraction-specialist│ Pydantic + LLM   │     │
+│  │ main.py    │ @backend-developer   │ API patterns      │     │
+│  │ schema.py  │ @data-modeler        │ Pydantic models   │     │
 │  │ test.py    │ @test-generator      │ pytest fixtures   │     │
 │  └────────────────────────────────────────────────────────┘     │
 │                          │                                       │
@@ -252,8 +253,8 @@ Build invokes matched specialists via the Task tool:
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │                   PARALLEL EXECUTION                      │   │
 │  │                                                           │   │
-│  │  Task(subagent: "function-developer", prompt: "...")     │   │
-│  │  Task(subagent: "extraction-specialist", prompt: "...")  │   │
+│  │  Task(subagent: "backend-developer", prompt: "...")      │   │
+│  │  Task(subagent: "data-modeler", prompt: "...")           │   │
 │  │  Task(subagent: "test-generator", prompt: "...")         │   │
 │  │                                                           │   │
 │  └──────────────────────────────────────────────────────────┘   │
@@ -262,8 +263,8 @@ Build invokes matched specialists via the Task tool:
 │  BUILD_REPORT:                                                   │
 │  ┌────────────────────────────────────────────────────────┐     │
 │  │ File         │ Agent                  │ Status │ Notes │     │
-│  │ main.py      │ @function-developer    │   OK   │ ...   │     │
-│  │ schema.py    │ @extraction-specialist │   OK   │ ...   │     │
+│  │ main.py      │ @backend-developer     │   OK   │ ...   │     │
+│  │ schema.py    │ @data-modeler          │   OK   │ ...   │     │
 │  │ test.py      │ @test-generator        │   OK   │ ...   │     │
 │  └────────────────────────────────────────────────────────┘     │
 │                                                                  │
@@ -339,16 +340,9 @@ AgentSpec integrates deeply with the curated Knowledge Base:
 
 ### Available Domains
 
-| Domain | Purpose | Entry Point | Status |
-|--------|---------|-------------|--------|
-| **pydantic** | Data validation, LLM output parsing | `.claude/kb/pydantic/` | Active |
-| **gcp** | Cloud Run, Pub/Sub, GCS, BigQuery | `.claude/kb/gcp/` | Active |
-| **gemini** | Document extraction, vision tasks | `.claude/kb/gemini/` | Active |
-| **langfuse** | LLM observability | `.claude/kb/langfuse/` | Active |
-| **terraform** | Infrastructure as Code | `.claude/kb/terraform/` | Active |
-| **terragrunt** | Multi-environment orchestration | `.claude/kb/terragrunt/` | Active |
-| **crewai** | Multi-agent orchestration | `.claude/kb/crewai/` | Active |
-| **openrouter** | LLM fallback provider | `.claude/kb/openrouter/` | Active |
+KB domains are user-created and project-specific. Use `/create-kb` to add domains for your stack.
+
+Domains are registered in `.claude/kb/_index.yaml` and follow the standard structure documented in `.claude/kb/README.md`.
 
 ### KB Flow
 
@@ -357,9 +351,8 @@ DEFINE                    DESIGN                    BUILD
 ──────                    ──────                    ─────
 
 KB Domains:          →    Read patterns:       →    Agents consult:
-• pydantic                • extraction-schema       • KB/pydantic/patterns/
-• gemini                  • invoice-extraction      • KB/gemini/patterns/
-• gcp                     • cloud-run-module        • KB/gcp/patterns/
+• {domain-1}              • {pattern-a}             • KB/{domain-1}/patterns/
+• {domain-2}              • {pattern-b}             • KB/{domain-2}/patterns/
 ```
 
 ### KB Domain Structure
@@ -418,9 +411,9 @@ KB Domains:          →    Read patterns:       →    Agents consult:
 
 | Aspect | Value | Notes |
 |--------|-------|-------|
-| **Deployment Location** | functions/ | Cloud Run serverless |
-| **KB Domains** | pydantic, gcp, gemini | Which patterns to consult |
-| **IaC Impact** | New resources | Terraform changes needed |
+| **Deployment Location** | src/api/ | REST API service |
+| **KB Domains** | {your-domains} | Which patterns to consult |
+| **IaC Impact** | New resources | Infrastructure changes needed |
 ```
 
 #### DESIGN (Agent Assignment)
@@ -430,16 +423,16 @@ KB Domains:          →    Read patterns:       →    Agents consult:
 
 | # | File | Action | Purpose | Agent | Dependencies |
 |---|------|--------|---------|-------|--------------|
-| 1 | main.py | Create | Handler | @function-developer | None |
-| 2 | schema.py | Create | Pydantic | @extraction-specialist | None |
+| 1 | main.py | Create | API handler | @backend-developer | None |
+| 2 | schema.py | Create | Pydantic models | @data-modeler | None |
 | 3 | test.py | Create | Tests | @test-generator | 1, 2 |
 
 ## Agent Assignment Rationale
 
 | Agent | Files | Why This Agent |
 |-------|-------|----------------|
-| @function-developer | 1 | Cloud Run patterns from KB |
-| @extraction-specialist | 2 | Pydantic + LLM output validation |
+| @backend-developer | 1 | API patterns from KB |
+| @data-modeler | 2 | Pydantic model validation |
 | @test-generator | 3 | pytest fixtures specialist |
 ```
 
@@ -450,8 +443,8 @@ KB Domains:          →    Read patterns:       →    Agents consult:
 
 | Agent | Files | Specialization Applied |
 |-------|-------|------------------------|
-| @function-developer | 2 | Cloud Run, Pub/Sub handlers |
-| @extraction-specialist | 2 | Pydantic models, LLM output |
+| @backend-developer | 2 | REST API, request handlers |
+| @data-modeler | 2 | Pydantic models, validation |
 | @test-generator | 2 | pytest, fixtures |
 | (direct) | 1 | DESIGN patterns only |
 ```
@@ -529,7 +522,7 @@ KB Domains:          →    Read patterns:       →    Agents consult:
 |--------|--------|-------------|
 | Features using full pipeline | >80% | Archive count |
 | Agent delegation usage | >70% | BUILD_REPORT analysis |
-| KB domain utilization | >6 domains | Technical Context audit |
+| KB domain utilization | Growing | Technical Context audit |
 
 ### Comparison: With vs Without AgentSpec
 
@@ -553,7 +546,7 @@ KB Domains:          →    Read patterns:       →    Agents consult:
 | **Backing** | GitHub (enterprise) | Indie/startup | Claude Code ecosystem |
 | **Phases** | 5 (Constitution→Implement) | 4 (new→apply→archive) | 5 (Brainstorm→Ship) |
 | **Agent Awareness** | None | None | **Full orchestration** |
-| **KB Grounding** | None | None | **8+ domains** |
+| **KB Grounding** | None | None | **Extensible domain system** |
 | **Agent Matching** | None | None | **Dynamic discovery** |
 | **Agent Delegation** | None | None | **Task tool invocation** |
 
@@ -585,7 +578,7 @@ KB Domains:          →    Read patterns:       →    Agents consult:
 |---------|-------------|-----------|
 | Agent Matching | Manual or None | **Automatic** |
 | Spec Validation | None | **Judge layer (planned)** |
-| KB Grounding | None | **8+ MCP-validated domains** |
+| KB Grounding | None | **MCP-validated, extensible** |
 | Multi-LLM Review | None | **OpenRouter (planned)** |
 | Usage Analytics | None | **Local telemetry (planned)** |
 | Quality Gates | Informal | **Objective, automated** |
@@ -704,7 +697,7 @@ domains:
 
 | Aspect | Value |
 |--------|-------|
-| **KB Domains** | pydantic, dbt |  # Now available
+| **KB Domains** | dbt |  # Now available
 ```
 
 ---
@@ -715,19 +708,19 @@ domains:
 
 ```bash
 # Phase 0: Explore the idea (optional)
-/brainstorm "Build an invoice extraction system"
+/brainstorm "Build a user notification system"
 
 # Phase 1: Define requirements with Technical Context
-/define .claude/sdd/features/BRAINSTORM_INVOICE_EXTRACTION.md
+/define .claude/sdd/features/BRAINSTORM_NOTIFICATION_SYSTEM.md
 
 # Phase 2: Design with Agent Matching
-/design .claude/sdd/features/DEFINE_INVOICE_EXTRACTION.md
+/design .claude/sdd/features/DEFINE_NOTIFICATION_SYSTEM.md
 
 # Phase 3: Build with Agent Delegation
-/build .claude/sdd/features/DESIGN_INVOICE_EXTRACTION.md
+/build .claude/sdd/features/DESIGN_NOTIFICATION_SYSTEM.md
 
 # Phase 4: Archive
-/ship .claude/sdd/features/DEFINE_INVOICE_EXTRACTION.md
+/ship .claude/sdd/features/DEFINE_NOTIFICATION_SYSTEM.md
 ```
 
 ### Clear Requirements (Skip Brainstorm)
@@ -882,14 +875,9 @@ CONTENT
 
 ## Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2026-02-17 | Public release: Consolidated as AgentSpec v1.0.0; Fixed agent counts to match actual 15 core agents |
-| 4.3.0 | 2026-02-03 | Restructured with meeting-analyst + codebase-explorer + code-documenter frameworks; Removed Dev Loop to focus on SDD |
-| 4.2.0 | 2026-01-29 | Added Agent Matching + Delegation |
-| 4.1.2 | 2026-01-28 | Added Sample Collection to /brainstorm |
-| 4.1.0 | 2026-01-27 | Added Phase 0: /brainstorm |
-| 4.0.0 | 2026-01-25 | Complete rewrite: 8→5 phases |
+| Version | Date       | Changes                            |
+|---------|------------|------------------------------------|
+| 1.0.0   | 2026-02-17 | Public release as AgentSpec v1.0.0 |
 
 ---
 
