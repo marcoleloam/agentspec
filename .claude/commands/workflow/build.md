@@ -55,7 +55,7 @@ The `/build` command executes the implementation, generating tasks on-the-fly fr
 ```markdown
 Read(.claude/sdd/features/DESIGN_{FEATURE}.md)
 Read(.claude/sdd/features/DEFINE_{FEATURE}.md)
-Read(.claude/CLAUDE.md)
+Read(CLAUDE.md)
 ```
 
 ### Step 2: Extract Tasks from File Manifest

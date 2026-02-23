@@ -1,3 +1,8 @@
+---
+name: create-kb
+description: Create a complete KB domain from scratch with MCP validation
+---
+
 # Create Knowledge Base Command
 
 > Create a complete KB section from scratch with MCP validation.

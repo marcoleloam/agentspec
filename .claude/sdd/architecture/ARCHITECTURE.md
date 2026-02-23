@@ -370,8 +370,8 @@
 │   ├─────────────────────────────────────────────────────────────────┤                   │
 │   │ [ ] All files from manifest created                              │                   │
 │   │ [ ] All verification commands pass                               │                   │
-│   │ [ ] Lint check passes (ruff)                                     │                   │
-│   │ [ ] Tests pass (pytest)                                          │                   │
+│   │ [ ] Lint check passes                                              │                   │
+│   │ [ ] Tests pass                                                    │                   │
 │   │ [ ] No TODO comments in code                                     │                   │
 │   └─────────────────────────────────────────────────────────────────┘                   │
 │                                                                                          │

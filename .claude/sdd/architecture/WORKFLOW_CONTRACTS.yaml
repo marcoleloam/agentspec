@@ -436,12 +436,12 @@ build:
 
   verification:
     per_file:
-      - "python -c 'import module'"
-      - "ruff check {file}"
+      - "{language-specific import check}"
+      - "{linter} check {file}"
     full:
-      - "ruff check ."
-      - "mypy . (if configured)"
-      - "pytest"
+      - "{linter} check ."
+      - "{type checker} (if configured)"
+      - "{test runner}"
 
   code_standards:
     - no_inline_comments
@@ -802,5 +802,5 @@ version_history:
       - "Public release as AgentSpec v1.0.0"
       - "Consolidated from internal development versions (4.0-4.2)"
       - "15 core agents across 4 categories"
-      - "8 KB domains included"
+      - "Extensible KB domain system"
 

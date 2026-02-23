@@ -22,7 +22,7 @@ This command orchestrates a **dual AI review** combining:
 | Reviewer | Strengths |
 |----------|-----------|
 | **CodeRabbit** | Static analysis, security scanning (Gitleaks, Semgrep), linting (Ruff, Pylint), pattern detection |
-| **Claude** | Architectural review, business logic, GenAI patterns, contextual understanding |
+| **Claude** | Architectural review, business logic, design patterns, contextual understanding |
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
@@ -37,7 +37,7 @@ This command orchestrates a **dual AI review** combining:
 │   ┌───────▼───────┐          ┌───────▼───────┐                  │
 │   │ • Security    │          │ • Architecture│                  │
 │   │ • Linting     │          │ • Logic       │                  │
-│   │ • Patterns    │          │ • GenAI       │                  │
+│   │ • Patterns    │          │ • Design      │                  │
 │   │ • Style       │          │ • Intent      │                  │
 │   └───────┬───────┘          └───────┬───────┘                  │
 │           │                          │                           │
@@ -117,7 +117,7 @@ Use the code-reviewer agent capabilities:
 |----------|-----------|
 | **Architecture** | Project pattern alignment, separation of concerns |
 | **Business Logic** | Correct implementation, edge cases, error handling |
-| **GenAI Patterns** | LangFuse hooks, structured outputs, prompt engineering |
+| **Design Patterns** | Project conventions, established patterns, consistency |
 | **Maintainability** | Self-documenting code, type hints, DRY principle |
 
 ### Step 4: Synthesize Findings

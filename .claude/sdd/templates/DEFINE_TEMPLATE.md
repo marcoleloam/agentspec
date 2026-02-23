@@ -95,7 +95,7 @@ Explicitly NOT included in this feature:
 |--------|-------|-------|
 | **Deployment Location** | {src/ \| functions/ \| gen/ \| deploy/ \| custom path} | {Why this location} |
 | **KB Domains** | {List domains from .claude/kb/ relevant to this feature} | {Which patterns to consult} |
-| **IaC Impact** | {New resources \| Modify existing \| None \| TBD} | {Terraform/Terragrunt changes needed} |
+| **IaC Impact** | {New resources \| Modify existing \| None \| TBD} | {Infrastructure changes needed} |
 
 **Why This Matters:**
 

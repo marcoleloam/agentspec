@@ -303,7 +303,7 @@ BRANCH
 | `refactor` | Code restructure | `refactor(auth): extract token service` |
 | `docs` | Documentation | `docs(readme): add setup instructions` |
 | `test` | Tests | `test(parser): add edge case coverage` |
-| `chore` | Maintenance | `chore(deps): update langchain to 0.3` |
+| `chore` | Maintenance | `chore(deps): update dependencies` |
 | `style` | Formatting | `style: apply black formatting` |
 | `perf` | Performance | `perf(query): add index for lookups` |
 | `ci` | CI/CD | `ci: add github actions workflow` |

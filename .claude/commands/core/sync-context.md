@@ -5,7 +5,7 @@ description: Sync project context to CLAUDE.md by analyzing codebase patterns an
 
 # Sync Context Command
 
-Analyzes codebase and intelligently updates `.claude/CLAUDE.md` with current project context.
+Analyzes codebase and intelligently updates `CLAUDE.md` with current project context.
 
 ## Usage
 
@@ -142,7 +142,7 @@ Generated CLAUDE.md follows this structure:
 
 | Category | Agents | Use When |
 | -------- | ------ | -------- |
-| Workflow | prd-agent, clarify-agent, ... | Building features with SDD |
+| Workflow | brainstorm-agent, define-agent, ... | Building features with SDD |
 | Code Quality | code-reviewer, test-generator, ... | Improving code |
 | {category} | {agents} | {trigger} |
 
@@ -335,9 +335,9 @@ After running, manually update:
 
 ```bash
 # Review changes before committing
-git diff .claude/CLAUDE.md
+git diff CLAUDE.md
 
 # Commit with context
-git add .claude/CLAUDE.md
+git add CLAUDE.md
 git commit -m "chore: update CLAUDE.md with latest project structure"
 ```
