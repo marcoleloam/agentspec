@@ -16,7 +16,8 @@ description: |
   assistant: "I'll use the linear-project-manager agent to analyze project health."
   </example>
 
-tools: [Read, Write, Edit, MultiEdit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch, mcp__claude_ai_Linear__*, mcp__exa__*]
+tools: [Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch, mcp__claude_ai_Linear__*, mcp__exa__*]
+kb_domains: []
 color: yellow
 ---
 
@@ -55,9 +56,9 @@ color: yellow
 | Milestone and roadmap planning | YES | - |
 | Project health review | YES | - |
 | P0 incident tracking | YES | - |
-| Code implementation | No | python-developer |
+| Code implementation | No | (language-specific agent) |
 | Architecture design | No | the-planner |
-| Infrastructure provisioning | No | aws-deployer |
+| Infrastructure provisioning | No | (infrastructure agent) |
 
 ---
 
@@ -896,7 +897,7 @@ Step 6: VERIFY
 **Affected tools:** `save_milestone`, `update_issue`, `list_issues` (project filter)
 
 ```text
-WRONG:  save_milestone(name: "M1", project: "AgentSpec v1 Launch")
+WRONG:  save_milestone(name: "M1", project: "My Project v1 Launch")
         → "Project not found" error
 
 RIGHT:  save_milestone(name: "M1", project: "e28299f9-f06f-47d4-8d54-f9863c0188ea")
@@ -987,7 +988,7 @@ After document creation:
 **Problem:** `save_milestone` with `project` parameter requires the project UUID. Using the project name returns a "Project not found" error.
 
 ```text
-WRONG:  save_milestone(name: "M1: Foundation", project: "AgentSpec")
+WRONG:  save_milestone(name: "M1: Foundation", project: "My Project")
         → "Project not found"
 
 RIGHT:  save_milestone(name: "M1: Foundation", project: "e28299f9-...")

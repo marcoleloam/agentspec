@@ -13,7 +13,7 @@
 | **Project** | AgentSpec - Spec-Driven Development Framework |
 | **Tagline** | Spec-Driven Development for AI-Native Teams |
 | **Business Problem** | Gap between unstructured "vibe coding" and stale traditional specifications |
-| **Solution** | 5-phase workflow with 15+ specialized AI agents and curated knowledge bases |
+| **Solution** | 5-phase workflow with 16 specialized AI agents and curated knowledge bases |
 | **Target Audience** | AI-native development teams using Claude Code |
 | **License** | MIT |
 
@@ -30,7 +30,7 @@ Traditional specs produce a task list. AgentSpec produces a **team assignment**.
 | Criterion | Score | Evidence |
 |-----------|-------|----------|
 | Architecture Clarity | 9/10 | Well-defined 5-phase pipeline with clear contracts |
-| Agent Coverage | 9/10 | 15 agents across 4 categories |
+| Agent Coverage | 9/10 | 16 agents across 4 categories |
 | KB Grounding | 8/10 | MCP-validated patterns, extensible domain system |
 | Documentation | 8/10 | Comprehensive but needs OSS polish |
 | Extensibility | 9/10 | Framework-agnostic agent discovery |
@@ -227,11 +227,13 @@ Glob(.claude/           agents:                 main.py → @backend-developer
   agents/**/*.md)         backend-developer:    schema.py → @data-modeler
        │                    keywords: [api,     config.yaml → @infra-deployer
        ▼                      rest, backend]    test_main.py → @test-generator
-15 agent files              role: "Backend
+16 agent files              role: "Backend
                               API developer"
 ```
 
 **Framework-Agnostic:** New agents added to `.claude/agents/` automatically become available for matching - zero configuration.
+
+> **Note:** The agents shown above (`@backend-developer`, `@data-modeler`, etc.) are hypothetical examples. Your actual agents are discovered from `.claude/agents/`.
 
 ### 3. Agent Delegation (Build Phase)
 
@@ -275,7 +277,7 @@ Build invokes matched specialists via the Task tool:
 
 ## The Agent Ecosystem
 
-AgentSpec leverages an ecosystem of 15+ specialized agents:
+AgentSpec leverages an ecosystem of 16 specialized agents:
 
 ### By Category
 
@@ -283,7 +285,7 @@ AgentSpec leverages an ecosystem of 15+ specialized agents:
 |----------|-------|--------|----------------|
 | **Workflow** | 6 | brainstorm, define, design, build, ship, iterate | SDD phases |
 | **Code Quality** | 4 | code-reviewer, code-cleaner, code-documenter, test-generator | Quality assurance |
-| **Communication** | 3 | adaptive-explainer, meeting-analyst, the-planner | Documentation |
+| **Communication** | 4 | adaptive-explainer, linear-project-manager, meeting-analyst, the-planner | Documentation |
 | **Exploration** | 2 | codebase-explorer, kb-architect | Analysis |
 
 ### Agent Structure
@@ -626,9 +628,9 @@ WRONG                              RIGHT
    • No traceability                  • Full attribution
         │                                   │
         ▼                                   ▼
-   Future you: "Why is               Future you: "Oh, @extraction-
-   this code here?"                  specialist built this with
-                                     Pydantic patterns from KB"
+   Future you: "Why is               Future you: "Oh, @code-reviewer
+   this code here?"                  validated this with
+                                     patterns from KB"
 ```
 
 ---

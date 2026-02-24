@@ -17,10 +17,10 @@
 ```
 agentspec/
 ├── .claude/                 # Claude Code integration
-│   ├── agents/              # 15 specialized agents
+│   ├── agents/              # 16 specialized agents
 │   │   ├── workflow/        # 6 SDD phase agents
 │   │   ├── code-quality/    # 4 code excellence agents
-│   │   ├── communication/   # 3 explanation agents
+│   │   ├── communication/   # 4 communication agents
 │   │   └── exploration/     # 2 codebase agents
 │   │
 │   ├── commands/            # Slash commands
@@ -40,9 +40,6 @@ agentspec/
 │       ├── _templates/      # KB domain templates
 │       ├── _index.yaml      # Domain registry
 │       └── {domain}/        # User-created KB domains (via /create-kb)
-│
-├── .claude-plugin/          # Plugin manifest
-│   └── plugin.json
 │
 └── docs/                    # Documentation
 ```
@@ -76,7 +73,7 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 | Task | Status | Description |
 |------|--------|-------------|
-| Sanitize agents | Pending | Remove project-specific references |
+| Sanitize agents | Done | Removed project-specific references |
 | Clean KB domains | Done | Removed project-specific KB domains, kept framework scaffolding |
 | Create CLAUDE.md.template | Pending | Template for user projects |
 | Implement Judge layer | Planned | Spec validation via external LLM |
@@ -131,7 +128,6 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 | File | Purpose |
 |------|---------|
-| `.claude-plugin/plugin.json` | Plugin manifest for Claude Code |
 | `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
 | `.claude/sdd/templates/*.md` | Document templates |
 | `.claude/kb/_templates/*.template` | KB domain templates |
@@ -142,4 +138,4 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 - **Version:** 1.0.0
 - **Status:** Release
-- **Last Updated:** 2026-02-17
+- **Last Updated:** 2026-02-24

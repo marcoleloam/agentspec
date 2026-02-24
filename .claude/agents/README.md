@@ -1,6 +1,6 @@
 # AgentSpec Core Agents
 
-AgentSpec includes **15 core agents** organized by category, all following the **KB-First architecture** with confidence scoring.
+AgentSpec includes **16 core agents** organized by category, all following the **KB-First architecture** with confidence scoring.
 
 ## Core Principle: KB-First Resolution
 
@@ -43,13 +43,14 @@ Ensure code excellence:
 | `code-documenter` | Generate documentation, READMEs, API docs |
 | `test-generator` | Generate pytest tests with fixtures |
 
-### Communication Agents (3)
+### Communication Agents (4)
 
 Bridge technical and business:
 
 | Agent | Purpose |
 |-------|---------|
 | `adaptive-explainer` | Explain concepts at any audience level |
+| `linear-project-manager` | Linear project management, sprint planning, issue tracking |
 | `meeting-analyst` | Extract decisions and action items from meetings |
 | `the-planner` | Strategic architecture and roadmap planning |
 

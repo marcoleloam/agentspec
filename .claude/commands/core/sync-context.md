@@ -129,7 +129,7 @@ Generated CLAUDE.md follows this structure:
 │   ├── commands/
 │   ├── sdd/
 │   ├── kb/
-│   └── memories/
+│   └── storage/
 ```
 
 ---
