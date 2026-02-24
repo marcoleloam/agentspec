@@ -2,206 +2,173 @@
 
 # AgentSpec
 
-### Spec-Driven Development for Claude Code
+## Spec-Driven Development for Claude Code
 
-**Transform ideas into shipped features through a structured 5-phase AI workflow**
+Turn ideas into shipped features through a structured 5-phase AI workflow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](CHANGELOG.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
+[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](CHANGELOG.md)
 
-[Quick Start](#-quick-start) | [Documentation](docs/) | [Examples](examples/) | [Contributing](CONTRIBUTING.md)
+[Quick Start](#quick-start) | [Documentation](docs/) | [Contributing](CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## What is AgentSpec?
+## The Problem
 
-AgentSpec is a **Spec-Driven Development (SDD)** framework that brings structure and traceability to AI-assisted software development. Instead of ad-hoc prompting, AgentSpec guides you through a proven 5-phase workflow:
+AI-assisted development without structure leads to lost decisions, spec drift, and repeated mistakes. You discuss requirements in one session, forget them in the next, and end up with code that doesn't match what was agreed.
 
-```
+## The Solution
+
+AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code — a 5-phase workflow where every decision is captured, every design is traceable, and every lesson is preserved:
+
+```text
 /brainstorm  →  /define  →  /design  →  /build  →  /ship
-   (Explore)    (Capture)   (Architect)  (Execute)  (Archive)
+  (Explore)    (Capture)   (Architect)  (Execute)  (Archive)
 ```
 
-Each phase produces traceable artifacts, ensuring nothing gets lost between idea and implementation.
-
-### Why AgentSpec?
-
-| Problem | AgentSpec Solution |
-|---------|-------------------|
-| "I forgot what we decided" | Persistent DEFINE docs capture all requirements |
-| "The implementation doesn't match the spec" | DESIGN docs provide clear contracts |
-| "We keep making the same mistakes" | SHIPPED docs preserve lessons learned |
-| "Context gets lost in long sessions" | Structured workflow maintains continuity |
-| "No audit trail for AI decisions" | Every phase produces traceable artifacts |
-
----
-
-## Key Features
-
-### 5-Phase SDD Workflow
-
-| Phase | Command | Purpose | Artifact |
-|-------|---------|---------|----------|
-| **Brainstorm** | `/brainstorm` | Explore ideas through dialogue | `BRAINSTORM_*.md` |
-| **Define** | `/define` | Capture requirements formally | `DEFINE_*.md` |
-| **Design** | `/design` | Create technical architecture | `DESIGN_*.md` |
-| **Build** | `/build` | Execute implementation | `BUILD_REPORT_*.md` |
-| **Ship** | `/ship` | Archive with lessons learned | `SHIPPED_*.md` |
-
-### Specialized Agents (17 included)
-
-| Category | Agents | Purpose |
-|----------|--------|---------|
-| **Workflow** | 6 | Drive each SDD phase |
-| **Code Quality** | 6 | Review, test, document code |
-| **Communication** | 3 | Explain, plan, analyze meetings |
-| **Exploration** | 2 | Navigate and understand codebases |
-
-### Knowledge Base Framework
-
-Build domain-specific knowledge that grounds AI responses:
-
-```
-kb/
-├── _templates/           # Create your own KB domains
-├── pydantic/            # Example: Data validation patterns
-│   ├── concepts/
-│   ├── patterns/
-│   └── quick-reference.md
-```
+Each phase produces a document. Each transition has a quality gate. Nothing gets lost.
 
 ---
 
 ## Quick Start
 
-### Installation
+### Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_ORG/agentspec.git
+# Clone AgentSpec
+git clone https://github.com/luanmorenommaciel/agentspec.git
 
-# Navigate to your project
-cd your-project
-
-# Install as Claude Code plugin
-claude --plugin-dir /path/to/agentspec
+# Copy the framework into your project
+cp -r agentspec/.claude your-project/.claude
 ```
 
-### Your First Feature
+### Build Your First Feature
 
 ```bash
-# 1. Start with exploration
-claude> /brainstorm "Add user authentication to the app"
+# 1. Explore the idea
+claude> /brainstorm "Add user authentication with JWT"
 
-# 2. Capture requirements
-claude> /define
+# 2. Capture requirements (must score 12/15 to proceed)
+claude> /define USER_AUTH
 
-# 3. Design the architecture
-claude> /design
+# 3. Design the architecture (agents auto-matched to tasks)
+claude> /design USER_AUTH
 
 # 4. Build with verification
-claude> /build
+claude> /build USER_AUTH
 
-# 5. Ship and archive
-claude> /ship
+# 5. Archive with lessons learned
+claude> /ship USER_AUTH
 ```
 
-### Project Setup
+That's it. Five commands, full traceability from idea to production.
 
-AgentSpec creates this structure in your project:
+---
 
+## What You Get
+
+### 5-Phase Workflow with Quality Gates
+
+| Phase          | Command       | What It Does                  | Quality Gate                  |
+|----------------|---------------|-------------------------------|-------------------------------|
+| **Brainstorm** | `/brainstorm` | Explore approaches, compare   | 3+ questions, 2+ approaches   |
+| **Define**     | `/define`     | Capture requirements formally | Clarity Score >= 12/15        |
+| **Design**     | `/design`     | Architecture, manifest, ADRs  | Complete manifest             |
+| **Build**      | `/build`      | Execute with agent delegation | All tests pass                |
+| **Ship**       | `/ship`       | Archive with lessons learned  | Acceptance verified           |
+
+### 16 Specialized Agents
+
+| Category          | Count | Examples                                        |
+|-------------------|-------|-------------------------------------------------|
+| **Workflow**      | 6     | brainstorm, define, design, build, ship, iterate|
+| **Code Quality**  | 4     | code-reviewer, test-generator, code-cleaner     |
+| **Communication** | 4     | adaptive-explainer, linear-pm, meeting-analyst  |
+| **Exploration**   | 2     | codebase-explorer, kb-architect                 |
+
+During `/build`, agents are automatically matched to tasks based on your DESIGN document.
+
+### Knowledge Base Framework
+
+Ground AI responses in verified patterns instead of hallucinated ones:
+
+```bash
+# Create a domain-specific KB
+claude> /create-kb fastapi
+
+# Agents will consult it during /design and /build
 ```
-your-project/
-├── .claude/
-│   └── sdd/
-│       ├── features/     # Active feature documents
-│       ├── reports/      # Build reports
-│       └── archive/      # Shipped features (lessons learned)
+
+### 12 Slash Commands
+
+Beyond the 5 workflow phases: `/iterate` (update docs when requirements change), `/review` (dual AI code review), `/create-pr`, `/create-kb`, `/memory`, `/sync-context`, `/readme-maker`.
+
+---
+
+## How It Works
+
+```text
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  BRAINSTORM  │────▶│    DEFINE    │────▶│    DESIGN    │
+│  (Optional)  │     │ Requirements │     │ Architecture │
+└──────────────┘     └──────────────┘     └──────────────┘
+                                                │
+                                                ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│     SHIP     │◀────│    BUILD     │◀────│    Agent     │
+│   Archive    │     │   Execute    │     │   Matching   │
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+**Agent matching example:** Your DESIGN doc mentions "Pydantic models" and "pytest" — AgentSpec automatically delegates to `test-generator` for tests and `code-reviewer` for quality checks.
+
+**Requirements changed?** Use `/iterate` to update any phase document with automatic cascade detection to downstream docs.
+
+---
+
+## Project Structure
+
+```text
+.claude/
+├── agents/              # 16 specialized agents
+│   ├── workflow/        # 6 SDD phase agents
+│   ├── code-quality/    # 4 code excellence agents
+│   ├── communication/   # 4 communication agents
+│   └── exploration/     # 2 codebase agents
+│
+├── commands/            # 12 slash commands
+│   ├── workflow/        # /brainstorm, /define, /design, /build, /ship, /iterate, /create-pr
+│   ├── core/            # /memory, /sync-context, /readme-maker
+│   ├── knowledge/       # /create-kb
+│   └── review/          # /review
+│
+├── sdd/                 # SDD framework
+│   ├── architecture/    # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md
+│   ├── templates/       # 5 phase document templates
+│   ├── features/        # Active feature documents
+│   ├── reports/         # Build reports
+│   └── archive/         # Shipped features
+│
+├── kb/                  # Knowledge Base
+│   ├── _templates/      # 7 KB templates
+│   └── _index.yaml      # Domain registry
+│
+└── docs/                # Documentation
 ```
 
 ---
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Getting Started](docs/getting-started/) | Installation and first steps |
-| [SDD Workflow](sdd/README.md) | Deep dive into each phase |
-| [Agents Reference](agents/README.md) | All 17 agents explained |
-| [Commands Reference](commands/README.md) | Slash commands guide |
-| [KB Framework](kb/README.md) | Building knowledge bases |
-| [Examples](examples/) | Real-world usage examples |
-
----
-
-## Project Structure
-
-```
-agentspec/
-├── .claude-plugin/
-│   └── plugin.json       # Plugin manifest
-│
-├── agents/               # 17 specialized agents
-│   ├── workflow/         # SDD phase agents
-│   ├── code-quality/     # Code review, testing
-│   ├── communication/    # Explanation, planning
-│   └── exploration/      # Codebase navigation
-│
-├── commands/             # Slash commands
-│   ├── workflow/         # /brainstorm, /define, etc.
-│   ├── core/             # /memory, /sync-context
-│   ├── knowledge/        # /create-kb
-│   └── review/           # /review, /create-pr
-│
-├── sdd/                  # SDD framework
-│   ├── templates/        # Document templates
-│   ├── architecture/     # ARCHITECTURE.md, contracts
-│   └── examples/         # Complete example flow
-│
-├── kb/                   # Knowledge Base framework
-│   └── _templates/       # KB domain templates
-│
-├── docs/                 # Extended documentation
-└── examples/             # Example projects
-```
-
----
-
-## How It Works
-
-### Phase Flow
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  BRAINSTORM │────▶│   DEFINE    │────▶│   DESIGN    │
-│  (Optional) │     │ Requirements│     │Architecture │
-└─────────────┘     └─────────────┘     └─────────────┘
-                                              │
-                                              ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│    SHIP     │◀────│    BUILD    │◀────│   Agent     │
-│   Archive   │     │   Execute   │     │  Matching   │
-└─────────────┘     └─────────────┘     └─────────────┘
-```
-
-### Agent Matching
-
-When you run `/build`, AgentSpec automatically matches the right agents to your task:
-
-```
-DESIGN doc mentions "Pydantic models" + "pytest"
-                    │
-                    ▼
-┌─────────────────────────────────────────┐
-│  Agent Router                           │
-│  ├── python-developer (Pydantic work)   │
-│  ├── test-generator (pytest tests)      │
-│  └── code-reviewer (quality check)      │
-└─────────────────────────────────────────┘
-```
+| Guide                                        | Description                                  |
+|----------------------------------------------|----------------------------------------------|
+| [Getting Started](docs/getting-started/)     | Install and build your first feature         |
+| [Core Concepts](docs/concepts/)              | How phases, agents, and KB work together     |
+| [Tutorials](docs/tutorials/)                 | Step-by-step workflow walkthroughs           |
+| [Reference](docs/reference/)                 | Full command, agent, and template catalog    |
 
 ---
 
@@ -209,32 +176,23 @@ DESIGN doc mentions "Pydantic models" + "pytest"
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-### Ways to Contribute
-
-- **New Agents**: Add specialized agents for your domain
-- **KB Domains**: Share knowledge base domains
-- **Examples**: Document real-world usage
-- **Bug Fixes**: Help improve stability
-- **Documentation**: Clarify and expand docs
+- **New Agents** — add specialized agents for your domain
+- **KB Domains** — share knowledge base domains
+- **Bug Fixes** — help improve stability
+- **Documentation** — clarify and expand docs
 
 ---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-## Acknowledgments
-
-AgentSpec was developed as part of a production invoice processing pipeline project, proving its value in real-world AI-assisted development.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
 
-**[Documentation](docs/) | [Examples](examples/) | [Contributing](CONTRIBUTING.md) | [Changelog](CHANGELOG.md)**
+**[Documentation](docs/) | [Contributing](CONTRIBUTING.md) | [Changelog](CHANGELOG.md)**
 
-Built with Claude Code
+Built with [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 </div>

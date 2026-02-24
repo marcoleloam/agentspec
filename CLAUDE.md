@@ -8,13 +8,13 @@
 
 **What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow.
 
-**Current Status:** Initial repository setup complete, ready for enhancement and sanitization.
+**Current Status:** Framework ready, Linear is the project tracker (source of truth).
 
 ---
 
 ## Repository Structure
 
-```
+```text
 agentspec/
 ├── .claude/                 # Claude Code integration
 │   ├── agents/              # 16 specialized agents
@@ -23,25 +23,34 @@ agentspec/
 │   │   ├── communication/   # 4 communication agents
 │   │   └── exploration/     # 2 codebase agents
 │   │
-│   ├── commands/            # Slash commands
-│   │   ├── workflow/        # SDD commands
-│   │   ├── core/            # Utility commands
-│   │   ├── knowledge/       # KB commands
-│   │   └── review/          # Review commands
+│   ├── commands/            # 12 slash commands
+│   │   ├── workflow/        # SDD commands (7)
+│   │   ├── core/            # Utility commands (3)
+│   │   ├── knowledge/       # KB commands (1)
+│   │   └── review/          # Review commands (1)
 │   │
 │   ├── sdd/                 # SDD framework
-│   │   ├── architecture/    # Framework design
-│   │   ├── templates/       # Document templates
+│   │   ├── architecture/    # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md
+│   │   ├── templates/       # 5 document templates
 │   │   ├── features/        # Active development
 │   │   ├── reports/         # Build reports
 │   │   └── archive/         # Shipped features
 │   │
 │   └── kb/                  # Knowledge Base
-│       ├── _templates/      # KB domain templates
+│       ├── _templates/      # 7 KB domain templates
 │       ├── _index.yaml      # Domain registry
 │       └── {domain}/        # User-created KB domains (via /create-kb)
 │
-└── docs/                    # Documentation
+├── docs/                    # Documentation
+│   ├── getting-started/     # Installation and first feature
+│   ├── concepts/            # SDD mental model and pillars
+│   ├── tutorials/           # Workflow walkthroughs
+│   └── reference/           # Command, agent, template catalog
+│
+├── CHANGELOG.md             # Version history
+├── CONTRIBUTING.md          # Contribution guide
+├── SECURITY.md              # Security policy
+└── README.md                # Project overview
 ```
 
 ---
@@ -75,6 +84,9 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 |------|--------|-------------|
 | Sanitize agents | Done | Removed project-specific references |
 | Clean KB domains | Done | Removed project-specific KB domains, kept framework scaffolding |
+| Linear project setup | Done | 60 issues, 6 milestones, 9 strategic docs in Linear |
+| Framework readiness review | Done | SDD 9.2, KB 9.4, Commands 8.5, Agents 7.2 |
+| Documentation overhaul | Done | Getting started, concepts, tutorials, reference, README, community files |
 | Create CLAUDE.md.template | Pending | Template for user projects |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
@@ -136,6 +148,6 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 ## Version
 
-- **Version:** 1.0.0
+- **Version:** 1.1.0
 - **Status:** Release
 - **Last Updated:** 2026-02-24

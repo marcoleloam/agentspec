@@ -8,7 +8,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Claude Code local settings (personal MCP servers, permissions)
+# Claude Code Local Settings
 .claude/settings.local.json
 
 # Python
