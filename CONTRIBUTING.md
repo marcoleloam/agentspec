@@ -12,7 +12,7 @@ git checkout -b feature/your-feature
 
 # The framework lives in .claude/
 ls .claude/agents/      # 16 specialized agents
-ls .claude/commands/    # 12 slash commands
+ls .claude/skills/      # 12 slash commands (skills)
 ls .claude/sdd/         # SDD framework
 ls .claude/kb/          # Knowledge Base
 ```
@@ -23,7 +23,7 @@ ls .claude/kb/          # Knowledge Base
 |----------------|--------------------------------|------------------------------------------|
 | New Agent      | `.claude/agents/{category}/`   | [Adding Agents](#adding-a-new-agent)     |
 | New KB Domain  | `.claude/kb/{domain}/`         | [Adding KB Domains](#adding-a-kb-domain) |
-| New Command    | `.claude/commands/{category}/` | [Adding Commands](#adding-a-command)     |
+| New Skill      | `.claude/skills/{category}/`   | [Adding Skills](#adding-a-skill)         |
 | Bug Fix        | Any file                       | [Bug Fixes](#bug-fixes)                  |
 | Documentation  | `docs/`                        | [Docs Guide](#documentation)             |
 
@@ -77,20 +77,23 @@ Or create manually:
 
 Templates are in `.claude/kb/_templates/`. Register your domain in `.claude/kb/_index.yaml`.
 
-## Adding a Command
+## Adding a Skill
 
-1. Create `.claude/commands/{category}/your-command.md`
+1. Create `.claude/skills/{category}/your-skill/SKILL.md`
 2. Include YAML frontmatter:
 
    ```yaml
    ---
-   name: your-command
-   description: What this command does
+   name: your-skill
+   description: What this skill does
+   user-invocable: true
+   agent: agent-name (optional)
+   allowed-tools: Read, Write, Grep, Glob
    ---
    ```
 
 3. Reference the appropriate agent if applicable
-4. Test: `claude> /your-command`
+4. Test: `claude> /your-skill`
 
 ## Bug Fixes
 

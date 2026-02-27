@@ -10,6 +10,8 @@
 
 **Current Status:** Framework ready, Linear is the project tracker (source of truth).
 
+**Idioma:** Todos os documentos gerados e interações com o usuário são em **Português-BR (pt-BR)**.
+
 ---
 
 ## Repository Structure
@@ -23,15 +25,13 @@ agentspec/
 │   │   ├── communication/   # 4 communication agents
 │   │   └── exploration/     # 2 codebase agents
 │   │
-│   ├── commands/            # 12 slash commands
-│   │   ├── workflow/        # SDD commands (7)
-│   │   ├── core/            # Utility commands (3)
-│   │   ├── knowledge/       # KB commands (1)
-│   │   └── review/          # Review commands (1)
+│   ├── skills/              # 12 slash commands (skills)
+│   │   ├── workflow/        # SDD + dev skills (9)
+│   │   └── core/            # Utility skills (3)
 │   │
 │   ├── sdd/                 # SDD framework
 │   │   ├── architecture/    # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md
-│   │   ├── templates/       # 5 document templates
+│   │   ├── templates/       # 5 document templates (pt-BR)
 │   │   ├── features/        # Active development
 │   │   ├── reports/         # Build reports
 │   │   └── archive/         # Shipped features
@@ -60,20 +60,20 @@ agentspec/
 Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 ```bash
-# Explore an enhancement idea
-/brainstorm "Add Judge layer for spec validation"
+# Explorar uma ideia de melhoria
+/explorar "Adicionar camada Judge para validação de spec"
 
-# Capture requirements
-/define JUDGE_LAYER
+# Capturar requisitos
+/definir CAMADA_JUDGE
 
-# Design the architecture
-/design JUDGE_LAYER
+# Projetar a arquitetura
+/projetar CAMADA_JUDGE
 
-# Build it
-/build JUDGE_LAYER
+# Construir
+/construir CAMADA_JUDGE
 
-# Ship when complete
-/ship JUDGE_LAYER
+# Entregar quando completo
+/entregar CAMADA_JUDGE
 ```
 
 ---
@@ -87,6 +87,10 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | Linear project setup | Done | 60 issues, 6 milestones, 9 strategic docs in Linear |
 | Framework readiness review | Done | SDD 9.2, KB 9.4, Commands 8.5, Agents 7.2 |
 | Documentation overhaul | Done | Getting started, concepts, tutorials, reference, README, community files |
+| Migração para pt-BR | Done | Templates, agentes, comandos e contratos 100% em português |
+| Migração commands → skills | Done | 12 commands migrados para .claude/skills/ com SKILL.md |
+| Tradução completa pt-BR | Done | Todos os 16 agentes e 12 skills traduzidos para pt-BR |
+| Reorganização skills | Done | review e create-kb movidos para workflow/, core mantido |
 | Create CLAUDE.md.template | Pending | Template for user projects |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
@@ -117,22 +121,34 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 ---
 
-## Commands Available
+## Skills Available
 
-| Command | Purpose |
-|---------|---------|
-| `/brainstorm` | Explore ideas (Phase 0) |
-| `/define` | Capture requirements (Phase 1) |
-| `/design` | Create architecture (Phase 2) |
-| `/build` | Execute implementation (Phase 3) |
-| `/ship` | Archive completed work (Phase 4) |
-| `/iterate` | Update existing docs (Cross-phase) |
-| `/create-pr` | Create pull request |
-| `/create-kb` | Create KB domain |
-| `/review` | Code review |
-| `/memory` | Save session insights |
-| `/sync-context` | Update CLAUDE.md |
-| `/readme-maker` | Generate README |
+| Skill | Objetivo | Localização |
+|-------|----------|-------------|
+| `/explorar` | Explorar ideias (Fase 0) | `.claude/skills/workflow/explorar/` |
+| `/definir` | Capturar requisitos (Fase 1) | `.claude/skills/workflow/definir/` |
+| `/projetar` | Criar arquitetura (Fase 2) | `.claude/skills/workflow/projetar/` |
+| `/construir` | Executar implementação (Fase 3) | `.claude/skills/workflow/construir/` |
+| `/entregar` | Arquivar trabalho concluído (Fase 4) | `.claude/skills/workflow/entregar/` |
+| `/iterar` | Atualizar docs existentes (Cross-phase) | `.claude/skills/workflow/iterar/` |
+| `/create-pr` | Criar pull request | `.claude/skills/workflow/create-pr/` |
+| `/create-kb` | Criar domínio KB | `.claude/skills/workflow/create-kb/` |
+| `/review` | Revisão de código | `.claude/skills/workflow/review/` |
+| `/memory` | Salvar insights da sessão | `.claude/skills/core/memory/` |
+| `/sync-context` | Atualizar CLAUDE.md | `.claude/skills/core/sync-context/` |
+| `/readme-maker` | Gerar README | `.claude/skills/core/readme-maker/` |
+
+---
+
+## File Naming Convention
+
+| Fase | Prefixo | Exemplo |
+|------|---------|---------|
+| Fase 0 | `00_` | `00_BRAINSTORM_AUTH.md` |
+| Fase 1 | `01_` | `01_DEFINE_AUTH.md` |
+| Fase 2 | `02_` | `02_DESIGN_AUTH.md` |
+| Build Report | (sem prefixo) | `BUILD_REPORT_AUTH.md` |
+| Shipped | (sem prefixo) | `SHIPPED_2026-02-27.md` |
 
 ---
 
@@ -141,13 +157,13 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | File | Purpose |
 |------|---------|
 | `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
-| `.claude/sdd/templates/*.md` | Document templates |
+| `.claude/sdd/templates/*.md` | Document templates (pt-BR) |
 | `.claude/kb/_templates/*.template` | KB domain templates |
 
 ---
 
 ## Version
 
-- **Version:** 1.1.0
+- **Version:** 2.1.0
 - **Status:** Release
-- **Last Updated:** 2026-02-24
+- **Last Updated:** 2026-02-27

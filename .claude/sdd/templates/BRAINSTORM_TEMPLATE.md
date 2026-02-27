@@ -1,192 +1,208 @@
-# BRAINSTORM: {Feature Name}
+# BRAINSTORM: {Nome da Feature}
 
-> Exploratory session to clarify intent and approach before requirements capture
+> Sessão exploratória para clarificar intenção e abordagem antes da captura de requisitos
 
-## Metadata
+## Metadados
 
-| Attribute | Value |
-|-----------|-------|
+| Atributo | Valor |
+|----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Date** | {YYYY-MM-DD} |
-| **Author** | brainstorm-agent |
-| **Status** | Exploring / Approaches Identified / Ready for Define |
+| **Data** | {AAAA-MM-DD} |
+| **Autor** | brainstorm-agent |
+| **Status** | Explorando / Abordagens Identificadas / Pronto para Definir |
 
 ---
 
-## Initial Idea
+## Ideia Inicial
 
-**Raw Input:** {Original idea or request as stated by user}
+**Entrada Original:** {Ideia ou solicitação original conforme descrita pelo usuário}
 
-**Context Gathered:**
-- {Project state observation 1}
-- {Project state observation 2}
-- {Relevant existing code or patterns found}
+**Contexto Coletado:**
+- {Observação do estado do projeto 1}
+- {Observação do estado do projeto 2}
+- {Código ou padrões existentes relevantes encontrados}
 
-**Technical Context Observed (for Define):**
+**Contexto Técnico Observado (para Definir):**
 
-| Aspect | Observation | Implication |
-|--------|-------------|-------------|
-| Likely Location | {src/ \| functions/ \| gen/ \| deploy/} | {Where code should live} |
-| Relevant KB Domains | {domain-1, domain-2, etc.} | {Patterns to consult} |
-| IaC Patterns | {Existing IaC tooling or N/A} | {Infrastructure approach} |
-
----
-
-## Discovery Questions & Answers
-
-| # | Question | Answer | Impact |
-|---|----------|--------|--------|
-| 1 | {Question about purpose} | {User's answer} | {How this shapes the solution} |
-| 2 | {Question about users} | {User's answer} | {How this shapes the solution} |
-| 3 | {Question about constraints} | {User's answer} | {How this shapes the solution} |
-| 4 | {Question about success criteria} | {User's answer} | {How this shapes the solution} |
-
-**Minimum Questions:** 3 (to ensure clarity before proceeding)
+| Aspecto | Observação | Implicação |
+|---------|------------|------------|
+| Localização Provável | {src/ \| functions/ \| gen/ \| deploy/} | {Onde o código deve ficar} |
+| Domínios KB Relevantes | {dominio-1, dominio-2, etc.} | {Padrões a consultar} |
+| Padrões IaC | {Ferramentas IaC existentes ou N/A} | {Abordagem de infraestrutura} |
 
 ---
 
-## Sample Data Inventory
+## Perguntas de Descoberta e Respostas
 
-> Samples improve LLM accuracy through in-context learning and few-shot prompting.
+| # | Pergunta | Resposta | Impacto |
+|---|----------|----------|---------|
+| 1 | {Pergunta sobre o propósito} | {Resposta do usuário} | {Como isso molda a solução} |
+| 2 | {Pergunta sobre os usuários} | {Resposta do usuário} | {Como isso molda a solução} |
+| 3 | {Pergunta sobre restrições} | {Resposta do usuário} | {Como isso molda a solução} |
+| 4 | {Pergunta sobre critérios de sucesso} | {Resposta do usuário} | {Como isso molda a solução} |
 
-| Type | Location | Count | Notes |
-|------|----------|-------|-------|
-| Input files | {Path or N/A} | {N} | {Format, size, patterns} |
-| Output examples | {Path or N/A} | {N} | {Schema, structure} |
-| Ground truth | {Path or N/A} | {N} | {Verified correct values} |
-| Related code | {Path or N/A} | {N} | {Patterns to reuse} |
-
-**How samples will be used:**
-
-- {e.g., Few-shot examples in extraction prompts}
-- {e.g., Schema validation reference}
-- {e.g., Test fixtures for validation}
+**Mínimo de Perguntas:** 3 (para garantir clareza antes de prosseguir)
 
 ---
 
-## Approaches Explored
+## Inventário de Dados de Exemplo
 
-### Approach A: {Name} ⭐ Recommended
+> Exemplos melhoram a precisão do LLM através de aprendizado em contexto e few-shot prompting.
 
-**Description:** {Brief description of approach}
+| Tipo | Localização | Quantidade | Notas |
+|------|-------------|------------|-------|
+| Arquivos de entrada | {Caminho ou N/A} | {N} | {Formato, tamanho, padrões} |
+| Exemplos de saída | {Caminho ou N/A} | {N} | {Schema, estrutura} |
+| Dados de referência | {Caminho ou N/A} | {N} | {Valores verificados corretos} |
+| Código relacionado | {Caminho ou N/A} | {N} | {Padrões para reutilizar} |
 
-**Pros:**
-- {Advantage 1}
-- {Advantage 2}
+**Como os exemplos serão usados:**
 
-**Cons:**
+- {ex: Exemplos few-shot em prompts de extração}
+- {ex: Referência de validação de schema}
+- {ex: Fixtures de teste para validação}
+
+---
+
+## Abordagens Exploradas
+
+### Abordagem A: {Nome} ⭐ Recomendada
+
+**Descrição:** {Breve descrição da abordagem}
+
+**Prós:**
+- {Vantagem 1}
+- {Vantagem 2}
+
+**Contras:**
 - {Trade-off 1}
 - {Trade-off 2}
 
-**Why Recommended:** {Clear reasoning for why this is the suggested path}
+**Por que Recomendada:** {Raciocínio claro do por que este é o caminho sugerido}
 
 ---
 
-### Approach B: {Name}
+### Abordagem B: {Nome}
 
-**Description:** {Brief description of approach}
+**Descrição:** {Breve descrição da abordagem}
 
-**Pros:**
-- {Advantage 1}
-- {Advantage 2}
+**Prós:**
+- {Vantagem 1}
+- {Vantagem 2}
 
-**Cons:**
+**Contras:**
 - {Trade-off 1}
 - {Trade-off 2}
 
 ---
 
-### Approach C: {Name} (Optional)
+### Abordagem C: {Nome} (Opcional)
 
-**Description:** {Brief description of approach}
+**Descrição:** {Breve descrição da abordagem}
 
-**Pros:**
-- {Advantage 1}
+**Prós:**
+- {Vantagem 1}
 
-**Cons:**
+**Contras:**
 - {Trade-off 1}
 
 ---
 
-## Selected Approach
+## Abordagem Selecionada
 
-| Attribute | Value |
-|-----------|-------|
-| **Chosen** | Approach {A/B/C} |
-| **User Confirmation** | {Date/Time of confirmation} |
-| **Reasoning** | {Why user selected this approach} |
-
----
-
-## Key Decisions Made
-
-| # | Decision | Rationale | Alternative Rejected |
-|---|----------|-----------|----------------------|
-| 1 | {Decision made during brainstorm} | {Why} | {What we didn't do} |
-| 2 | {Decision made during brainstorm} | {Why} | {What we didn't do} |
+| Atributo | Valor |
+|----------|-------|
+| **Escolhida** | Abordagem {A/B/C} |
+| **Confirmação do Usuário** | {Data/Hora da confirmação} |
+| **Justificativa** | {Por que o usuário selecionou esta abordagem} |
 
 ---
 
-## Features Removed (YAGNI)
+## Decisões Tomadas
 
-| Feature Suggested | Reason Removed | Can Add Later? |
-|-------------------|----------------|----------------|
-| {Feature that seemed good but unnecessary} | {YAGNI reasoning} | Yes/No |
-| {Another deferred feature} | {Why not needed now} | Yes/No |
-
----
-
-## Incremental Validations
-
-| Section | Presented | User Feedback | Adjusted? |
-|---------|-----------|---------------|-----------|
-| Architecture concept | ✅ | {Feedback} | Yes/No |
-| Component breakdown | ✅ | {Feedback} | Yes/No |
-| Data flow | ✅ | {Feedback} | Yes/No |
-| Error handling | ✅ | {Feedback} | Yes/No |
-
-**Minimum Validations:** 2 (to ensure alignment)
+| # | Decisão | Justificativa | Alternativa Rejeitada |
+|---|---------|---------------|----------------------|
+| 1 | {Decisão tomada durante o brainstorm} | {Por quê} | {O que não fizemos} |
+| 2 | {Decisão tomada durante o brainstorm} | {Por quê} | {O que não fizemos} |
 
 ---
 
-## Suggested Requirements for /define
+## Funcionalidades Removidas (YAGNI)
 
-Based on this brainstorm session, the following should be captured in the DEFINE phase:
+| Funcionalidade Sugerida | Motivo da Remoção | Pode Adicionar Depois? |
+|-------------------------|-------------------|----------------------|
+| {Funcionalidade que parecia boa mas desnecessária} | {Raciocínio YAGNI} | Sim/Não |
+| {Outra funcionalidade adiada} | {Por que não é necessária agora} | Sim/Não |
 
-### Problem Statement (Draft)
-{One clear sentence describing the problem to solve}
+---
 
-### Target Users (Draft)
-| User | Pain Point |
-|------|------------|
-| {User 1} | {Pain} |
+## Validações Incrementais
 
-### Success Criteria (Draft)
-- [ ] {Measurable criterion 1}
-- [ ] {Measurable criterion 2}
+| Seção | Apresentada | Feedback do Usuário | Ajustada? |
+|-------|-------------|---------------------|-----------|
+| Conceito de arquitetura | ✅ | {Feedback} | Sim/Não |
+| Divisão de componentes | ✅ | {Feedback} | Sim/Não |
+| Fluxo de dados | ✅ | {Feedback} | Sim/Não |
+| Tratamento de erros | ✅ | {Feedback} | Sim/Não |
 
-### Constraints Identified
-- {Constraint 1}
-- {Constraint 2}
+**Mínimo de Validações:** 2 (para garantir alinhamento)
 
-### Out of Scope (Confirmed)
-- {Item 1 - explicitly excluded during brainstorm}
+---
+
+## Requisitos Sugeridos para /definir
+
+Com base nesta sessão de exploração, o seguinte deve ser capturado na fase DEFINE:
+
+### Declaração do Problema (Rascunho)
+{Uma frase clara descrevendo o problema a resolver}
+
+### Usuários-Alvo (Rascunho)
+| Usuário | Ponto de Dor |
+|---------|-------------|
+| {Usuário 1} | {Dor} |
+
+### Critérios de Sucesso (Rascunho)
+- [ ] {Critério mensurável 1}
+- [ ] {Critério mensurável 2}
+
+### Restrições Identificadas
+- {Restrição 1}
+- {Restrição 2}
+
+### Fora do Escopo (Confirmado)
+- {Item 1 - explicitamente excluído durante o brainstorm}
 - {Item 2}
 
 ---
 
-## Session Summary
+## Resumo da Sessão
 
-| Metric | Value |
-|--------|-------|
-| Questions Asked | {N} |
-| Approaches Explored | {2-3} |
-| Features Removed (YAGNI) | {N} |
-| Validations Completed | {N} |
-| Duration | {Approx time} |
+| Métrica | Valor |
+|---------|-------|
+| Perguntas Feitas | {N} |
+| Abordagens Exploradas | {2-3} |
+| Funcionalidades Removidas (YAGNI) | {N} |
+| Validações Concluídas | {N} |
+| Duração | {Tempo aproximado} |
 
 ---
 
-## Next Step
+## Mapa do Workflow
 
-**Ready for:** `/define .claude/sdd/features/BRAINSTORM_{FEATURE_NAME}.md`
+```text
+📍 Progresso do Workflow
+════════════════════════════════════════════
+✅ Fase 0: Explorar        ← CONCLUÍDA
+➡️ Fase 1: /definir
+⬜ Fase 2: /projetar
+⬜ Fase 3: /construir
+⬜ Fase 4: /entregar
+```
+
+---
+
+## Próxima Etapa
+
+**Pronto para:** `/definir .claude/sdd/features/00_BRAINSTORM_{FEATURE_NAME}.md`
+
+💡 **Dica:** O documento de exploração já contém requisitos rascunhados. O `/definir` vai extraí-los e validá-los automaticamente.

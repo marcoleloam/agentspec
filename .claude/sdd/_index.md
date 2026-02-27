@@ -267,7 +267,7 @@ AgentSpec provides Agent Matching (Design phase) and Agent Delegation (Build pha
 
 | Resource | Location |
 |----------|----------|
-| Commands | `.claude/commands/workflow/` |
+| Skills | `.claude/skills/workflow/` |
 | Agents | `.claude/agents/workflow/` |
 | Templates | `.claude/sdd/templates/` |
 | Contracts | `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` |

@@ -115,7 +115,7 @@ Moves all artifacts to `.claude/sdd/archive/USER_AUTH/` with a SHIPPED document 
 ## Troubleshooting
 
 **Commands not recognized?**
-Ensure `.claude/commands/` exists in your project root with the slash command files.
+Ensure `.claude/skills/` exists in your project root with the skill directories (each containing a `SKILL.md`).
 
 **Agent not matching?**
 Check that `.claude/agents/` contains the agent `.md` files. Agents are discovered via glob pattern.

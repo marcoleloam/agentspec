@@ -1,133 +1,133 @@
-# SHIPPED: {Feature Name}
+# ENTREGUE: {Nome da Feature}
 
-> Feature shipped on {YYYY-MM-DD}
+> Feature entregue em {AAAA-MM-DD}
 
-## Metadata
+## Metadados
 
-| Attribute | Value |
-|-----------|-------|
+| Atributo | Valor |
+|----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Ship Date** | {YYYY-MM-DD} |
-| **Author** | ship-agent |
+| **Data de Entrega** | {AAAA-MM-DD} |
+| **Autor** | ship-agent |
 
 ---
 
-## Summary
+## Resumo
 
-{One paragraph describing what was built and the business value delivered.}
-
----
-
-## Timeline
-
-| Milestone | Date | Duration |
-|-----------|------|----------|
-| Define Started | {YYYY-MM-DD} | - |
-| Define Complete | {YYYY-MM-DD} | {X days} |
-| Design Complete | {YYYY-MM-DD} | {X days} |
-| Build Complete | {YYYY-MM-DD} | {X days} |
-| **Shipped** | {YYYY-MM-DD} | **Total: {X days}** |
+{Um parágrafo descrevendo o que foi construído e o valor de negócio entregue.}
 
 ---
 
-## Metrics
+## Cronograma
 
-| Metric | Value |
-|--------|-------|
-| **Total Files Created** | {N} |
-| **Lines of Code** | {N} |
-| **Tests Written** | {N} |
-| **Test Coverage** | {X}% |
-| **Build Iterations** | {N} |
-| **Design Decisions** | {N} |
-
----
-
-## What Was Built
-
-### Components
-
-| Component | Description |
-|-----------|-------------|
-| {Component 1} | {What it does} |
-| {Component 2} | {What it does} |
-
-### Files
-
-| File | Purpose |
-|------|---------|
-| `{path/to/file1}` | {Purpose} |
-| `{path/to/file2}` | {Purpose} |
+| Marco | Data | Duração |
+|-------|------|---------|
+| Definir Iniciado | {AAAA-MM-DD} | - |
+| Definir Concluído | {AAAA-MM-DD} | {X dias} |
+| Design Concluído | {AAAA-MM-DD} | {X dias} |
+| Build Concluído | {AAAA-MM-DD} | {X dias} |
+| **Entregue** | {AAAA-MM-DD} | **Total: {X dias}** |
 
 ---
 
-## Success Criteria Verification
+## Métricas
 
-| Criterion | Target | Actual | Status |
-|-----------|--------|--------|--------|
-| {From DEFINE} | {Target} | {Actual} | ✅ / ❌ |
-| {From DEFINE} | {Target} | {Actual} | ✅ / ❌ |
-| {From DEFINE} | {Target} | {Actual} | ✅ / ❌ |
-
----
-
-## Lessons Learned
-
-### Process
-
-{What would you do differently in the process next time?}
-
-- {Lesson 1: Be specific and actionable}
-- {Lesson 2: Include what worked AND what didn't}
-
-### Technical
-
-{What technical insights were gained?}
-
-- {Lesson 1: Technical discovery or pattern that worked}
-- {Lesson 2: Technical challenge and how it was solved}
-
-### Communication
-
-{Where did early clarification help or would have helped?}
-
-- {Lesson 1: What clarification prevented rework}
-- {Lesson 2: What confusion could have been avoided}
-
-### Tools & Libraries
-
-{What tools or libraries proved valuable?}
-
-- {Tool/Library 1: Why it was helpful}
-- {Tool/Library 2: Why it was helpful}
+| Métrica | Valor |
+|---------|-------|
+| **Total de Arquivos Criados** | {N} |
+| **Linhas de Código** | {N} |
+| **Testes Escritos** | {N} |
+| **Cobertura de Testes** | {X}% |
+| **Iterações de Build** | {N} |
+| **Decisões de Design** | {N} |
 
 ---
 
-## Recommendations for Future Work
+## O Que Foi Construído
 
-| Area | Recommendation |
-|------|----------------|
-| {Area 1} | {Specific recommendation} |
-| {Area 2} | {Specific recommendation} |
+### Componentes
+
+| Componente | Descrição |
+|------------|-----------|
+| {Componente 1} | {O que faz} |
+| {Componente 2} | {O que faz} |
+
+### Arquivos
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `{caminho/arquivo1}` | {Propósito} |
+| `{caminho/arquivo2}` | {Propósito} |
 
 ---
 
-## Archived Artifacts
+## Verificação dos Critérios de Sucesso
 
-| Artifact | Location |
-|----------|----------|
-| BRAINSTORM | `./BRAINSTORM_{FEATURE}.md` (if Phase 0 was used) |
-| DEFINE | `./DEFINE_{FEATURE}.md` |
-| DESIGN | `./DESIGN_{FEATURE}.md` |
+| Critério | Meta | Real | Status |
+|----------|------|------|--------|
+| {Do DEFINE} | {Meta} | {Real} | ✅ / ❌ |
+| {Do DEFINE} | {Meta} | {Real} | ✅ / ❌ |
+| {Do DEFINE} | {Meta} | {Real} | ✅ / ❌ |
+
+---
+
+## Lições Aprendidas
+
+### Processo
+
+{O que você faria diferente no processo da próxima vez?}
+
+- {Lição 1: Seja específico e acionável}
+- {Lição 2: Inclua o que funcionou E o que não funcionou}
+
+### Técnico
+
+{Quais insights técnicos foram obtidos?}
+
+- {Lição 1: Descoberta técnica ou padrão que funcionou}
+- {Lição 2: Desafio técnico e como foi resolvido}
+
+### Comunicação
+
+{Onde o esclarecimento precoce ajudou ou teria ajudado?}
+
+- {Lição 1: Qual esclarecimento evitou retrabalho}
+- {Lição 2: Qual confusão poderia ter sido evitada}
+
+### Ferramentas e Bibliotecas
+
+{Quais ferramentas ou bibliotecas provaram ser valiosas?}
+
+- {Ferramenta/Biblioteca 1: Por que foi útil}
+- {Ferramenta/Biblioteca 2: Por que foi útil}
+
+---
+
+## Recomendações para Trabalho Futuro
+
+| Área | Recomendação |
+|------|-------------|
+| {Área 1} | {Recomendação específica} |
+| {Área 2} | {Recomendação específica} |
+
+---
+
+## Artefatos Arquivados
+
+| Artefato | Localização |
+|----------|-------------|
+| BRAINSTORM | `./00_BRAINSTORM_{FEATURE}.md` (se Fase 0 foi usada) |
+| DEFINE | `./01_DEFINE_{FEATURE}.md` |
+| DESIGN | `./02_DESIGN_{FEATURE}.md` |
 | BUILD_REPORT | `./BUILD_REPORT_{FEATURE}.md` |
-| SHIPPED | `./SHIPPED_{DATE}.md` (this file) |
+| ENTREGUE | `./SHIPPED_{DATA}.md` (este arquivo) |
 
 ---
 
-## Acknowledgments
+## Agradecimentos
 
-{Optional: Note any particular challenges overcome or valuable contributions.}
+{Opcional: Destaque quaisquer desafios superados ou contribuições valiosas.}
 
 ---
 
-*Feature archived on {YYYY-MM-DD} by ship-agent*
+*Feature arquivada em {AAAA-MM-DD} por ship-agent*

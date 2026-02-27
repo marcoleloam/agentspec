@@ -1,86 +1,98 @@
-# AgentSpec - Workflow Contracts
-# 5-Phase Development Workflow with Agent Matching and Delegation
-# Version: 1.0.0
-# Date: 2026-02-17
+# AgentSpec - Contratos de Workflow
+# Workflow de Desenvolvimento em 5 Fases com Matching e Delegação de Agentes
+# Versão: 2.0.0
+# Data: 2026-02-27
 
-version: "1.0.0"
+version: "2.0.0"
 name: "AgentSpec"
-description: "5-phase software development workflow with agent orchestration"
+description: "Workflow de desenvolvimento de software em 5 fases com orquestração de agentes"
 
 # =============================================================================
-# WORKFLOW OVERVIEW
+# IDIOMA
+# =============================================================================
+
+language:
+  output: "pt-BR"
+  rule: "Todos os documentos gerados e interações com o usuário DEVEM ser em Português-BR"
+  exceptions:
+    - "Prefixos de arquivo: BRAINSTORM_, DEFINE_, DESIGN_, BUILD_REPORT_, SHIPPED_"
+    - "Termos técnicos: MoSCoW, YAGNI, MVP, ADR, API, KB, ASCII"
+    - "Nomes de ferramentas: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, Task"
+
+# =============================================================================
+# VISÃO GERAL DO WORKFLOW
 # =============================================================================
 
 workflow:
   phases:
-    - name: "Brainstorm"
+    - name: "Explorar"
       number: 0
-      command: "/brainstorm"
+      command: "/explorar"
       agent: "brainstorm-agent"
-      purpose: "Collaborative exploration to clarify intent and approach"
-      input: "Raw idea, request, or problem statement"
-      output: "BRAINSTORM_{FEATURE}.md"
+      purpose: "Exploração colaborativa para clarificar intenção e abordagem"
+      input: "Ideia, solicitação ou declaração de problema"
+      output: "00_BRAINSTORM_{FEATURE}.md"
       model: "opus"
       optional: true
 
-    - name: "Define"
+    - name: "Definir"
       number: 1
-      command: "/define"
+      command: "/definir"
       agent: "define-agent"
-      purpose: "Capture and validate requirements"
-      input: "Raw notes, emails, conversations, BRAINSTORM document, or direct requirements"
-      output: "DEFINE_{FEATURE}.md"
+      purpose: "Capturar e validar requisitos"
+      input: "Notas, emails, conversas, documento BRAINSTORM, ou requisitos diretos"
+      output: "01_DEFINE_{FEATURE}.md"
       model: "opus"
 
-    - name: "Design"
+    - name: "Projetar"
       number: 2
-      command: "/design"
+      command: "/projetar"
       agent: "design-agent"
-      purpose: "Create architecture and technical specification"
-      input: "DEFINE_{FEATURE}.md"
-      output: "DESIGN_{FEATURE}.md"
+      purpose: "Criar arquitetura e especificação técnica"
+      input: "01_DEFINE_{FEATURE}.md"
+      output: "02_DESIGN_{FEATURE}.md"
       model: "opus"
 
-    - name: "Build"
+    - name: "Construir"
       number: 3
-      command: "/build"
+      command: "/construir"
       agent: "build-agent"
-      purpose: "Execute implementation with verification"
-      input: "DESIGN_{FEATURE}.md"
-      output: "Code files + BUILD_REPORT_{FEATURE}.md"
+      purpose: "Executar implementação com verificação"
+      input: "02_DESIGN_{FEATURE}.md"
+      output: "Arquivos de código + BUILD_REPORT_{FEATURE}.md"
       model: "sonnet"
 
-    - name: "Ship"
+    - name: "Entregar"
       number: 4
-      command: "/ship"
+      command: "/entregar"
       agent: "ship-agent"
-      purpose: "Archive feature with lessons learned"
-      input: "All feature artifacts"
+      purpose: "Arquivar feature com lições aprendidas"
+      input: "Todos os artefatos da feature"
       output: "archive/{FEATURE}/SHIPPED_{DATE}.md"
       model: "haiku"
 
   cross_phase:
-    - name: "Iterate"
-      command: "/iterate"
+    - name: "Iterar"
+      command: "/iterar"
       agent: "iterate-agent"
-      purpose: "Update any phase document when changes needed"
-      works_with: ["Brainstorm", "Define", "Design"]
-      phase_3_note: "To change code during Build, update DESIGN then run /build"
+      purpose: "Atualizar qualquer documento de fase quando mudanças necessárias"
+      works_with: ["Explorar", "Definir", "Projetar"]
+      phase_3_note: "Para alterar código durante Construir, atualize DESIGN depois execute /construir"
       model: "sonnet"
 
 # =============================================================================
-# PHASE 0: BRAINSTORM (Optional)
+# FASE 0: EXPLORAR (Opcional)
 # =============================================================================
 
 brainstorm:
   command:
-    name: "/brainstorm"
-    file: ".claude/commands/workflow/brainstorm.md"
-    args: "<idea-or-request>"
+    name: "/explorar"
+    file: ".claude/skills/workflow/explorar.md"
+    args: "<ideia-ou-solicitação>"
     examples:
-      - '/brainstorm "Build a user notification system"'
-      - '/brainstorm notes/rough-idea.txt'
-      - '/brainstorm "I want to add data export functionality"'
+      - '/explorar "Construir um sistema de notificações em tempo real"'
+      - '/explorar notas/ideia-inicial.txt'
+      - '/explorar "Quero adicionar funcionalidade de exportação de dados"'
 
   agent:
     name: "brainstorm-agent"
@@ -96,83 +108,83 @@ brainstorm:
 
   input:
     types:
-      - raw_idea
-      - problem_statement
-      - feature_request
-      - rough_notes
-      - comparison_request
+      - ideia_bruta
+      - declaracao_problema
+      - solicitacao_feature
+      - notas_rascunho
+      - solicitacao_comparacao
 
   output:
-    file: ".claude/sdd/features/BRAINSTORM_{FEATURE}.md"
+    file: ".claude/sdd/features/00_BRAINSTORM_{FEATURE}.md"
     template: ".claude/sdd/templates/BRAINSTORM_TEMPLATE.md"
     status_values:
-      - "Exploring"
-      - "Approaches Identified"
-      - "Ready for Define"
+      - "Explorando"
+      - "Abordagens Identificadas"
+      - "Pronto para Definir"
 
   process:
     steps:
-      - name: "Gather Context"
-        description: "Read project files, recent commits, existing patterns"
-      - name: "Discovery Questions"
-        description: "Ask one question at a time, minimum 3 questions"
-      - name: "Collect Samples"
-        description: "Ask about sample inputs, outputs, ground truth for LLM grounding"
-      - name: "Explore Approaches"
-        description: "Present 2-3 approaches with trade-offs and recommendation"
-      - name: "Apply YAGNI"
-        description: "Remove unnecessary features, document what was removed"
-      - name: "Validate Incrementally"
-        description: "Present design in sections, check after each (min 2)"
-      - name: "Generate Document"
-        description: "Write BRAINSTORM file with draft requirements and sample inventory"
+      - name: "Coletar Contexto"
+        description: "Ler arquivos do projeto, commits recentes, padrões existentes"
+      - name: "Perguntas de Descoberta"
+        description: "Fazer uma pergunta por vez, mínimo 3 perguntas"
+      - name: "Coletar Exemplos"
+        description: "Perguntar sobre exemplos de entrada, saída, dados de referência para grounding do LLM"
+      - name: "Explorar Abordagens"
+        description: "Apresentar 2-3 abordagens com trade-offs e recomendação"
+      - name: "Aplicar YAGNI"
+        description: "Remover funcionalidades desnecessárias, documentar o que foi removido"
+      - name: "Validar Incrementalmente"
+        description: "Apresentar design em seções, verificar após cada (mín 2)"
+      - name: "Gerar Documento"
+        description: "Escrever arquivo BRAINSTORM com rascunho de requisitos e inventário de exemplos"
 
   questioning:
     principles:
-      - one_question_at_a_time: "Never ask multiple questions in one message"
-      - multiple_choice_preferred: "Easier to answer than open-ended"
-      - minimum_questions: 3
-      - open_ended_ok: "When exploring unknown territory"
+      - uma_pergunta_por_vez: "Nunca fazer múltiplas perguntas em uma mensagem"
+      - multipla_escolha_preferida: "Mais fácil de responder que perguntas abertas"
+      - minimo_perguntas: 3
+      - aberta_ok: "Quando explorando território desconhecido"
 
   approaches:
     minimum: 2
     maximum: 3
     format:
-      - name: "Descriptive name"
-      - description: "What it does"
-      - pros: "Clear advantages"
-      - cons: "Honest trade-offs"
-      - recommendation: "Why or why not"
+      - name: "Nome descritivo"
+      - description: "O que faz"
+      - pros: "Vantagens claras"
+      - cons: "Trade-offs honestos"
+      - recommendation: "Por que sim ou não"
     rules:
-      - lead_with_recommendation: "Always state your preferred option first"
-      - explain_reasoning: "Don't just list, explain why"
+      - liderar_com_recomendacao: "Sempre declarar a opção preferida primeiro"
+      - explicar_raciocinio: "Não apenas listar, explicar o porquê"
 
   yagni:
     questions:
-      - "Do we need this for MVP?"
-      - "Does this solve the core problem?"
-      - "Would the user miss this?"
-    action: "If answer is 'no' to any, remove the feature"
-    documentation: "All removed features must be documented with reasoning"
+      - "Precisamos disso para o MVP?"
+      - "Isso resolve o problema central?"
+      - "O usuário sentiria falta disso?"
+    action: "Se resposta for 'não' para qualquer uma, remover a funcionalidade"
+    documentation: "Todas as funcionalidades removidas devem ser documentadas com justificativa"
 
   validation:
     incremental: true
-    section_size: "200-300 words"
+    section_size: "200-300 palavras"
     minimum_validations: 2
-    checkpoint_format: "Does this look right so far?"
+    checkpoint_format: "Isso parece correto até agora?"
 
   sample_collection:
-    purpose: "Improve LLM accuracy through in-context learning"
-    question: "Do you have samples that could help ground the solution?"
+    purpose: "Melhorar precisão do LLM através de aprendizado em contexto"
+    question: "Você tem exemplos que possam ajudar a fundamentar a solução?"
     sample_types:
-      - input_files: "Sample inputs (images, documents, data)"
-      - output_examples: "Expected output (JSON, CSV, schema)"
-      - ground_truth: "Verified correct values"
-      - related_code: "Existing patterns to reuse"
+      - input_files: "Entradas de exemplo (imagens, documentos, dados)"
+      - output_examples: "Saída esperada (JSON, CSV, schema)"
+      - ground_truth: "Valores verificados corretos"
+      - related_code: "Padrões existentes para reutilizar"
     benefits:
-      - "Few-shot prompting increases accuracy by 30-50%"
-      - "Ground truth prevents hallucination"
-      - "Schema examples ensure format consistency"
+      - "Few-shot prompting aumenta precisão em 30-50%"
+      - "Dados de referência previnem alucinação"
+      - "Exemplos de schema garantem consistência de formato"
 
   quality_gate:
     minimum_questions: 3
@@ -184,26 +196,26 @@ brainstorm:
     draft_requirements_included: true
 
   anti_patterns:
-    - question_dump: "Asking multiple questions at once"
-    - assuming_answers: "Not asking, just proceeding"
-    - single_approach: "Only presenting one option"
-    - skipping_validation: "Not checking understanding"
-    - feature_creep: "Not applying YAGNI"
-    - jumping_to_solution: "Skipping problem understanding"
+    - despejo_perguntas: "Fazer múltiplas perguntas de uma vez"
+    - assumir_respostas: "Não perguntar, apenas prosseguir"
+    - abordagem_unica: "Apresentar apenas uma opção"
+    - pular_validacao: "Não verificar entendimento"
+    - feature_creep: "Não aplicar YAGNI"
+    - pular_para_solucao: "Pular entendimento do problema"
 
 # =============================================================================
-# PHASE 1: DEFINE
+# FASE 1: DEFINIR
 # =============================================================================
 
 define:
   command:
-    name: "/define"
-    file: ".claude/commands/workflow/define.md"
-    args: "<input>"
+    name: "/definir"
+    file: ".claude/skills/workflow/definir.md"
+    args: "<entrada>"
     examples:
-      - "/define notes/meeting-notes.md"
-      - "/define \"Build a REST API for user management\""
-      - "/define docs/stakeholder-email.txt"
+      - "/definir notas/ata-reuniao.md"
+      - '/definir "Construir uma API REST para gerenciamento de usuários"'
+      - "/definir docs/email-stakeholder.txt"
 
   agent:
     name: "define-agent"
@@ -217,109 +229,109 @@ define:
 
   input:
     types:
-      - brainstorm_document
-      - meeting_notes
-      - email_thread
-      - conversation
-      - direct_requirement
-      - mixed_sources
+      - documento_brainstorm
+      - notas_reuniao
+      - thread_email
+      - conversa
+      - requisito_direto
+      - fontes_mistas
 
   output:
-    file: ".claude/sdd/features/DEFINE_{FEATURE}.md"
+    file: ".claude/sdd/features/01_DEFINE_{FEATURE}.md"
     template: ".claude/sdd/templates/DEFINE_TEMPLATE.md"
     status_values:
-      - "Draft"
-      - "In Progress"
-      - "Needs Clarification"
-      - "Ready for Design"
+      - "Rascunho"
+      - "Em Andamento"
+      - "Precisa de Esclarecimento"
+      - "Pronto para Projetar"
 
   process:
     steps:
-      - name: "Load Context"
-        description: "Read template and input files"
-      - name: "Classify Input"
-        description: "Identify input type (meeting notes, email, etc.)"
-      - name: "Extract Entities"
-        description: "Pull structured data from unstructured input"
-      - name: "Calculate Clarity Score"
-        description: "Score each element 0-3, total must be >= 12"
-      - name: "Fill Gaps"
-        description: "Ask clarifying questions if score < 12"
-      - name: "Generate Document"
-        description: "Write DEFINE file following template"
+      - name: "Carregar Contexto"
+        description: "Ler template e arquivos de entrada"
+      - name: "Classificar Entrada"
+        description: "Identificar tipo de entrada (notas de reunião, email, etc.)"
+      - name: "Extrair Entidades"
+        description: "Extrair dados estruturados de entrada não-estruturada"
+      - name: "Calcular Score de Clareza"
+        description: "Pontuar cada elemento 0-3, total deve ser >= 12"
+      - name: "Preencher Lacunas"
+        description: "Fazer perguntas de esclarecimento se score < 12"
+      - name: "Gerar Documento"
+        description: "Escrever arquivo DEFINE seguindo o template"
 
   extraction_elements:
-    - name: "problem"
-      patterns: ["We're struggling with...", "The issue is...", "Pain point:"]
-    - name: "users"
-      patterns: ["For the team...", "Customers want...", "Users need..."]
-    - name: "goals_with_priority"
-      patterns: ["We need to...", "Must have...", "Should have...", "Nice-to-have..."]
+    - name: "problema"
+      patterns: ["Estamos com dificuldade em...", "O problema é...", "Ponto de dor:"]
+    - name: "usuarios"
+      patterns: ["Para a equipe...", "Clientes querem...", "Usuários precisam..."]
+    - name: "objetivos_com_prioridade"
+      patterns: ["Precisamos...", "Deve ter...", "Deveria ter...", "Bom ter..."]
       priority_classification:
-        MUST: "MVP fails without this (non-negotiable)"
-        SHOULD: "Important, but workaround exists"
-        COULD: "Nice-to-have, cut first if timeline tight"
-    - name: "success_criteria"
-      patterns: ["Success means...", "We'll know when...", "Measured by..."]
-    - name: "acceptance_tests"
-      patterns: ["Given/When/Then", "Test case:", "Scenario:"]
-    - name: "constraints"
-      patterns: ["Must work with...", "Can't change...", "Limited by..."]
-    - name: "out_of_scope"
-      patterns: ["Not including...", "Deferred to...", "Excluded:"]
-    - name: "assumptions"
-      patterns: ["Assuming that...", "We expect...", "If X then...", "Depends on..."]
+        MUST: "MVP falha sem isso (não-negociável)"
+        SHOULD: "Importante, mas existe workaround"
+        COULD: "Bom ter, cortar primeiro se prazo apertar"
+    - name: "criterios_sucesso"
+      patterns: ["Sucesso significa...", "Saberemos quando...", "Medido por..."]
+    - name: "testes_aceitacao"
+      patterns: ["Dado/Quando/Então", "Caso de teste:", "Cenário:"]
+    - name: "restricoes"
+      patterns: ["Deve funcionar com...", "Não pode mudar...", "Limitado por..."]
+    - name: "fora_escopo"
+      patterns: ["Não incluindo...", "Adiado para...", "Excluído:"]
+    - name: "premissas"
+      patterns: ["Assumindo que...", "Esperamos que...", "Se X então...", "Depende de..."]
       format:
-        id: "A-001, A-002, etc."
-        statement: "What we're assuming"
-        impact_if_wrong: "What happens if assumption is invalid"
-        validated: "Yes/No checkbox"
-      note: "BRAINSTORM captures exploratory assumptions; DEFINE formalizes them into trackable risks"
+        id: "P-001, P-002, etc."
+        statement: "O que estamos assumindo"
+        impact_if_wrong: "O que acontece se premissa for inválida"
+        validated: "Checkbox Sim/Não"
+      note: "BRAINSTORM captura premissas exploratórias; DEFINE as formaliza em riscos rastreáveis"
 
   quality_gate:
     clarity_score:
       minimum: 12
       maximum: 15
       breakdown:
-        problem: 3
-        users: 3
-        goals: 3
-        success: 3
-        scope: 3
+        problema: 3
+        usuarios: 3
+        objetivos: 3
+        sucesso: 3
+        escopo: 3
 
   required_sections:
-    - metadata
-    - problem_statement
-    - target_users
-    - goals  # With MUST/SHOULD/COULD priority
-    - success_criteria
-    - acceptance_tests
-    - out_of_scope
-    - constraints
-    - assumptions  # New: trackable risk register
-    - clarity_score_breakdown
-    - open_questions
-    - revision_history
+    - metadados
+    - declaracao_problema
+    - usuarios_alvo
+    - objetivos  # Com prioridade MUST/SHOULD/COULD
+    - criterios_sucesso
+    - testes_aceitacao
+    - fora_escopo
+    - restricoes
+    - premissas  # Registro de riscos rastreáveis
+    - detalhamento_score_clareza
+    - questoes_abertas
+    - historico_revisoes
 
   anti_patterns:
-    - vague_language: "Words like 'improve', 'better', 'faster' without metrics"
-    - missing_users: "No identified target users"
-    - untestable_criteria: "Success criteria that can't be measured"
-    - implementation_details: "How-to in Define phase (belongs in Design)"
+    - linguagem_vaga: "Palavras como 'melhorar', 'mais rápido' sem métricas"
+    - usuarios_ausentes: "Nenhum usuário-alvo identificado"
+    - criterios_nao_testaveis: "Critérios de sucesso que não podem ser medidos"
+    - detalhes_implementacao: "Como-fazer na fase Definir (pertence ao Design)"
 
 # =============================================================================
-# PHASE 2: DESIGN
+# FASE 2: PROJETAR
 # =============================================================================
 
 design:
   command:
-    name: "/design"
-    file: ".claude/commands/workflow/design.md"
-    args: "<define-file>"
+    name: "/projetar"
+    file: ".claude/skills/workflow/projetar.md"
+    args: "<arquivo-define>"
     examples:
-      - "/design .claude/sdd/features/DEFINE_USER_NOTIFICATIONS.md"
-      - "/design DEFINE_USER_AUTH.md"
-      - "/design .claude/sdd/features/DEFINE_DATA_EXPORT.md"
+      - "/projetar .claude/sdd/features/01_DEFINE_NOTIFICACOES_USUARIO.md"
+      - "/projetar 01_DEFINE_AUTH_USUARIO.md"
+      - "/projetar .claude/sdd/features/01_DEFINE_EXPORTACAO_DADOS.md"
 
   agent:
     name: "design-agent"
@@ -334,76 +346,76 @@ design:
       - WebSearch
 
   input:
-    file: ".claude/sdd/features/DEFINE_{FEATURE}.md"
+    file: ".claude/sdd/features/01_DEFINE_{FEATURE}.md"
     required_sections:
-      - problem_statement
-      - success_criteria
-      - acceptance_tests
+      - declaracao_problema
+      - criterios_sucesso
+      - testes_aceitacao
 
   output:
-    file: ".claude/sdd/features/DESIGN_{FEATURE}.md"
+    file: ".claude/sdd/features/02_DESIGN_{FEATURE}.md"
     template: ".claude/sdd/templates/DESIGN_TEMPLATE.md"
 
   process:
     steps:
-      - name: "Load Context"
-        description: "Read DEFINE document, template, and explore codebase patterns"
-      - name: "Create Architecture"
-        description: "Design system with ASCII diagram, components, data flow"
-      - name: "Document Decisions"
-        description: "Record inline ADRs with status, date, context, choice, rationale"
-      - name: "Create File Manifest"
-        description: "List all files with #, path, action, purpose, dependencies"
-      - name: "Define Code Patterns"
-        description: "Provide copy-paste ready code snippets"
-      - name: "Plan Testing Strategy"
-        description: "Define unit, integration, E2E tests with coverage goals"
-      - name: "Save Document"
-        description: "Write DESIGN file following template"
+      - name: "Carregar Contexto"
+        description: "Ler documento DEFINE, template e explorar padrões do codebase"
+      - name: "Criar Arquitetura"
+        description: "Projetar sistema com diagrama ASCII, componentes, fluxo de dados"
+      - name: "Documentar Decisões"
+        description: "Registrar ADRs inline com status, data, contexto, escolha, justificativa"
+      - name: "Criar Manifesto de Arquivos"
+        description: "Listar todos os arquivos com #, caminho, ação, propósito, dependências"
+      - name: "Definir Padrões de Código"
+        description: "Fornecer trechos de código prontos para copiar e colar"
+      - name: "Planejar Estratégia de Testes"
+        description: "Definir testes unitários, integração, E2E com metas de cobertura"
+      - name: "Salvar Documento"
+        description: "Escrever arquivo DESIGN seguindo o template"
 
   required_sections:
-    - architecture_overview
-    - components
-    - key_decisions
-    - file_manifest
-    - code_patterns
-    - testing_strategy
+    - visao_geral_arquitetura
+    - componentes
+    - decisoes_chave
+    - manifesto_arquivos
+    - padroes_codigo
+    - estrategia_testes
 
   inline_decisions:
     format:
-      status: "Accepted"
-      date: "YYYY-MM-DD"
-      context: "Why decision was needed"
-      choice: "What we decided"
-      rationale: "Why this is right"
-      alternatives_rejected: "What we didn't choose and why"
-      consequences: "Trade-offs accepted"
+      status: "Aceita"
+      date: "AAAA-MM-DD"
+      context: "Por que a decisão foi necessária"
+      choice: "O que decidimos"
+      rationale: "Por que esta é a escolha certa"
+      alternatives_rejected: "O que não escolhemos e por quê"
+      consequences: "Trade-offs aceitos"
 
   file_manifest:
     columns:
-      - number
-      - file_path
-      - action
-      - purpose
-      - dependencies
+      - numero
+      - caminho_arquivo
+      - acao
+      - proposito
+      - dependencias
 
   anti_patterns:
-    - shared_code: "Dependencies across deployable units"
-    - hardcoded_config: "Values that should be in YAML"
-    - circular_deps: "A depends on B depends on A"
-    - missing_tests: "No testing strategy defined"
+    - codigo_compartilhado: "Dependências entre unidades deployáveis"
+    - config_hardcoded: "Valores que deveriam estar em YAML"
+    - deps_circulares: "A depende de B depende de A"
+    - testes_ausentes: "Nenhuma estratégia de testes definida"
 
 # =============================================================================
-# PHASE 3: BUILD
+# FASE 3: CONSTRUIR
 # =============================================================================
 
 build:
   command:
-    name: "/build"
-    file: ".claude/commands/workflow/build.md"
-    args: "<design-file>"
+    name: "/construir"
+    file: ".claude/skills/workflow/construir.md"
+    args: "<arquivo-design>"
     examples:
-      - "/build .claude/sdd/features/DESIGN_USER_NOTIFICATIONS.md"
+      - "/construir .claude/sdd/features/02_DESIGN_NOTIFICACOES_USUARIO.md"
 
   agent:
     name: "build-agent"
@@ -420,52 +432,52 @@ build:
 
   input:
     files:
-      - ".claude/sdd/features/DESIGN_{FEATURE}.md"
-      - ".claude/sdd/features/DEFINE_{FEATURE}.md"
+      - ".claude/sdd/features/02_DESIGN_{FEATURE}.md"
+      - ".claude/sdd/features/01_DEFINE_{FEATURE}.md"
 
   output:
-    code: "As specified in DESIGN file manifest"
+    code: "Conforme especificado no manifesto de arquivos do DESIGN"
     report: ".claude/sdd/reports/BUILD_REPORT_{FEATURE}.md"
     template: ".claude/sdd/templates/BUILD_REPORT_TEMPLATE.md"
 
   execution:
-    task_generation: "on-the-fly from file manifest"
-    order: "by dependencies"
-    verification: "after each file"
+    task_generation: "sob demanda a partir do manifesto de arquivos"
+    order: "por dependências"
+    verification: "após cada arquivo"
     retry_limit: 3
 
   verification:
     per_file:
-      - "{language-specific import check}"
-      - "{linter} check {file}"
+      - "{verificação de import específica da linguagem}"
+      - "{linter} check {arquivo}"
     full:
       - "{linter} check ."
-      - "{type checker} (if configured)"
-      - "{test runner}"
+      - "{verificador de tipos} (se configurado)"
+      - "{executor de testes}"
 
   code_standards:
-    - no_inline_comments
-    - type_hints_required
-    - self_documenting_names
-    - config_over_hardcode
+    - sem_comentarios_inline
+    - type_hints_obrigatorios
+    - nomes_auto_documentaveis
+    - config_ao_inves_de_hardcode
 
   anti_patterns:
-    - improvising: "Creating files not in manifest"
-    - skipping_verify: "Not testing after creation"
-    - todo_comments: "Leaving TODOs in code"
-    - inline_comments: "Explaining code with comments"
+    - improvisar: "Criar arquivos que não estão no manifesto"
+    - pular_verificacao: "Não testar após criação"
+    - comentarios_todo: "Deixar TODOs no código"
+    - comentarios_inline: "Explicar código com comentários"
 
 # =============================================================================
-# PHASE 4: SHIP
+# FASE 4: ENTREGAR
 # =============================================================================
 
 ship:
   command:
-    name: "/ship"
-    file: ".claude/commands/workflow/ship.md"
-    args: "<define-file>"
+    name: "/entregar"
+    file: ".claude/skills/workflow/entregar.md"
+    args: "<arquivo-define>"
     examples:
-      - "/ship .claude/sdd/features/DEFINE_USER_NOTIFICATIONS.md"
+      - "/entregar .claude/sdd/features/01_DEFINE_NOTIFICACOES_USUARIO.md"
 
   agent:
     name: "ship-agent"
@@ -479,8 +491,8 @@ ship:
 
   input:
     required:
-      - ".claude/sdd/features/DEFINE_{FEATURE}.md"
-      - ".claude/sdd/features/DESIGN_{FEATURE}.md"
+      - ".claude/sdd/features/01_DEFINE_{FEATURE}.md"
+      - ".claude/sdd/features/02_DESIGN_{FEATURE}.md"
       - ".claude/sdd/reports/BUILD_REPORT_{FEATURE}.md"
 
   output:
@@ -489,38 +501,38 @@ ship:
     template: ".claude/sdd/templates/SHIPPED_TEMPLATE.md"
 
   archive_contents:
-    - "BRAINSTORM_{FEATURE}.md"  # Optional - if Phase 0 was used
-    - "DEFINE_{FEATURE}.md"
-    - "DESIGN_{FEATURE}.md"
+    - "00_BRAINSTORM_{FEATURE}.md"  # Opcional - se Fase 0 foi usada
+    - "01_DEFINE_{FEATURE}.md"
+    - "02_DESIGN_{FEATURE}.md"
     - "BUILD_REPORT_{FEATURE}.md"
     - "SHIPPED_{DATE}.md"
 
   lessons_learned:
     categories:
-      - process
-      - technical
-      - communication
-      - tools
+      - processo
+      - tecnico
+      - comunicacao
+      - ferramentas
 
   pre_ship_checklist:
-    - build_report_complete
-    - all_tests_passing
-    - no_blocking_issues
-    - acceptance_tests_verified
+    - relatorio_build_completo
+    - todos_testes_passando
+    - sem_bloqueadores
+    - testes_aceitacao_verificados
 
 # =============================================================================
-# CROSS-PHASE: ITERATE
+# CROSS-PHASE: ITERAR
 # =============================================================================
 
 iterate:
   command:
-    name: "/iterate"
-    file: ".claude/commands/workflow/iterate.md"
-    args: '<file> "<change-description>"'
+    name: "/iterar"
+    file: ".claude/skills/workflow/iterar.md"
+    args: '<arquivo> "<descrição-da-mudança>"'
     examples:
-      - '/iterate DEFINE_DATA_EXPORT.md "Add support for CSV format"'
-      - '/iterate DESIGN_AUTH.md "Change from JWT to session-based"'
-      - '/iterate .claude/sdd/features/DEFINE_AUTH.md "Add multi-language support"'
+      - '/iterar 01_DEFINE_EXPORTACAO_DADOS.md "Adicionar suporte a formato CSV"'
+      - '/iterar 02_DESIGN_AUTH.md "Mudar de JWT para autenticação baseada em sessão"'
+      - '/iterar .claude/sdd/features/01_DEFINE_AUTH.md "Adicionar suporte multi-idioma"'
 
   agent:
     name: "iterate-agent"
@@ -534,91 +546,91 @@ iterate:
       - TodoWrite
 
   works_with:
-    - phase: "Brainstorm"
-      file_pattern: "BRAINSTORM_*.md"
-      cascade_to: "Define"
-    - phase: "Define"
-      file_pattern: "DEFINE_*.md"
-      cascade_to: "Design"
-    - phase: "Design"
-      file_pattern: "DESIGN_*.md"
-      cascade_to: "Code"
+    - phase: "Explorar"
+      file_pattern: "00_BRAINSTORM_*.md"
+      cascade_to: "Definir"
+    - phase: "Definir"
+      file_pattern: "01_DEFINE_*.md"
+      cascade_to: "Projetar"
+    - phase: "Projetar"
+      file_pattern: "02_DESIGN_*.md"
+      cascade_to: "Código"
 
   process:
     steps:
-      - name: "Load Target Document"
-        description: "Read target file and identify document type (BRAINSTORM/DEFINE/DESIGN)"
-      - name: "Analyze Change"
-        description: "Classify change type and assess impact level"
-      - name: "Apply Changes"
-        description: "Make change, bump version, add change note"
-      - name: "Assess Cascade Need"
-        description: "Determine if downstream documents need updates"
-      - name: "Execute Cascade"
-        description: "Prompt user and apply cascade updates if confirmed"
-      - name: "Save Updates"
-        description: "Write updated document(s)"
+      - name: "Carregar Documento Alvo"
+        description: "Ler arquivo alvo e identificar tipo de documento (BRAINSTORM/DEFINE/DESIGN)"
+      - name: "Analisar Mudança"
+        description: "Classificar tipo de mudança e avaliar nível de impacto"
+      - name: "Aplicar Mudanças"
+        description: "Fazer mudança, incrementar versão, adicionar nota de mudança"
+      - name: "Avaliar Necessidade de Cascata"
+        description: "Determinar se documentos downstream precisam de atualização"
+      - name: "Executar Cascata"
+        description: "Perguntar ao usuário e aplicar atualizações em cascata se confirmado"
+      - name: "Salvar Atualizações"
+        description: "Escrever documento(s) atualizado(s)"
 
   change_types:
-    additive:
-      impact: "low"
-      example: "Add new feature"
-    modifying:
-      impact: "medium"
-      example: "Change existing behavior"
-    removing:
-      impact: "medium"
-      example: "Remove feature"
-    architectural:
-      impact: "high"
-      example: "Change fundamental approach"
+    aditiva:
+      impact: "baixo"
+      example: "Adicionar nova funcionalidade"
+    modificadora:
+      impact: "médio"
+      example: "Alterar comportamento existente"
+    removedora:
+      impact: "médio"
+      example: "Remover funcionalidade"
+    arquitetural:
+      impact: "alto"
+      example: "Mudar abordagem fundamental"
 
   cascade_rules:
-    brainstorm_to_define:
-      - changed_approach: "DEFINE may need different problem focus"
-      - new_yagni_items: "Out of scope needs update"
-      - changed_users: "Target users section needs update"
-      - changed_constraints: "Constraints section needs update"
-      - new_discovery_answers: "May affect requirements"
+    brainstorm_para_define:
+      - abordagem_mudou: "DEFINE pode precisar de foco diferente no problema"
+      - novos_itens_yagni: "Fora do escopo precisa de atualização"
+      - usuarios_mudaram: "Seção de usuários-alvo precisa de atualização"
+      - restricoes_mudaram: "Seção de restrições precisa de atualização"
+      - novas_respostas_descoberta: "Pode afetar requisitos"
 
-    define_to_design:
-      - new_requirement: "May need new component"
-      - changed_success_criteria: "May need different approach"
-      - scope_expansion: "Needs new sections"
-      - scope_reduction: "Can simplify"
-      - new_constraint: "Must be accommodated"
+    define_para_design:
+      - novo_requisito: "Pode precisar de novo componente"
+      - criterios_sucesso_mudaram: "Pode precisar de abordagem diferente"
+      - expansao_escopo: "Precisa de novas seções"
+      - reducao_escopo: "Pode simplificar"
+      - nova_restricao: "Deve ser acomodada"
 
-    design_to_code:
-      - new_file: "Create file"
-      - removed_file: "Delete file"
-      - changed_pattern: "Update affected files"
-      - new_decision: "May need refactor"
-      - architecture_change: "Significant updates needed"
+    design_para_codigo:
+      - novo_arquivo: "Criar arquivo"
+      - arquivo_removido: "Deletar arquivo"
+      - padrao_mudou: "Atualizar arquivos afetados"
+      - nova_decisao: "Pode precisar de refactor"
+      - mudanca_arquitetura: "Atualizações significativas necessárias"
 
   cascade_prompt:
     options:
-      - "(a) Update downstream automatically"
-      - "(b) Just update this document, I'll handle downstream manually"
-      - "(c) Show me what would change first"
+      - "(a) Atualizar downstream automaticamente"
+      - "(b) Apenas atualizar este documento, vou lidar com o downstream manualmente"
+      - "(c) Mostrar o que mudaria primeiro"
 
   thresholds:
-    use_iterate: "< 30% change"
-    consider_new_define: "> 50% change"
+    use_iterate: "< 30% de mudança"
+    consider_new_define: "> 50% de mudança"
     indicators_for_new_define:
-      - "Different problem entirely"
-      - "Different target users"
-      - "Fundamental approach change"
+      - "Problema completamente diferente"
+      - "Usuários-alvo diferentes"
+      - "Mudança fundamental de abordagem"
 
   version_tracking:
-    location: "Revision History section"
+    location: "Seção Histórico de Revisões"
     format:
-      - version
-      - date
-      - author
-      - changes
+      - versao
+      - data
+      - autor
+      - mudancas
 
 # =============================================================================
-# FOLDER STRUCTURE
+# ESTRUTURA DE PASTAS
 # =============================================================================
 
 folder_structure:
@@ -628,9 +640,9 @@ folder_structure:
     features:
       path: "features/"
       contains:
-        - "BRAINSTORM_*.md"
-        - "DEFINE_*.md"
-        - "DESIGN_*.md"
+        - "00_BRAINSTORM_*.md"
+        - "01_DEFINE_*.md"
+        - "02_DESIGN_*.md"
 
     reports:
       path: "reports/"
@@ -641,8 +653,8 @@ folder_structure:
       path: "archive/"
       structure: "{FEATURE_NAME}/"
       contains:
-        - "DEFINE_*.md"
-        - "DESIGN_*.md"
+        - "01_DEFINE_*.md"
+        - "02_DESIGN_*.md"
         - "BUILD_REPORT_*.md"
         - "SHIPPED_*.md"
 
@@ -662,145 +674,154 @@ folder_structure:
         - "ARCHITECTURE.md"
 
 # =============================================================================
-# NAMING CONVENTIONS
+# CONVENÇÕES DE NOMENCLATURA
 # =============================================================================
 
 naming:
   feature_name:
     format: "SCREAMING_SNAKE_CASE"
     examples:
-      - "USER_NOTIFICATIONS"
-      - "USER_AUTHENTICATION"
-      - "DATA_EXPORT"
+      - "NOTIFICACOES_USUARIO"
+      - "AUTENTICACAO_USUARIO"
+      - "EXPORTACAO_DADOS"
 
   files:
-    brainstorm: "BRAINSTORM_{FEATURE}.md"
-    define: "DEFINE_{FEATURE}.md"
-    design: "DESIGN_{FEATURE}.md"
+    brainstorm: "00_BRAINSTORM_{FEATURE}.md"
+    define: "01_DEFINE_{FEATURE}.md"
+    design: "02_DESIGN_{FEATURE}.md"
     build_report: "BUILD_REPORT_{FEATURE}.md"
     shipped: "SHIPPED_{YYYY-MM-DD}.md"
 
   date_format: "YYYY-MM-DD"
 
 # =============================================================================
-# STATUS TRANSITIONS (CRITICAL: Prevents stale document statuses)
+# TRANSIÇÕES DE STATUS (CRÍTICO: Previne status de documento desatualizados)
 # =============================================================================
 
 status_transitions:
   description: |
-    Each phase MUST update document statuses when completing.
-    This prevents stale "Ready for X" statuses after phase completion.
+    Cada fase DEVE atualizar status dos documentos ao completar.
+    Isso previne status desatualizados como "Pronto para X" após conclusão da fase.
 
   brainstorm:
-    initial: "Exploring"
-    in_progress: "Approaches Identified"
-    ready: "Ready for Define"
-    after_define: "✅ Complete (Defined)"
+    initial: "Explorando"
+    in_progress: "Abordagens Identificadas"
+    ready: "Pronto para Definir"
+    after_define: "✅ Concluído (Definido)"
 
   define:
-    initial: "Draft"
-    in_progress: "In Progress"
-    needs_work: "Needs Clarification"
-    ready: "Ready for Design"
-    after_design: "✅ Complete (Designed)"
-    after_build: "✅ Complete (Built)"
-    after_ship: "✅ Shipped"
+    initial: "Rascunho"
+    in_progress: "Em Andamento"
+    needs_work: "Precisa de Esclarecimento"
+    ready: "Pronto para Projetar"
+    after_design: "✅ Concluído (Projetado)"
+    after_build: "✅ Concluído (Construído)"
+    after_ship: "✅ Entregue"
 
   design:
-    initial: "Draft"
-    in_progress: "In Progress"
-    ready: "Ready for Build"
-    after_build: "✅ Complete (Built)"
-    after_ship: "✅ Shipped"
+    initial: "Rascunho"
+    in_progress: "Em Andamento"
+    ready: "Pronto para Construir"
+    after_build: "✅ Concluído (Construído)"
+    after_ship: "✅ Entregue"
 
   build_report:
-    initial: "In Progress"
-    complete: "✅ Complete"
-    after_ship: "✅ Shipped"
+    initial: "Em Andamento"
+    complete: "✅ Completo"
+    after_ship: "✅ Entregue"
 
   update_rules:
-    - trigger: "/define completes (with brainstorm input)"
+    - trigger: "/definir conclui (com entrada brainstorm)"
       updates:
-        - file: "BRAINSTORM_{FEATURE}.md"
+        - file: "00_BRAINSTORM_{FEATURE}.md"
           field: "Status"
-          value: "✅ Complete (Defined)"
+          value: "✅ Concluído (Definido)"
 
-    - trigger: "/design completes"
+    - trigger: "/projetar conclui"
       updates:
-        - file: "DEFINE_{FEATURE}.md"
+        - file: "01_DEFINE_{FEATURE}.md"
           field: "Status"
-          value: "✅ Complete (Designed)"
-        - file: "DEFINE_{FEATURE}.md"
-          field: "Next Step"
-          value: "/build"
+          value: "✅ Concluído (Projetado)"
+        - file: "01_DEFINE_{FEATURE}.md"
+          field: "Próxima Etapa"
+          value: "/construir"
 
-    - trigger: "/build completes"
+    - trigger: "/construir conclui"
       updates:
-        - file: "DEFINE_{FEATURE}.md"
+        - file: "01_DEFINE_{FEATURE}.md"
           field: "Status"
-          value: "✅ Complete (Built)"
-        - file: "DESIGN_{FEATURE}.md"
+          value: "✅ Concluído (Construído)"
+        - file: "02_DESIGN_{FEATURE}.md"
           field: "Status"
-          value: "✅ Complete (Built)"
-        - file: "DEFINE_{FEATURE}.md"
-          field: "Next Step"
-          value: "/ship"
-        - file: "DESIGN_{FEATURE}.md"
-          field: "Next Step"
-          value: "/ship"
+          value: "✅ Concluído (Construído)"
+        - file: "01_DEFINE_{FEATURE}.md"
+          field: "Próxima Etapa"
+          value: "/entregar"
+        - file: "02_DESIGN_{FEATURE}.md"
+          field: "Próxima Etapa"
+          value: "/entregar"
 
-    - trigger: "/ship completes"
+    - trigger: "/entregar conclui"
       updates:
-        - file: "DEFINE_{FEATURE}.md"
+        - file: "01_DEFINE_{FEATURE}.md"
           field: "Status"
-          value: "✅ Shipped"
-        - file: "DESIGN_{FEATURE}.md"
+          value: "✅ Entregue"
+        - file: "02_DESIGN_{FEATURE}.md"
           field: "Status"
-          value: "✅ Shipped"
+          value: "✅ Entregue"
         - file: "BUILD_REPORT_{FEATURE}.md"
           field: "Status"
-          value: "✅ Shipped"
+          value: "✅ Entregue"
 
   agent_responsibility:
-    - "Each agent MUST update upstream document statuses before completing"
-    - "design-agent: Update DEFINE status to 'Complete (Designed)'"
-    - "build-agent: Update DEFINE and DESIGN status to 'Complete (Built)'"
-    - "ship-agent: Update all documents to 'Shipped'"
+    - "Cada agente DEVE atualizar status dos documentos upstream antes de completar"
+    - "design-agent: Atualizar status do DEFINE para 'Concluído (Projetado)'"
+    - "build-agent: Atualizar status do DEFINE e DESIGN para 'Concluído (Construído)'"
+    - "ship-agent: Atualizar todos os documentos para 'Entregue'"
 
 # =============================================================================
-# QUALITY STANDARDS
+# PADRÕES DE QUALIDADE
 # =============================================================================
 
 quality:
   code:
-    - no_inline_comments
-    - type_hints_required
-    - self_documenting_names
-    - config_in_yaml_not_code
-    - self_contained_units
+    - sem_comentarios_inline
+    - type_hints_obrigatorios
+    - nomes_auto_documentaveis
+    - config_em_yaml_nao_codigo
+    - unidades_auto_contidas
 
   documentation:
-    - clear_headings
-    - tables_for_structured_data
-    - ascii_diagrams_for_architecture
-    - version_history_maintained
+    - headings_claros
+    - tabelas_para_dados_estruturados
+    - diagramas_ascii_para_arquitetura
+    - historico_versoes_mantido
+    - idioma_pt_br_obrigatorio
 
   process:
-    - phase_gates_enforced
-    - all_artifacts_linked
-    - changes_via_iterate
-    - lessons_captured
+    - gates_de_fase_enforced
+    - todos_artefatos_linkados
+    - mudancas_via_iterar
+    - licoes_capturadas
 
 # =============================================================================
-# VERSION HISTORY
+# HISTÓRICO DE VERSÕES
 # =============================================================================
 
 version_history:
   - version: "1.0.0"
     date: "2026-02-17"
     changes:
-      - "Public release as AgentSpec v1.0.0"
-      - "Initial public release with 5-phase workflow and agent orchestration"
-      - "16 core agents across 4 categories"
-      - "Extensible KB domain system"
+      - "Lançamento público como AgentSpec v1.0.0"
+      - "Release inicial com workflow de 5 fases e orquestração de agentes"
+      - "16 agentes core em 4 categorias"
+      - "Sistema extensível de domínios KB"
 
+  - version: "2.0.0"
+    date: "2026-02-27"
+    changes:
+      - "Migração completa para Português-BR (pt-BR)"
+      - "Comandos traduzidos: /explorar, /definir, /projetar, /construir, /entregar, /iterar"
+      - "Prefixo numérico em features: 00_BRAINSTORM_, 01_DEFINE_, 02_DESIGN_"
+      - "Mapa do Workflow exibido após cada fase"
+      - "Status values em português"

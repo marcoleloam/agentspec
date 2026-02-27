@@ -869,7 +869,7 @@ CONTENT
 | SDD Index | `.claude/sdd/_index.md` |
 | Agents | `.claude/agents/` |
 | Knowledge Base | `.claude/kb/` |
-| Commands | `.claude/commands/workflow/` |
+| Skills | `.claude/skills/workflow/` |
 | Templates | `.claude/sdd/templates/` |
 | Archive | `.claude/sdd/archive/` |
 
