@@ -25,9 +25,8 @@ agentspec/
 │   │   ├── communication/   # 4 communication agents
 │   │   └── exploration/     # 2 codebase agents
 │   │
-│   ├── skills/              # 12 slash commands (skills)
-│   │   ├── workflow/        # SDD + dev skills (9)
-│   │   └── core/            # Utility skills (3)
+│   ├── skills/              # 14 slash commands (skills)
+│   │   └── {skill-name}/    # Cada skill em pasta própria com SKILL.md
 │   │
 │   ├── sdd/                 # SDD framework
 │   │   ├── architecture/    # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md
@@ -91,6 +90,7 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | Migração commands → skills | Done | 12 commands migrados para .claude/skills/ com SKILL.md |
 | Tradução completa pt-BR | Done | Todos os 16 agentes e 12 skills traduzidos para pt-BR |
 | Reorganização skills | Done | review e create-kb movidos para workflow/, core mantido |
+| Flatten skills structure | Done | Skills movidos de workflow/ e core/ para .claude/skills/ (flat) |
 | Create CLAUDE.md.template | Pending | Template for user projects |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
@@ -125,18 +125,19 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 | Skill | Objetivo | Localização |
 |-------|----------|-------------|
-| `/explorar` | Explorar ideias (Fase 0) | `.claude/skills/workflow/explorar/` |
-| `/definir` | Capturar requisitos (Fase 1) | `.claude/skills/workflow/definir/` |
-| `/projetar` | Criar arquitetura (Fase 2) | `.claude/skills/workflow/projetar/` |
-| `/construir` | Executar implementação (Fase 3) | `.claude/skills/workflow/construir/` |
-| `/entregar` | Arquivar trabalho concluído (Fase 4) | `.claude/skills/workflow/entregar/` |
-| `/iterar` | Atualizar docs existentes (Cross-phase) | `.claude/skills/workflow/iterar/` |
-| `/create-pr` | Criar pull request | `.claude/skills/workflow/create-pr/` |
-| `/create-kb` | Criar domínio KB | `.claude/skills/workflow/create-kb/` |
-| `/review` | Revisão de código | `.claude/skills/workflow/review/` |
-| `/memory` | Salvar insights da sessão | `.claude/skills/core/memory/` |
-| `/sync-context` | Atualizar CLAUDE.md | `.claude/skills/core/sync-context/` |
-| `/readme-maker` | Gerar README | `.claude/skills/core/readme-maker/` |
+| `/explorar` | Explorar ideias (Fase 0) | `.claude/skills/explorar/` |
+| `/definir` | Capturar requisitos (Fase 1) | `.claude/skills/definir/` |
+| `/projetar` | Criar arquitetura (Fase 2) | `.claude/skills/projetar/` |
+| `/construir` | Executar implementação (Fase 3) | `.claude/skills/construir/` |
+| `/entregar` | Arquivar trabalho concluído (Fase 4) | `.claude/skills/entregar/` |
+| `/iterar` | Atualizar docs existentes (Cross-phase) | `.claude/skills/iterar/` |
+| `/create-pr` | Criar pull request | `.claude/skills/create-pr/` |
+| `/create-kb` | Criar domínio KB | `.claude/skills/create-kb/` |
+| `/review` | Revisão de código | `.claude/skills/review/` |
+| `/start` | Tela de boas-vindas e status do projeto | `.claude/skills/start/` |
+| `/memory` | Salvar insights da sessão | `.claude/skills/memory/` |
+| `/sync-context` | Atualizar CLAUDE.md | `.claude/skills/sync-context/` |
+| `/readme-maker` | Gerar README | `.claude/skills/readme-maker/` |
 
 ---
 
