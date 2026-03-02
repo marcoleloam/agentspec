@@ -9,7 +9,7 @@
       "name": "agentspec",
       "source": "./",
       "description": "AgentSpec: Spec-Driven Development framework para Claude Code. Workflow SDD de 5 fases com 13 skills e 16 agentes especializados.",
-      "version": "2.2.0"
+      "version": "2.3.0"
     }
   ]
 }
