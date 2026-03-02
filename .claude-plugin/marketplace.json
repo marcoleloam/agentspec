@@ -1,0 +1,15 @@
+{
+  "name": "agentspec-marketplace",
+  "owner": {
+    "name": "Marco Monteiro",
+    "email": "marcoleloam@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "agentspec",
+      "source": ".",
+      "description": "AgentSpec: Spec-Driven Development framework para Claude Code. Workflow SDD de 5 fases com 13 skills e 16 agentes especializados.",
+      "version": "2.2.0"
+    }
+  ]
+}
