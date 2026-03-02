@@ -20,7 +20,7 @@ ls kb/          # Knowledge Base
 
 | Type           | Where                    | Guide                                    |
 |----------------|--------------------------|------------------------------------------|
-| New Agent      | `agents/{category}/`     | [Adding Agents](#adding-a-new-agent)     |
+| New Agent      | `agents/`                | [Adding Agents](#adding-a-new-agent)     |
 | New KB Domain  | `kb/{domain}/`           | [Adding KB Domains](#adding-a-kb-domain) |
 | New Skill      | `skills/{name}/`         | [Adding Skills](#adding-a-skill)         |
 | Bug Fix        | Any file                 | [Bug Fixes](#bug-fixes)                  |
@@ -28,26 +28,22 @@ ls kb/          # Knowledge Base
 
 ## Adding a New Agent
 
-1. Copy the template:
+1. Create a new agent file in `agents/`:
 
    ```bash
-   cp agents/_template.md agents/{category}/your-agent.md
+   # Use an existing agent as reference (e.g., brainstorm-agent.md)
+   cp agents/brainstorm-agent.md agents/your-agent.md
    ```
 
 2. Fill in the required sections:
+   - **Frontmatter** — name, description with examples, tools, kb_domains
    - **Identity block** — name, domain, trigger threshold
    - **Capabilities** — what the agent does (2-8 capabilities)
    - **Quality gate** — pre-flight checklist
    - **Response format** — expected output structure
    - **Anti-patterns** — what to avoid
 
-3. Choose the right category:
-   - `workflow/` — SDD phase agents
-   - `code-quality/` — code review, testing, cleaning, documentation
-   - `communication/` — explanation, planning, analysis
-   - `exploration/` — codebase navigation, KB management
-
-4. Test with Claude Code:
+3. Test with Claude Code:
 
    ```bash
    # Verify agent is discoverable

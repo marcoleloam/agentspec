@@ -65,7 +65,7 @@ Navigate and understand codebases:
 
 ## Creating Custom Agents
 
-Use `_template.md` as the definitive template. Key sections:
+Use any existing agent as reference (e.g., `brainstorm-agent.md`). Key sections:
 
 1. **Frontmatter** - name, description with examples, tools, kb_domains
 2. **Identity Block** - Identity, Domain, Threshold
@@ -75,6 +75,4 @@ Use `_template.md` as the definitive template. Key sections:
 6. **Response Format** - Consistent output with confidence scores
 7. **Remember** - Mission and core principle
 
-## Creating Domain-Specific Agents
-
-Use `_template.md` to create agents for your specific domain (e.g., AWS, GCP, data engineering, ML/AI). Place them in a new category directory under `agents/`.
+All agents must be placed directly in the `agents/` directory (flat structure, no subdirectories).

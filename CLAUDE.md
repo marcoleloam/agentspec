@@ -24,11 +24,14 @@ agentspec/
 ├── skills/                  # 13 slash commands (skills)
 │   └── {skill-name}/       # Cada skill em pasta própria com SKILL.md
 │
-├── agents/                  # 16 specialized agents
-│   ├── workflow/            # 6 SDD phase agents
-│   ├── code-quality/        # 4 code excellence agents
-│   ├── communication/       # 4 communication agents
-│   └── exploration/         # 2 codebase agents
+├── agents/                  # 16 specialized agents (flat structure)
+│   ├── brainstorm-agent.md  # Phase 0 - Explore ideas
+│   ├── define-agent.md      # Phase 1 - Capture requirements
+│   ├── design-agent.md      # Phase 2 - Architecture
+│   ├── build-agent.md       # Phase 3 - Implementation
+│   ├── ship-agent.md        # Phase 4 - Archive
+│   ├── iterate-agent.md     # Cross-phase updates
+│   └── ...                  # +10 more (code-quality, communication, exploration)
 │
 ├── sdd/                     # SDD framework
 │   ├── architecture/        # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md

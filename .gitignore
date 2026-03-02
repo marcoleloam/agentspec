@@ -9,7 +9,7 @@ Thumbs.db
 *.swo
 
 # Claude Code Local Settings
-.claude/settings.local.json
+.claude/
 
 # Python
 __pycache__/
