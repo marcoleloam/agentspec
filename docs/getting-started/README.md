@@ -104,7 +104,7 @@ Archive everything with lessons learned:
 claude> /ship USER_AUTH
 ```
 
-Moves all artifacts to `.claude/sdd/archive/USER_AUTH/` with a SHIPPED document capturing what worked, what didn't, and recommendations.
+Moves all artifacts to `sdd/archive/USER_AUTH/` with a SHIPPED document capturing what worked, what didn't, and recommendations.
 
 ## What's Next
 
@@ -115,10 +115,10 @@ Moves all artifacts to `.claude/sdd/archive/USER_AUTH/` with a SHIPPED document 
 ## Troubleshooting
 
 **Commands not recognized?**
-Ensure `.claude/skills/` exists in your project root with the skill directories (each containing a `SKILL.md`).
+Ensure `skills/` exists in your project root with the skill directories (each containing a `SKILL.md`).
 
 **Agent not matching?**
-Check that `.claude/agents/` contains the agent `.md` files. Agents are discovered via glob pattern.
+Check that `agents/` contains the agent `.md` files. Agents are discovered via glob pattern.
 
 **Clarity score too low?**
 The `/define` phase requires 12/15 to proceed. Add more detail to Problem, Users, Goals, Success criteria, and Scope sections.

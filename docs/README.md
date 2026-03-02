@@ -18,10 +18,10 @@
 
 ## Quick Links
 
-- [SDD Workflow](./../.claude/sdd/README.md) — Phase transition rules and architecture
-- [Agents](./../.claude/agents/README.md) — All 16 agents explained
-- [Skills](./../.claude/skills/) — Slash command (skills) catalog
-- [Knowledge Base](./../.claude/kb/README.md) — Building domain-specific KB
+- [SDD Workflow](./../sdd/README.md) — Phase transition rules and architecture
+- [Agents](./../agents/README.md) — All 16 agents explained
+- [Skills](./../skills/) — Slash command (skills) catalog
+- [Knowledge Base](./../kb/README.md) — Building domain-specific KB
 
 ## Need Help?
 

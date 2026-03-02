@@ -39,7 +39,7 @@ When a stakeholder changes scope after you've started design:
 
 ```bash
 # Update the DEFINE document with cascade detection
-claude> /iterate .claude/sdd/features/DEFINE_PAGINATION.md "Add cursor-based pagination support"
+claude> /iterate sdd/features/DEFINE_PAGINATION.md "Add cursor-based pagination support"
 ```
 
 The iterate-agent detects which downstream documents (DESIGN, BUILD_REPORT) need updates and guides you through each cascade.

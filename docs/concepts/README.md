@@ -55,14 +55,14 @@ Brainstorm is optional. You can start directly with `/define` if requirements ar
 | **Communication** | 4     | Explain, plan, manage projects, analyze meetings |
 | **Exploration**   | 2     | Navigate codebases and manage knowledge bases    |
 
-During `/build`, the design-agent scans `.claude/agents/**/*.md` and matches agents to tasks based on the DESIGN file manifest. Each task gets the best-fit specialist.
+During `/build`, the design-agent scans `agents/**/*.md` and matches agents to tasks based on the DESIGN file manifest. Each task gets the best-fit specialist.
 
 ### 3. Knowledge Base (the memory)
 
 KB domains ground agent responses in verified patterns instead of hallucinated ones:
 
 ```text
-.claude/kb/
+kb/
 ├── _templates/          # Templates for creating domains
 ├── _index.yaml          # Domain registry
 └── your-domain/         # Your custom domain

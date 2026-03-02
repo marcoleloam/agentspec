@@ -1,0 +1,12 @@
+{
+  "name": "agentspec",
+  "description": "AgentSpec: Spec-Driven Development framework para Claude Code. Workflow SDD de 5 fases com 13 skills e 16 agentes especializados.",
+  "version": "2.1.0",
+  "author": {
+    "name": "Marco Monteiro",
+    "email": "marcoleloam@gmail.com"
+  },
+  "repository": "https://github.com/marcoleloam/agentspec",
+  "license": "MIT",
+  "keywords": ["sdd", "spec-driven-development", "workflow", "agents", "framework"]
+}

@@ -8,7 +8,7 @@
 
 **What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow.
 
-**Current Status:** Framework ready, Linear is the project tracker (source of truth).
+**Current Status:** Plugin ready for distribution.
 
 **Idioma:** Todos os documentos gerados e interações com o usuário são em **Português-BR (pt-BR)**.
 
@@ -18,27 +18,29 @@
 
 ```text
 agentspec/
-├── .claude/                 # Claude Code integration
-│   ├── agents/              # 16 specialized agents
-│   │   ├── workflow/        # 6 SDD phase agents
-│   │   ├── code-quality/    # 4 code excellence agents
-│   │   ├── communication/   # 4 communication agents
-│   │   └── exploration/     # 2 codebase agents
-│   │
-│   ├── skills/              # 14 slash commands (skills)
-│   │   └── {skill-name}/    # Cada skill em pasta própria com SKILL.md
-│   │
-│   ├── sdd/                 # SDD framework
-│   │   ├── architecture/    # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md
-│   │   ├── templates/       # 5 document templates (pt-BR)
-│   │   ├── features/        # Active development
-│   │   ├── reports/         # Build reports
-│   │   └── archive/         # Shipped features
-│   │
-│   └── kb/                  # Knowledge Base
-│       ├── _templates/      # 7 KB domain templates
-│       ├── _index.yaml      # Domain registry
-│       └── {domain}/        # User-created KB domains (via /create-kb)
+├── .claude-plugin/          # Plugin manifest
+│   └── plugin.json          # name, version, author
+│
+├── skills/                  # 13 slash commands (skills)
+│   └── {skill-name}/       # Cada skill em pasta própria com SKILL.md
+│
+├── agents/                  # 16 specialized agents
+│   ├── workflow/            # 6 SDD phase agents
+│   ├── code-quality/        # 4 code excellence agents
+│   ├── communication/       # 4 communication agents
+│   └── exploration/         # 2 codebase agents
+│
+├── sdd/                     # SDD framework
+│   ├── architecture/        # WORKFLOW_CONTRACTS.yaml, ARCHITECTURE.md
+│   ├── templates/           # 5 document templates (pt-BR)
+│   ├── features/            # Active development
+│   ├── reports/             # Build reports
+│   └── archive/             # Shipped features
+│
+├── kb/                      # Knowledge Base
+│   ├── _templates/          # 7 KB domain templates
+│   ├── _index.yaml          # Domain registry
+│   └── {domain}/            # User-created KB domains (via /create-kb)
 │
 ├── docs/                    # Documentation
 │   ├── getting-started/     # Installation and first feature
@@ -54,25 +56,39 @@ agentspec/
 
 ---
 
+## Installation
+
+```bash
+# Local testing
+claude --plugin-dir ./agentspec
+
+# From marketplace (after publishing)
+claude plugin install agentspec
+```
+
+Skills are namespaced: `/agentspec:explorar`, `/agentspec:definir`, etc.
+
+---
+
 ## Development Workflow
 
 Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 ```bash
 # Explorar uma ideia de melhoria
-/explorar "Adicionar camada Judge para validação de spec"
+/agentspec:explorar "Adicionar camada Judge para validação de spec"
 
 # Capturar requisitos
-/definir CAMADA_JUDGE
+/agentspec:definir CAMADA_JUDGE
 
 # Projetar a arquitetura
-/projetar CAMADA_JUDGE
+/agentspec:projetar CAMADA_JUDGE
 
 # Construir
-/construir CAMADA_JUDGE
+/agentspec:construir CAMADA_JUDGE
 
 # Entregar quando completo
-/entregar CAMADA_JUDGE
+/agentspec:entregar CAMADA_JUDGE
 ```
 
 ---
@@ -87,10 +103,9 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | Framework readiness review | Done | SDD 9.2, KB 9.4, Commands 8.5, Agents 7.2 |
 | Documentation overhaul | Done | Getting started, concepts, tutorials, reference, README, community files |
 | Migração para pt-BR | Done | Templates, agentes, comandos e contratos 100% em português |
-| Migração commands → skills | Done | 12 commands migrados para .claude/skills/ com SKILL.md |
-| Tradução completa pt-BR | Done | Todos os 16 agentes e 12 skills traduzidos para pt-BR |
-| Reorganização skills | Done | review e create-kb movidos para workflow/, core mantido |
-| Flatten skills structure | Done | Skills movidos de workflow/ e core/ para .claude/skills/ (flat) |
+| Migração commands → skills | Done | 12 commands migrados para skills/ com SKILL.md |
+| Flatten skills structure | Done | Skills em estrutura flat skills/{nome}/ |
+| Plugin packaging | Done | .claude-plugin/plugin.json + skills e agents na raiz |
 | Create CLAUDE.md.template | Pending | Template for user projects |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
@@ -125,19 +140,19 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 | Skill | Objetivo | Localização |
 |-------|----------|-------------|
-| `/explorar` | Explorar ideias (Fase 0) | `.claude/skills/explorar/` |
-| `/definir` | Capturar requisitos (Fase 1) | `.claude/skills/definir/` |
-| `/projetar` | Criar arquitetura (Fase 2) | `.claude/skills/projetar/` |
-| `/construir` | Executar implementação (Fase 3) | `.claude/skills/construir/` |
-| `/entregar` | Arquivar trabalho concluído (Fase 4) | `.claude/skills/entregar/` |
-| `/iterar` | Atualizar docs existentes (Cross-phase) | `.claude/skills/iterar/` |
-| `/create-pr` | Criar pull request | `.claude/skills/create-pr/` |
-| `/create-kb` | Criar domínio KB | `.claude/skills/create-kb/` |
-| `/review` | Revisão de código | `.claude/skills/review/` |
-| `/start` | Tela de boas-vindas e status do projeto | `.claude/skills/start/` |
-| `/memory` | Salvar insights da sessão | `.claude/skills/memory/` |
-| `/sync-context` | Atualizar CLAUDE.md | `.claude/skills/sync-context/` |
-| `/readme-maker` | Gerar README | `.claude/skills/readme-maker/` |
+| `/agentspec:explorar` | Explorar ideias (Fase 0) | `skills/explorar/` |
+| `/agentspec:definir` | Capturar requisitos (Fase 1) | `skills/definir/` |
+| `/agentspec:projetar` | Criar arquitetura (Fase 2) | `skills/projetar/` |
+| `/agentspec:construir` | Executar implementação (Fase 3) | `skills/construir/` |
+| `/agentspec:entregar` | Arquivar trabalho concluído (Fase 4) | `skills/entregar/` |
+| `/agentspec:iterar` | Atualizar docs existentes (Cross-phase) | `skills/iterar/` |
+| `/agentspec:create-pr` | Criar pull request | `skills/create-pr/` |
+| `/agentspec:create-kb` | Criar domínio KB | `skills/create-kb/` |
+| `/agentspec:review` | Revisão de código | `skills/review/` |
+| `/agentspec:start` | Tela de boas-vindas e status do projeto | `skills/start/` |
+| `/agentspec:memory` | Salvar insights da sessão | `skills/memory/` |
+| `/agentspec:sync-context` | Atualizar CLAUDE.md | `skills/sync-context/` |
+| `/agentspec:readme-maker` | Gerar README | `skills/readme-maker/` |
 
 ---
 
@@ -157,14 +172,14 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 | File | Purpose |
 |------|---------|
-| `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
-| `.claude/sdd/templates/*.md` | Document templates (pt-BR) |
-| `.claude/kb/_templates/*.template` | KB domain templates |
+| `sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
+| `sdd/templates/*.md` | Document templates (pt-BR) |
+| `kb/_templates/*.template` | KB domain templates |
 
 ---
 
 ## Version
 
-- **Version:** 2.1.0
-- **Status:** Release
-- **Last Updated:** 2026-02-27
+- **Version:** 2.2.0
+- **Status:** Plugin Release
+- **Last Updated:** 2026-03-02

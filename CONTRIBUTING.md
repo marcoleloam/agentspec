@@ -8,31 +8,30 @@ Thank you for your interest in AgentSpec! This guide will help you contribute ef
 # Fork and clone
 git clone https://github.com/YOUR_USERNAME/agentspec.git
 cd agentspec
-git checkout -b feature/your-feature
 
-# The framework lives in .claude/
-ls .claude/agents/      # 16 specialized agents
-ls .claude/skills/      # 12 slash commands (skills)
-ls .claude/sdd/         # SDD framework
-ls .claude/kb/          # Knowledge Base
+# The framework structure
+ls agents/      # 16 specialized agents
+ls skills/      # 13 slash commands (skills)
+ls sdd/         # SDD framework
+ls kb/          # Knowledge Base
 ```
 
 ## Ways to Contribute
 
-| Type           | Where                          | Guide                                    |
-|----------------|--------------------------------|------------------------------------------|
-| New Agent      | `.claude/agents/{category}/`   | [Adding Agents](#adding-a-new-agent)     |
-| New KB Domain  | `.claude/kb/{domain}/`         | [Adding KB Domains](#adding-a-kb-domain) |
-| New Skill      | `.claude/skills/{category}/`   | [Adding Skills](#adding-a-skill)         |
-| Bug Fix        | Any file                       | [Bug Fixes](#bug-fixes)                  |
-| Documentation  | `docs/`                        | [Docs Guide](#documentation)             |
+| Type           | Where                    | Guide                                    |
+|----------------|--------------------------|------------------------------------------|
+| New Agent      | `agents/{category}/`     | [Adding Agents](#adding-a-new-agent)     |
+| New KB Domain  | `kb/{domain}/`           | [Adding KB Domains](#adding-a-kb-domain) |
+| New Skill      | `skills/{name}/`         | [Adding Skills](#adding-a-skill)         |
+| Bug Fix        | Any file                 | [Bug Fixes](#bug-fixes)                  |
+| Documentation  | `docs/`                  | [Docs Guide](#documentation)             |
 
 ## Adding a New Agent
 
 1. Copy the template:
 
    ```bash
-   cp .claude/agents/_template.md .claude/agents/{category}/your-agent.md
+   cp agents/_template.md agents/{category}/your-agent.md
    ```
 
 2. Fill in the required sections:
@@ -60,13 +59,13 @@ ls .claude/kb/          # Knowledge Base
 Use the built-in command:
 
 ```bash
-claude> /create-kb redis
+claude> /agentspec:create-kb redis
 ```
 
 Or create manually:
 
 ```text
-.claude/kb/your-domain/
+kb/your-domain/
 ├── index.md              # Domain overview
 ├── quick-reference.md    # Cheat sheet (max 100 lines)
 ├── concepts/             # Core concepts (max 150 lines each)
@@ -75,29 +74,27 @@ Or create manually:
     └── your-pattern.md
 ```
 
-Templates are in `.claude/kb/_templates/`. Register your domain in `.claude/kb/_index.yaml`.
+Templates are in `kb/_templates/`. Register your domain in `kb/_index.yaml`.
 
 ## Adding a Skill
 
-1. Create `.claude/skills/{category}/your-skill/SKILL.md`
+1. Create `skills/your-skill/SKILL.md`
 2. Include YAML frontmatter:
 
    ```yaml
    ---
    name: your-skill
    description: What this skill does
-   user-invocable: true
-   agent: agent-name (optional)
-   allowed-tools: Read, Write, Grep, Glob
+   user-invokable: true
    ---
    ```
 
-3. Reference the appropriate agent if applicable
-4. Test: `claude> /your-skill`
+3. Write the skill instructions in markdown
+4. Test: `claude> /agentspec:your-skill`
 
 ## Bug Fixes
 
-1. Check [existing issues](https://github.com/luanmorenommaciel/agentspec/issues)
+1. Check [existing issues](https://github.com/marcoleloam/agentspec/issues)
 2. Create a branch: `git checkout -b fix/description`
 3. Make your fix
 4. Submit a PR with a clear description of the problem and solution
@@ -114,7 +111,7 @@ Templates are in `.claude/kb/_templates/`. Register your domain in `.claude/kb/_
 1. Fork the repository
 2. Create a feature branch from `main`
 3. Make changes following the style guidelines above
-4. Test with Claude Code to ensure commands and agents work
+4. Test with Claude Code to ensure skills and agents work
 5. Submit a PR with:
    - Clear title (e.g., "Add redis KB domain" or "Fix brainstorm agent quality gate")
    - Description of what changed and why
@@ -126,5 +123,5 @@ We follow the [Contributor Covenant](https://www.contributor-covenant.org/). Be 
 
 ## Questions?
 
-- [Open an issue](https://github.com/luanmorenommaciel/agentspec/issues)
-- [Start a discussion](https://github.com/luanmorenommaciel/agentspec/discussions)
+- [Open an issue](https://github.com/marcoleloam/agentspec/issues)
+- [Start a discussion](https://github.com/marcoleloam/agentspec/discussions)

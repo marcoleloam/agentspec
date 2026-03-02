@@ -76,7 +76,7 @@ Complete catalog of commands, agents, templates, and configuration.
 
 ## SDD Templates
 
-All templates live in `.claude/sdd/templates/`:
+All templates live in `sdd/templates/`:
 
 | Template                     | Phase     | Purpose                          |
 |------------------------------|-----------|----------------------------------|
@@ -88,7 +88,7 @@ All templates live in `.claude/sdd/templates/`:
 
 ## KB Templates
 
-All templates live in `.claude/kb/_templates/`:
+All templates live in `kb/_templates/`:
 
 | Template                        | Purpose                              |
 |---------------------------------|--------------------------------------|
@@ -104,7 +104,7 @@ All templates live in `.claude/kb/_templates/`:
 
 ### Workflow Contracts
 
-Phase transition rules are defined in `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml`:
+Phase transition rules are defined in `sdd/architecture/WORKFLOW_CONTRACTS.yaml`:
 
 - Phase inputs, outputs, and quality gates
 - Model allocation per phase (Opus/Sonnet/Haiku)
@@ -123,10 +123,10 @@ Project settings in `.claude/settings.local.json`:
 
 | Artifact                | Pattern                            | Location                    |
 |-------------------------|------------------------------------|-----------------------------|
-| Brainstorm document     | `BRAINSTORM_{FEATURE}.md`          | `.claude/sdd/features/`     |
-| Requirements document   | `DEFINE_{FEATURE}.md`              | `.claude/sdd/features/`     |
-| Design document         | `DESIGN_{FEATURE}.md`              | `.claude/sdd/features/`     |
-| Build report            | `BUILD_REPORT_{FEATURE}.md`        | `.claude/sdd/reports/`      |
-| Shipped archive         | `SHIPPED_{YYYY-MM-DD}.md`          | `.claude/sdd/archive/{FEATURE}/` |
+| Brainstorm document     | `BRAINSTORM_{FEATURE}.md`          | `sdd/features/`     |
+| Requirements document   | `DEFINE_{FEATURE}.md`              | `sdd/features/`     |
+| Design document         | `DESIGN_{FEATURE}.md`              | `sdd/features/`     |
+| Build report            | `BUILD_REPORT_{FEATURE}.md`        | `sdd/reports/`      |
+| Shipped archive         | `SHIPPED_{YYYY-MM-DD}.md`          | `sdd/archive/{FEATURE}/` |
 
 Feature names use `SCREAMING_SNAKE_CASE` (e.g., `USER_AUTH`, `JUDGE_LAYER`).
