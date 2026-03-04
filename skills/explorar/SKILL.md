@@ -1,10 +1,10 @@
 ---
 name: explorar
-description: Explorar ideias através de diálogo colaborativo antes da captura de requisitos (Fase 0)
-user-invocable: true
+description: "Fase 0 do SDD: explore uma ideia antes de capturar requisitos formais. Use proativamente quando o usuário disser 'quero construir X', 'tenho uma ideia para Y', ou qualquer feature nova ainda vaga. Acione também quando houver notas de reunião ou brainstorms sem documento DEFINE."
+user-invokable: true
 agent: brainstorm-agent
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, AskUserQuestion
-argument-hint: [ideia-ou-solicitação]
+argument-hint: "[ideia-ou-solicitação]"
 ---
 
 # Comando Explorar
@@ -36,7 +36,7 @@ argument-hint: [ideia-ou-solicitação]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -163,6 +163,6 @@ Após gerar o documento, exibir ao usuário:
 
 ## Referências
 
-- Agente: `agents/workflow/brainstorm-agent.md`
+- Agente: `agents/brainstorm-agent.md`
 - Template: `sdd/templates/BRAINSTORM_TEMPLATE.md`
 - Contratos: `sdd/architecture/WORKFLOW_CONTRACTS.yaml`

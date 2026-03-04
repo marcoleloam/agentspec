@@ -1,9 +1,9 @@
 ---
 name: sync-context
-description: Sync project context to CLAUDE.md by analyzing codebase patterns and conventions
-user-invocable: true
+description: "Analisa o codebase e atualiza o CLAUDE.md com o contexto atual do projeto, detectando novos agentes, skills, padrões e arquitetura. Use após adicionar novos agentes ou skills ou quando o CLAUDE.md estiver desatualizado. Acione quando o usuário disser 'atualizar contexto', 'sincronizar CLAUDE.md' ou 'o contexto está desatualizado'."
+user-invokable: true
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
-argument-hint: [--section nome-seção]
+argument-hint: "[--section nome-seção]"
 ---
 
 # Comando Sync Context
@@ -12,7 +12,7 @@ Analisa o codebase e atualiza inteligentemente o `CLAUDE.md` com o contexto atua
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 

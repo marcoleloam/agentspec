@@ -4,6 +4,33 @@ All notable changes to AgentSpec will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.4.0] - 2026-03-04
+
+### Added
+
+- Nova skill `/continuar` (Fase 3+): retoma builds incompletas ou insatisfatórias com gap analysis estruturado
+  - Classifica o tipo de gap (bug, feature ausente, problema de arquitetura, mudança de expectativa)
+  - Confirma com o usuário antes de executar
+  - Appenda ao BUILD_REPORT existente com seção "Continuação {DATA}" sem sobrescrever
+  - Tabela clara distinguindo `/continuar` (código) vs `/iterar` (documentos SDD)
+
+### Changed
+
+- Todas as 13 skills existentes revisadas com base nas melhores práticas do skill-creator
+  - Descriptions reescritas para melhor triggering (mais diretas e com frases de ativação concretas)
+  - `user-invocable` corrigido para `user-invokable` em todas as skills
+  - `argument-hint` corrigido de array YAML para string quoted em todas as skills
+  - Paths de referência corrigidos para estrutura flat `agents/` (removidas subpastas inexistentes)
+- `/agentspec:create-pr` completamente reescrito em Português-BR (headers, seções e descrição)
+- `/agentspec:start` description traduzida para Português-BR
+- Plugin.json: descrição atualizada para 14 skills
+
+### Fixed
+
+- Paths inválidos em referências de skills (`agents/workflow/`, `agents/exploration/`, `agents/code-quality/`) corrigidos para `agents/`
+- Mandatos em CAPS excessivos suavizados para blockquotes explicativos em todas as skills
+- README atualizado para refletir estrutura atual do projeto (skills em pt-BR, 14 skills, estrutura flat)
+
 ## [1.1.0] - 2026-02-24
 
 ### Added

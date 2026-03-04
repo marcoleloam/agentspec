@@ -1,10 +1,10 @@
 ---
 name: iterar
-description: Atualizar qualquer documento de fase quando requisitos ou design mudam (Cross-Phase)
-user-invocable: true
+description: "Atualiza documentos SDD de qualquer fase quando requisitos ou design mudam no meio do desenvolvimento. Use quando surgir mudança de escopo, nova restrição ou decisão arquitetural que afete docs existentes. Acione quando o usuário disser 'mudou um requisito', 'preciso ajustar o design' ou qualquer variação de mudança cross-phase."
+user-invokable: true
 agent: iterate-agent
 allowed-tools: Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
-argument-hint: [arquivo] "[descrição-da-mudança]"
+argument-hint: "[arquivo] [descrição-da-mudança]"
 ---
 
 # Comando Iterar
@@ -29,7 +29,7 @@ argument-hint: [arquivo] "[descrição-da-mudança]"
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -85,5 +85,5 @@ Quando cascata é necessária, perguntar ao usuário:
 
 ## Referências
 
-- Agente: `agents/workflow/iterate-agent.md`
+- Agente: `agents/iterate-agent.md`
 - Contratos: `sdd/architecture/WORKFLOW_CONTRACTS.yaml`

@@ -1,41 +1,41 @@
 ---
 name: create-pr
-description: Create pull request with conventional commits and structured descriptions
-user-invocable: true
+description: "Cria pull requests profissionais com commits convencionais e descrições estruturadas. Use quando o usuário quiser criar um PR ou commitar mudanças. Acione proativamente ao final de qualquer implementação ou quando o usuário disser 'criar PR', 'fazer merge' ou 'commitar'."
+user-invokable: true
 allowed-tools: Read, Grep, Glob, Bash, AskUserQuestion
-argument-hint: ["título-opcional"]
+argument-hint: "[título-opcional]"
 ---
 
-# Create PR Command
+# Comando Create PR
 
-> Automate professional pull request creation with conventional commits and structured descriptions
+> Automatizar criação profissional de pull requests com commits convencionais e descrições estruturadas
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
-## Usage
+## Uso
 
 ```bash
-/create-pr                           # Auto-detect changes and create PR
-/create-pr "feat: add user auth"     # Create PR with custom title
-/create-pr --draft                   # Create as draft PR
-/create-pr --review                  # Run dual AI review before PR creation
+/create-pr                           # Detectar mudanças e criar PR automaticamente
+/create-pr "feat: add user auth"     # Criar PR com título customizado
+/create-pr --draft                   # Criar como PR draft
+/create-pr --review                  # Executar revisão dual AI antes de criar o PR
 ```
 
 ---
 
-## Pre-PR Review Option
+## Opção de Revisão Pré-PR
 
-When using `--review`, the command runs a **dual AI review** (CodeRabbit + Claude) before creating the PR. Critical issues block PR creation.
+Ao usar `--review`, o comando executa uma **revisão dual AI** (CodeRabbit + Claude) antes de criar o PR. Problemas críticos bloqueiam a criação do PR.
 
 ---
 
-## Process
+## Processo
 
-### Step 1: Analyze Changes
+### Passo 1: Analisar Mudanças
 
 ```bash
 git status
@@ -43,31 +43,31 @@ git diff --stat
 git log origin/main..HEAD --oneline
 ```
 
-### Step 2: Determine PR Type
+### Passo 2: Determinar Tipo do PR
 
-| Files Changed | Likely Type |
-|---------------|-------------|
-| `src/**/*.py` + new functionality | `feat:` |
-| `src/**/*.py` + bug fix | `fix:` |
+| Arquivos Alterados | Tipo Provável |
+|--------------------|---------------|
+| `src/**/*.py` + nova funcionalidade | `feat:` |
+| `src/**/*.py` + correção de bug | `fix:` |
 | `*.md`, `docs/**` | `docs:` |
 | `tests/**` | `test:` |
 | `agents/**` | `refactor(agents):` |
 | `kb/**` | `docs(kb):` |
 | `sdd/**` | `docs(sdd):` |
 
-### Step 3: Generate Commit Message
+### Passo 3: Gerar Mensagem de Commit
 
-Conventional Commits format with `Co-Authored-By: Claude <noreply@anthropic.com>`.
+Formato Conventional Commits com `Co-Authored-By: Claude <noreply@anthropic.com>`.
 
-### Step 4: Ask Clarifying Questions
+### Passo 4: Confirmar com o Usuário
 
-Confirm PR type, scope, breaking changes, and related issues.
+Confirmar tipo do PR, escopo, breaking changes e issues relacionadas.
 
-### Step 5: Build PR Description
+### Passo 5: Construir Descrição do PR
 
-Structured description with Summary, Key Changes, Files Changed, Test Plan, Breaking Changes.
+Descrição estruturada com Resumo, Principais Mudanças, Arquivos Alterados, Plano de Testes, Breaking Changes.
 
-### Step 6: Create Branch, Commit, Push, and Create PR
+### Passo 6: Criar Branch, Commit, Push e PR
 
 ```bash
 gh pr create --title "<type>(<scope>): <description>" --body "<generated-body>" --base main
@@ -75,28 +75,28 @@ gh pr create --title "<type>(<scope>): <description>" --body "<generated-body>" 
 
 ---
 
-## Output
+## Saída
 
-- **Branch:** `<type>/<short-description>`
-- **Commit:** Conventional commit format
-- **PR URL:** Returned from `gh pr create`
+- **Branch:** `<tipo>/<descrição-curta>`
+- **Commit:** Formato Conventional Commits
+- **URL do PR:** Retornado pelo `gh pr create`
 
 ---
 
-## Conventional Commits Reference
+## Referência de Conventional Commits
 
-| Type | When to Use |
+| Tipo | Quando Usar |
 |------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `refactor` | Code restructure |
-| `docs` | Documentation |
-| `test` | Tests |
-| `chore` | Maintenance |
+| `feat` | Nova funcionalidade |
+| `fix` | Correção de bug |
+| `refactor` | Reestruturação de código |
+| `docs` | Documentação |
+| `test` | Testes |
+| `chore` | Manutenção |
 
 ---
 
-## Related
+## Referências
 
-- Review Skill: `skills/workflow/review/SKILL.md`
-- Code Reviewer Agent: `agents/code-quality/code-reviewer.md`
+- Review Skill: `skills/review/SKILL.md`
+- Agente: `agents/code-reviewer.md`

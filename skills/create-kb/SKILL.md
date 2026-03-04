@@ -1,10 +1,10 @@
 ---
 name: create-kb
-description: Create a complete KB domain from scratch with MCP validation
-user-invocable: true
+description: "Cria um domínio completo de Knowledge Base validado com MCP a partir do zero. Use quando o usuário quiser documentar uma tecnologia, biblioteca ou padrão na KB do projeto. Acione quando o usuário disser 'criar KB para X', 'documentar biblioteca Y' ou 'adicionar base de conhecimento sobre Z'."
+user-invokable: true
 agent: kb-architect
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch, WebFetch
-argument-hint: [domínio]
+argument-hint: "[domínio]"
 ---
 
 # Comando Create KB
@@ -13,7 +13,7 @@ argument-hint: [domínio]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -129,6 +129,6 @@ Atualizar `kb/_index.yaml` com o novo domínio.
 
 ## Referências
 
-- Agente: `agents/exploration/kb-architect.md`
+- Agente: `agents/kb-architect.md`
 - Templates: `kb/_templates/`
 - Registry: `kb/_index.yaml`

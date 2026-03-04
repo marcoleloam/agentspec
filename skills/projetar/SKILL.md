@@ -1,10 +1,10 @@
 ---
 name: projetar
-description: Criar arquitetura e especificação técnica (Fase 2)
-user-invocable: true
+description: "Fase 2 do SDD: crie arquitetura e especificação técnica a partir dos requisitos definidos. Use após /definir quando o usuário quiser planejar a solução antes de implementar. Acione quando houver um arquivo DEFINE pronto ou quando o usuário perguntar 'como implementar X?'."
+user-invokable: true
 agent: design-agent
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, WebSearch
-argument-hint: [arquivo-define]
+argument-hint: "[arquivo-define]"
 ---
 
 # Comando Projetar
@@ -28,7 +28,7 @@ argument-hint: [arquivo-define]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -116,6 +116,6 @@ Write(sdd/features/02_DESIGN_{FEATURE_NAME}.md)
 
 ## Referências
 
-- Agente: `agents/workflow/design-agent.md`
+- Agente: `agents/design-agent.md`
 - Template: `sdd/templates/DESIGN_TEMPLATE.md`
 - Contratos: `sdd/architecture/WORKFLOW_CONTRACTS.yaml`

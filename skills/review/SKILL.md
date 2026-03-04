@@ -1,10 +1,10 @@
 ---
 name: review
-description: Dual AI code review with CodeRabbit + Claude Code for maximum coverage
-user-invocable: true
+description: "Revisão de código dual AI com CodeRabbit + Claude para máxima cobertura. Use antes de criar um PR ou quando o usuário quiser revisar mudanças. Acione proativamente ao final de qualquer implementação ou quando o usuário disser 'revisar código', 'checar qualidade' ou 'verificar antes do merge'."
+user-invokable: true
 agent: code-reviewer
 allowed-tools: Read, Grep, Glob, Bash, TodoWrite
-argument-hint: [uncommitted|committed|--quick|--deep]
+argument-hint: "[uncommitted|committed|--quick|--deep]"
 ---
 
 # Comando Review
@@ -13,7 +13,7 @@ argument-hint: [uncommitted|committed|--quick|--deep]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -128,6 +128,6 @@ Deduplicar, priorizar, categorizar e gerar itens de ação.
 
 ## Referências
 
-- Agente: `agents/code-quality/code-reviewer.md`
+- Agente: `agents/code-reviewer.md`
 - Config: `.coderabbit.yaml`
-- Create PR: `skills/workflow/create-pr/SKILL.md`
+- Create PR: `skills/create-pr/SKILL.md`

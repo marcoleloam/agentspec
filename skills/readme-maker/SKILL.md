@@ -1,10 +1,10 @@
 ---
 name: readme-maker
-description: Generate comprehensive, production-ready README.md by analyzing codebase with explorer + documenter agents
-user-invocable: true
+description: "Gera um README.md profissional e completo analisando o codebase com agentes especializados. Use quando o projeto não tem README ou o README existente está desatualizado. Acione quando o usuário disser 'criar README', 'documentar o projeto' ou 'gerar documentação do projeto'."
+user-invokable: true
 agent: code-documenter
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, Task
-argument-hint: [--style minimal|comprehensive]
+argument-hint: "[--style minimal|comprehensive]"
 ---
 
 # Comando README Maker
@@ -13,7 +13,7 @@ Gera um README.md profissional combinando exploração do codebase com boas prá
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -107,5 +107,5 @@ PRECISÃO
 
 ## Referências
 
-- Agente: `agents/code-quality/code-documenter.md`
-- Explorador: `agents/exploration/codebase-explorer.md`
+- Agente: `agents/code-documenter.md`
+- Explorador: `agents/codebase-explorer.md`

@@ -1,10 +1,10 @@
 ---
 name: definir
-description: Capturar e validar requisitos em uma única passagem (Fase 1)
-user-invocable: true
+description: "Fase 1 do SDD: capture e valide requisitos de qualquer entrada — brainstorm, ata de reunião ou ideia direta. Use após /explorar ou quando o usuário quiser formalizar o que precisa ser construído. Acione proativamente quando houver um arquivo BRAINSTORM pronto ou quando o usuário descrever um problema sem spec estruturada."
+user-invokable: true
 agent: define-agent
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, AskUserQuestion
-argument-hint: [entrada]
+argument-hint: "[entrada]"
 ---
 
 # Comando Definir
@@ -29,7 +29,7 @@ argument-hint: [entrada]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -119,6 +119,6 @@ Write(sdd/features/01_DEFINE_{FEATURE_NAME}.md)
 
 ## Referências
 
-- Agente: `agents/workflow/define-agent.md`
+- Agente: `agents/define-agent.md`
 - Template: `sdd/templates/DEFINE_TEMPLATE.md`
 - Contratos: `sdd/architecture/WORKFLOW_CONTRACTS.yaml`

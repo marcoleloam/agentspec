@@ -1,6 +1,6 @@
 ---
 name: start
-description: Display AgentSpec welcome screen with project status and quick-start guidance
+description: "Tela de boas-vindas do AgentSpec com inventário do projeto e próximo passo recomendado. Use ao iniciar uma sessão de desenvolvimento ou quando o usuário quiser ver o status atual das features. Acione quando o usuário disser 'começar', 'status do projeto', 'o que tenho aqui' ou simplesmente /start."
 user-invokable: true
 ---
 
@@ -25,7 +25,7 @@ user-invokable: true
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 

@@ -1,10 +1,10 @@
 ---
 name: construir
-description: Executar implementação com geração de tarefas sob demanda (Fase 3)
-user-invocable: true
+description: "Fase 3 do SDD: execute a implementação completa com base no documento de design. Use após /projetar quando houver um arquivo DESIGN pronto. Acione quando o usuário disser 'implementar', 'construir' ou 'codar' e houver um arquivo 02_DESIGN_ disponível."
+user-invokable: true
 agent: build-agent
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, Task
-argument-hint: [arquivo-design]
+argument-hint: "[arquivo-design]"
 ---
 
 # Comando Construir
@@ -28,7 +28,7 @@ argument-hint: [arquivo-design]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -125,6 +125,6 @@ Write(sdd/reports/BUILD_REPORT_{FEATURE}.md)
 
 ## Referências
 
-- Agente: `agents/workflow/build-agent.md`
+- Agente: `agents/build-agent.md`
 - Template: `sdd/templates/BUILD_REPORT_TEMPLATE.md`
 - Contratos: `sdd/architecture/WORKFLOW_CONTRACTS.yaml`

@@ -1,10 +1,10 @@
 ---
 name: entregar
-description: Arquivar feature concluída com lições aprendidas (Fase 4)
-user-invocable: true
+description: "Fase 4 do SDD: arquive a feature concluída e registre lições aprendidas. Use após /construir quando o build passou e o código está pronto. Acione quando o usuário disser 'finalizar', 'entregar' ou 'arquivar' e houver um BUILD_REPORT confirmando conclusão."
+user-invokable: true
 agent: ship-agent
 allowed-tools: Read, Write, Edit, Glob, Bash
-argument-hint: [arquivo-define]
+argument-hint: "[arquivo-define]"
 ---
 
 # Comando Entregar
@@ -28,7 +28,7 @@ argument-hint: [arquivo-define]
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
@@ -90,6 +90,6 @@ Fase 4: /entregar   → sdd/archive/{FEATURE}/SHIPPED_{DATA}.md (ESTE COMANDO)
 
 ## Referências
 
-- Agente: `agents/workflow/ship-agent.md`
+- Agente: `agents/ship-agent.md`
 - Template: `sdd/templates/SHIPPED_TEMPLATE.md`
 - Contratos: `sdd/architecture/WORKFLOW_CONTRACTS.yaml`

@@ -156,6 +156,7 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 | `/agentspec:memory` | Salvar insights da sessão | `skills/memory/` |
 | `/agentspec:sync-context` | Atualizar CLAUDE.md | `skills/sync-context/` |
 | `/agentspec:readme-maker` | Gerar README | `skills/readme-maker/` |
+| `/agentspec:continuar` | Retomar build incompleta (Fase 3+) | `skills/continuar/` |
 
 ---
 
@@ -183,6 +184,6 @@ Use AgentSpec's own SDD workflow to develop AgentSpec:
 
 ## Version
 
-- **Version:** 2.2.0
+- **Version:** 2.4.0
 - **Status:** Plugin Release
-- **Last Updated:** 2026-03-02
+- **Last Updated:** 2026-03-04

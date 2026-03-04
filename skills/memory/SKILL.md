@@ -1,9 +1,9 @@
 ---
 name: memory
-description: Save valuable insights from the current session to storage
-user-invocable: true
+description: "Salva insights valiosos da sessão atual em armazenamento persistente para referência futura. Use quando o usuário quiser capturar decisões, padrões descobertos ou armadilhas identificadas. Acione quando o usuário disser 'salvar memória', 'lembrar isso' ou ao final de uma sessão produtiva."
+user-invokable: true
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
-argument-hint: ["nota-específica-opcional"]
+argument-hint: "[nota-específica-opcional]"
 ---
 
 # Comando Memory
@@ -12,7 +12,7 @@ Salvar insights da sessão em `.claude/storage/` para referência futura (diret�
 
 ## Idioma
 
-**OBRIGATÓRIO:** Toda comunicação com o usuário e documentos gerados DEVEM ser em **Português-BR (pt-BR)**.
+> Este projeto usa **Português-BR** como idioma padrão — toda comunicação com o usuário e documentos gerados devem seguir esse padrão para manter consistência com o restante do framework.
 
 ---
 
