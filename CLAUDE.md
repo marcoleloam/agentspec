@@ -8,7 +8,7 @@
 
 **What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, specialized for data engineering with 58 agents, 21 commands, and 22 KB domains.
 
-**Current Status:** v2.0.0 — Data engineering pivot complete. Linear is the project tracker (source of truth).
+**Current Status:** v2.1.0 — Data engineering pivot complete with multi-cloud coverage. Linear is the project tracker (source of truth).
 
 ---
 
@@ -30,7 +30,6 @@ agentspec/
 │   ├── commands/            # 21 slash commands
 │   │   ├── workflow/        # SDD commands (7)
 │   │   ├── data-engineering/ # DE commands (8)
-│   │   ├── dev/             # Dev commands (1)
 │   │   ├── core/            # Utility commands (4)
 │   │   ├── knowledge/       # KB commands (1)
 │   │   └── review/          # Review commands (1)
@@ -122,7 +121,7 @@ Data engineering example:
 
 | Task | Status | Description |
 |------|--------|-------------|
-| Data engineering pivot | Done | 11 KB domains, 11 DE agents, 8 DE commands |
+| Data engineering pivot | Done | 22 KB domains, 58 agents (8 categories), 21 commands |
 | Adapt existing agents for DE | Done | code-reviewer, code-cleaner, test-generator, design, define, build |
 | Adapt SDD templates for DE | Done | BRAINSTORM, DEFINE, DESIGN, BUILD_REPORT templates |
 | Documentation overhaul | Done | Getting started, concepts, tutorials, reference, README |
@@ -184,12 +183,6 @@ Data engineering example:
 | `/data-contract` | Contract authoring (ODCS) |
 | `/migrate` | Legacy ETL migration |
 
-### Dev (1)
-
-| Command | Purpose |
-|---------|---------|
-| `/dev` | AgentLoop — SDD-lite for quick tasks |
-
 ### Core & Utilities (6)
 
 | Command | Purpose |
@@ -210,14 +203,14 @@ Data engineering example:
 | `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
 | `.claude/sdd/templates/*.md` | Document templates (DE-aware) |
 | `.claude/kb/_templates/*.template` | KB domain templates |
-| `.claude/kb/_index.yaml` | KB domain registry (11 domains) |
+| `.claude/kb/_index.yaml` | KB domain registry (22 domains) |
 | `.claude/agents/README.md` | Agent routing + escalation map |
 | `.claude/agents/architect/` | System-level design agents (schema, pipeline, lakehouse) |
 | `.claude/agents/cloud/` | AWS, GCP, CI/CD, deployment agents |
 | `.claude/agents/platform/` | Microsoft Fabric specialists |
 | `.claude/agents/python/` | Python dev, code quality, prompt engineering |
 | `.claude/agents/test/` | Testing, data quality, data contracts |
-| `.claude/agents/dev/` | Overnight builder, prompt crafter, codebase explorer |
+| `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst |
 
 ---
 

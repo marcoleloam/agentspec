@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 [![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](CHANGELOG.md)
-[![Agents](https://img.shields.io/badge/agents-41-orange.svg)](.claude/agents/)
+[![Agents](https://img.shields.io/badge/agents-58-orange.svg)](.claude/agents/)
 [![KB Domains](https://img.shields.io/badge/KB%20domains-22-blue.svg)](.claude/kb/)
 
 [Quick Start](#quick-start) | [Data Engineering](#data-engineering-commands) | [Documentation](docs/) | [Contributing](CONTRIBUTING.md)
@@ -108,20 +108,20 @@ claude> /migrate legacy/etl_orders_proc.sql
 | **Build** | `/build` | Execute + dbt build, sqlfluff, GE | All tests + quality gates pass |
 | **Ship** | `/ship` | Archive with lessons learned | Acceptance verified |
 
-### 41 Specialized Agents
+### 58 Specialized Agents
 
 | Category | Count | Examples |
 |----------|-------|---------|
 | **Workflow** | 6 | brainstorm, define, design, build, ship, iterate |
-| **Code Quality** | 5 | code-reviewer (DE-aware), test-generator (GE/dbt), code-cleaner (SQL), python-developer |
-| **Data Engineering** | 15 | dbt-specialist, spark-engineer, spark-troubleshooter, spark-performance-analyzer, pipeline-architect, schema-designer, sql-optimizer, streaming-engineer, lakehouse-architect, lakeflow-specialist, medallion-architect, data-quality-analyst, ai-data-engineer, data-platform-engineer, data-contracts-engineer |
-| **Cloud Platforms** | 5 | aws-data-architect, aws-deployer, fabric-architect, fabric-pipeline-developer, gcp-data-architect |
-| **AI/ML** | 2 | genai-architect, ai-prompt-specialist |
-| **Dev** | 2 | overnight-builder, prompt-crafter |
-| **Communication** | 4 | adaptive-explainer, linear-pm, meeting-analyst, the-planner |
-| **Exploration** | 2 | codebase-explorer, kb-architect |
+| **Architect** | 8 | schema-designer, pipeline-architect, medallion-architect, lakehouse-architect, genai-architect, the-planner, data-platform-engineer, meeting-analyst |
+| **Cloud** | 10 | aws-data-architect, aws-deployer, aws-lambda-architect, gcp-data-architect, lambda-builder, ci-cd-specialist, supabase-specialist, ai-data-engineer-cloud, ai-data-engineer-gcp, ai-prompt-specialist-gcp |
+| **Platform** | 6 | fabric-architect, fabric-pipeline-developer, fabric-security-specialist, fabric-cicd-specialist, fabric-logging-specialist, fabric-ai-specialist |
+| **Python** | 6 | python-developer, code-reviewer, code-cleaner, code-documenter, llm-specialist, ai-prompt-specialist |
+| **Test** | 3 | test-generator, data-quality-analyst, data-contracts-engineer |
+| **Data Engineering** | 15 | dbt-specialist, spark-engineer, spark-specialist, spark-troubleshooter, spark-performance-analyzer, spark-streaming-architect, sql-optimizer, streaming-engineer, airflow-specialist, lakeflow-specialist, lakeflow-expert, lakeflow-architect, lakeflow-pipeline-builder, ai-data-engineer, qdrant-specialist |
+| **Dev** | 4 | prompt-crafter, codebase-explorer, shell-script-specialist, meeting-analyst |
 
-During `/build`, agents are automatically matched to tasks: dbt models go to `dbt-specialist`, Spark jobs to `spark-engineer`, Fabric notebooks to `fabric-pipeline-developer`, quality checks to `data-quality-analyst`.
+During `/build`, agents are automatically matched to tasks: dbt models go to `dbt-specialist`, Spark jobs to `spark-engineer`, Airflow DAGs to `airflow-specialist`, quality checks to `data-quality-analyst`.
 
 ### 22 Knowledge Base Domains
 
@@ -134,13 +134,12 @@ During `/build`, agents are automatically matched to tasks: dbt models go to `db
 | **AI & Prompt** | `ai-data-engineering`, `modern-stack`, `genai`, `prompt-engineering` |
 | **Foundations** | `pydantic`, `python`, `testing` |
 
-### 22 Slash Commands
+### 21 Slash Commands
 
 | Category | Commands |
 |----------|----------|
 | **Workflow** (7) | `/brainstorm`, `/define`, `/design`, `/build`, `/ship`, `/iterate`, `/create-pr` |
 | **Data Engineering** (8) | `/pipeline`, `/schema`, `/data-quality`, `/lakehouse`, `/sql-review`, `/ai-pipeline`, `/data-contract`, `/migrate` |
-| **Dev** (1) | `/dev` (AgentLoop — SDD-lite for quick tasks) |
 | **Core** (4) | `/memory`, `/meeting`, `/sync-context`, `/readme-maker` |
 | **Knowledge** (1) | `/create-kb` |
 | **Review** (1) | `/review` |
@@ -262,7 +261,7 @@ During `/build`, agents are automatically matched to tasks: dbt models go to `db
 | [Getting Started](docs/getting-started/) | Install and build your first data pipeline |
 | [Core Concepts](docs/concepts/) | SDD pillars through a data engineering lens |
 | [Tutorials](docs/tutorials/) | dbt, star schema, data quality, Spark, streaming, RAG |
-| [Reference](docs/reference/) | Full catalog: 27 agents, 20 commands, 11 KB domains |
+| [Reference](docs/reference/) | Full catalog: 58 agents, 21 commands, 22 KB domains |
 
 ---
 

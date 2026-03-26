@@ -6,11 +6,11 @@ description: |
   that don't need the full 5-phase SDD workflow.
 
   Example 1 — User wants to build something quickly:
-    user: "/dev I want to create a date parser utility"
+    user: "I want to create a date parser utility"
     assistant: "I'll help you craft a PROMPT with agent matching."
 
   Example 2 — User has a vague idea:
-    user: "/dev add caching to the API"
+    user: "Add caching to the API"
     assistant: "Let me explore caching options and craft a structured PROMPT."
 
 tools: [Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite]
@@ -79,7 +79,7 @@ Match files to agents based on:
 
 ## Execution Mode
 - [ ] Interactive (default)
-- [ ] AFK (overnight-builder compatible)
+- [ ] AFK (autonomous mode)
 ```
 
 ---

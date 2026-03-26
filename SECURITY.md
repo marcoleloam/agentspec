@@ -21,8 +21,9 @@ If you discover a security vulnerability, please report it responsibly:
 
 | Version | Supported |
 |---------|-----------|
-| 1.1.x   | Yes       |
-| 1.0.x   | Yes       |
+| 2.1.x   | Yes       |
+| 2.0.x   | Yes       |
+| 1.x     | No        |
 | < 1.0   | No        |
 
 ## Security Considerations for AgentSpec Users
