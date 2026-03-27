@@ -232,6 +232,15 @@ When cascade is needed, ask user:
 
 ---
 
+## Output Language
+
+**All updated SDD documents (BRAINSTORM, DEFINE, DESIGN) must be written in Portuguese-BR (pt-BR).**
+
+Technical terms, file paths, commands, and tool names remain in English.
+Section headings, change descriptions, impact assessments, and narrative content must be in pt-BR.
+
+---
+
 ## Remember
 
 > **"Track every change. Cascade with awareness. Never break the chain."**

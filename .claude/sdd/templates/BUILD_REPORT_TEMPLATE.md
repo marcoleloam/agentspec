@@ -1,209 +1,209 @@
-# BUILD REPORT: {Feature Name}
+# BUILD REPORT: {Nome da Feature}
 
-> Implementation report for {Feature Name}
+> Relatório de implementação de {Nome da Feature}
 
-## Metadata
+## Metadados
 
-| Attribute | Value |
-|-----------|-------|
+| Atributo | Valor |
+|----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Date** | {YYYY-MM-DD} |
-| **Author** | build-agent |
+| **Data** | {YYYY-MM-DD} |
+| **Autor** | build-agent |
 | **DEFINE** | [DEFINE_{FEATURE}.md](../features/DEFINE_{FEATURE}.md) |
 | **DESIGN** | [DESIGN_{FEATURE}.md](../features/DESIGN_{FEATURE}.md) |
-| **Status** | In Progress / Complete / Blocked |
+| **Status** | Em Andamento / Completo / Bloqueado |
 
 ---
 
-## Summary
+## Resumo
 
-| Metric | Value |
-|--------|-------|
-| **Tasks Completed** | {X}/{Y} |
-| **Files Created** | {N} |
-| **Lines of Code** | {N} |
-| **Build Time** | {Duration} |
-| **Tests Passing** | {X}/{Y} |
-| **Agents Used** | {N} |
-
----
-
-## Task Execution with Agent Attribution
-
-| # | Task | Agent | Status | Duration | Notes |
-|---|------|-------|--------|----------|-------|
-| 1 | {Task description} | @{agent-name} | ✅ Complete | {Xm} | {Any notes} |
-| 2 | {Task description} | @{agent-name} | ✅ Complete | {Xm} | {Any notes} |
-| 3 | {Task description} | (direct) | 🔄 In Progress | - | {No specialist matched} |
-| 4 | {Task description} | @{agent-name} | ⏳ Pending | - | - |
-
-**Legend:** ✅ Complete | 🔄 In Progress | ⏳ Pending | ❌ Blocked
-
-**Agent Key:**
-- `@{agent-name}` = Delegated to specialist agent via Task tool
-- `(direct)` = Built directly by build-agent (no specialist matched)
+| Métrica | Valor |
+|---------|-------|
+| **Tarefas Concluídas** | {X}/{Y} |
+| **Arquivos Criados** | {N} |
+| **Linhas de Código** | {N} |
+| **Tempo de Build** | {Duração} |
+| **Testes Passando** | {X}/{Y} |
+| **Agentes Utilizados** | {N} |
 
 ---
 
-## Agent Contributions
+## Execução de Tarefas com Atribuição de Agentes
 
-| Agent | Files | Specialization Applied |
-|-------|-------|------------------------|
-| @{agent-1} | {N} | {What patterns/KB used} |
-| @{agent-2} | {N} | {What patterns/KB used} |
-| (direct) | {N} | DESIGN patterns only |
+| # | Tarefa | Agente | Status | Duração | Notas |
+|---|--------|--------|--------|---------|-------|
+| 1 | {Descrição da tarefa} | @{nome-agente} | ✅ Completo | {Xm} | {Quaisquer notas} |
+| 2 | {Descrição da tarefa} | @{nome-agente} | ✅ Completo | {Xm} | {Quaisquer notas} |
+| 3 | {Descrição da tarefa} | (direto) | 🔄 Em Andamento | - | {Nenhum especialista encontrado} |
+| 4 | {Descrição da tarefa} | @{nome-agente} | ⏳ Pendente | - | - |
 
----
+**Legenda:** ✅ Completo | 🔄 Em Andamento | ⏳ Pendente | ❌ Bloqueado
 
-## Files Created
-
-| File | Lines | Agent | Verified | Notes |
-| ---- | ----- | ----- | -------- | ----- |
-| `{path/to/file1.py}` | {N} | @{agent-name} | ✅ | {Any notes} |
-| `{path/to/file2.py}` | {N} | @{agent-name} | ✅ | {Any notes} |
-| `{path/to/config.yaml}` | {N} | (direct) | ✅ | {Any notes} |
+**Chave de Agentes:**
+- `@{nome-agente}` = Delegado ao agente especialista via Task tool
+- `(direto)` = Construído diretamente pelo build-agent (nenhum especialista correspondeu)
 
 ---
 
-## Verification Results
+## Contribuições dos Agentes
 
-### Lint Check
+| Agente | Arquivos | Especialização Aplicada |
+|--------|----------|------------------------|
+| @{agente-1} | {N} | {Quais padrões/KB foram usados} |
+| @{agente-2} | {N} | {Quais padrões/KB foram usados} |
+| (direto) | {N} | Apenas padrões do DESIGN |
+
+---
+
+## Arquivos Criados
+
+| Arquivo | Linhas | Agente | Verificado | Notas |
+|---------|--------|--------|------------|-------|
+| `{caminho/para/arquivo1.py}` | {N} | @{nome-agente} | ✅ | {Quaisquer notas} |
+| `{caminho/para/arquivo2.py}` | {N} | @{nome-agente} | ✅ | {Quaisquer notas} |
+| `{caminho/para/config.yaml}` | {N} | (direto) | ✅ | {Quaisquer notas} |
+
+---
+
+## Resultados de Verificação
+
+### Verificação de Lint
 
 ```text
-{Output from linter (e.g., ruff, eslint, rubocop) or "All checks passed"}
+{Saída do linter (ex., ruff, eslint, rubocop) ou "Todas as verificações passaram"}
 ```
 
-**Status:** ✅ Pass / ❌ Fail
+**Status:** ✅ Passou / ❌ Falhou
 
-### Type Check
+### Verificação de Tipos
 
 ```text
-{Output from type checker (e.g., mypy, tsc) or "All checks passed" or "N/A - not configured"}
+{Saída do verificador de tipos (ex., mypy, tsc) ou "Todas as verificações passaram" ou "N/A - não configurado"}
 ```
 
-**Status:** ✅ Pass / ❌ Fail / ⏭️ Skipped
+**Status:** ✅ Passou / ❌ Falhou / ⏭️ Ignorado
 
-### Tests
+### Testes
 
 ```text
-{Output from test runner (e.g., pytest, jest, go test) or summary}
+{Saída do test runner (ex., pytest, jest, go test) ou resumo}
 ```
 
-| Test | Result |
-|------|--------|
-| `test_function_1` | ✅ Pass |
-| `test_function_2` | ✅ Pass |
-| `test_integration` | ✅ Pass |
+| Teste | Resultado |
+|-------|-----------|
+| `test_funcao_1` | ✅ Passou |
+| `test_funcao_2` | ✅ Passou |
+| `test_integracao` | ✅ Passou |
 
-**Status:** ✅ {X}/{Y} Pass | ❌ {N} Fail
-
----
-
-## Issues Encountered
-
-| # | Issue | Resolution | Time Impact |
-|---|-------|------------|-------------|
-| 1 | {Description of issue} | {How it was resolved} | {+Xm} |
-| 2 | {Description of issue} | {How it was resolved} | {+Xm} |
+**Status:** ✅ {X}/{Y} Passou | ❌ {N} Falhou
 
 ---
 
-## Deviations from Design
+## Problemas Encontrados
 
-| Deviation | Reason | Impact |
-|-----------|--------|--------|
-| {What changed from DESIGN} | {Why it changed} | {Effect on system} |
-
----
-
-## Blockers (if any)
-
-| Blocker | Required Action | Owner |
-|---------|-----------------|-------|
-| {Description} | {What needs to happen} | {Who can unblock} |
+| # | Problema | Resolução | Impacto no Tempo |
+|---|----------|-----------|-----------------|
+| 1 | {Descrição do problema} | {Como foi resolvido} | {+Xm} |
+| 2 | {Descrição do problema} | {Como foi resolvido} | {+Xm} |
 
 ---
 
-## Acceptance Test Verification
+## Desvios do Design
 
-| ID | Scenario | Status | Evidence |
-|----|----------|--------|----------|
-| AT-001 | {From DEFINE} | ✅ Pass / ❌ Fail | {How verified} |
-| AT-002 | {From DEFINE} | ✅ Pass / ❌ Fail | {How verified} |
-| AT-003 | {From DEFINE} | ✅ Pass / ❌ Fail | {How verified} |
+| Desvio | Motivo | Impacto |
+|--------|--------|---------|
+| {O que mudou em relação ao DESIGN} | {Por que mudou} | {Efeito no sistema} |
 
 ---
 
-## Performance Notes
+## Bloqueadores (se houver)
 
-| Metric | Expected | Actual | Status |
-|--------|----------|--------|--------|
-| {Metric 1} | {From DEFINE} | {Measured} | ✅ / ❌ |
-| {Metric 2} | {From DEFINE} | {Measured} | ✅ / ❌ |
+| Bloqueador | Ação Necessária | Responsável |
+|------------|-----------------|-------------|
+| {Descrição} | {O que precisa acontecer} | {Quem pode desbloquear} |
 
 ---
 
-## Data Quality Results (if applicable)
+## Verificação dos Testes de Aceitação
 
-> Include this section when the build involves data pipelines, dbt models, or data infrastructure.
+| ID | Cenário | Status | Evidência |
+|----|---------|--------|-----------|
+| AT-001 | {Do DEFINE} | ✅ Passou / ❌ Falhou | {Como foi verificado} |
+| AT-002 | {Do DEFINE} | ✅ Passou / ❌ Falhou | {Como foi verificado} |
+| AT-003 | {Do DEFINE} | ✅ Passou / ❌ Falhou | {Como foi verificado} |
 
-### dbt Build Results
+---
+
+## Notas de Performance
+
+| Métrica | Esperado | Real | Status |
+|---------|----------|------|--------|
+| {Métrica 1} | {Do DEFINE} | {Medido} | ✅ / ❌ |
+| {Métrica 2} | {Do DEFINE} | {Medido} | ✅ / ❌ |
+
+---
+
+## Resultados de Qualidade de Dados (se aplicável)
+
+> Inclua esta seção quando o build envolver pipelines de dados, modelos dbt ou infraestrutura de dados.
+
+### Resultados do dbt Build
 
 ```text
-{Output from `dbt build --select {models}` or "N/A"}
+{Saída de `dbt build --select {modelos}` ou "N/A"}
 ```
 
-**Status:** ✅ Pass / ❌ Fail
+**Status:** ✅ Passou / ❌ Falhou
 
-### SQL Lint Results
+### Resultados do SQL Lint
 
 ```text
-{Output from `sqlfluff lint` or "N/A"}
+{Saída de `sqlfluff lint` ou "N/A"}
 ```
 
-**Status:** ✅ Pass ({N} files clean) / ❌ {N} violations
+**Status:** ✅ Passou ({N} arquivos limpos) / ❌ {N} violações
 
-### Data Quality Checks
+### Verificações de Qualidade de Dados
 
-| Check | Tool | Result | Details |
-|-------|------|--------|---------|
-| {Null PK check} | {dbt test / GE} | ✅ / ❌ | {0 nulls found} |
-| {Unique PK check} | {dbt test / GE} | ✅ / ❌ | {0 duplicates} |
-| {Referential integrity} | {dbt test / GE} | ✅ / ❌ | {0 orphans} |
-| {Row count sanity} | {dbt test / GE} | ✅ / ❌ | {N rows, within range} |
-| {Freshness} | {dbt source freshness} | ✅ / ❌ | {Last update: HH:MM} |
+| Verificação | Ferramenta | Resultado | Detalhes |
+|-------------|------------|-----------|----------|
+| {Verificação de null em PK} | {dbt test / GE} | ✅ / ❌ | {0 nulls encontrados} |
+| {Verificação de unicidade de PK} | {dbt test / GE} | ✅ / ❌ | {0 duplicatas} |
+| {Integridade referencial} | {dbt test / GE} | ✅ / ❌ | {0 órfãos} |
+| {Sanidade de contagem de linhas} | {dbt test / GE} | ✅ / ❌ | {N linhas, dentro do intervalo} |
+| {Atualização} | {dbt source freshness} | ✅ / ❌ | {Última atualização: HH:MM} |
 
-### Pipeline Metrics
+### Métricas do Pipeline
 
-| Metric | Value |
-|--------|-------|
-| Models built | {N} |
-| Tests passed | {X}/{Y} |
-| SQL lint violations | {N} |
-| Avg model build time | {X}s |
-| Data freshness | {Within SLA / Exceeded} |
-
----
-
-## Final Status
-
-### Overall: {✅ COMPLETE / 🔄 IN PROGRESS / ❌ BLOCKED}
-
-**Completion Checklist:**
-
-- [ ] All tasks from manifest completed
-- [ ] All verification checks pass
-- [ ] All tests pass
-- [ ] No blocking issues
-- [ ] Acceptance tests verified
-- [ ] Ready for /ship
+| Métrica | Valor |
+|---------|-------|
+| Modelos construídos | {N} |
+| Testes passando | {X}/{Y} |
+| Violações de SQL lint | {N} |
+| Tempo médio de build por modelo | {X}s |
+| Atualização dos dados | {Dentro do SLA / Excedido} |
 
 ---
 
-## Next Step
+## Status Final
 
-**If Complete:** `/ship .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
+### Geral: {✅ COMPLETO / 🔄 EM ANDAMENTO / ❌ BLOQUEADO}
 
-**If Blocked:** Resolve blockers, then `/build` to resume
+**Checklist de Conclusão:**
 
-**If Issues Found:** `/iterate DESIGN_{FEATURE}.md "{change needed}"`
+- [ ] Todas as tarefas do manifesto concluídas
+- [ ] Todas as verificações passaram
+- [ ] Todos os testes passam
+- [ ] Sem bloqueadores
+- [ ] Testes de aceitação verificados
+- [ ] Pronto para /ship
+
+---
+
+## Próximo Passo
+
+**Se Completo:** `/ship .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
+
+**Se Bloqueado:** Resolver bloqueadores, depois `/build` para retomar
+
+**Se Houver Problemas:** `/iterate DESIGN_{FEATURE}.md "{mudança necessária}"`

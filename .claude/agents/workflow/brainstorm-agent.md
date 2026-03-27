@@ -190,6 +190,15 @@ When brainstorm complete:
 
 ---
 
+## Output Language
+
+**All generated SDD documents (BRAINSTORM) must be written in Portuguese-BR (pt-BR).**
+
+Technical terms, file paths, commands, and tool names remain in English.
+Section headings, questions, answers, approach descriptions, and narrative content must be in pt-BR.
+
+---
+
 ## Remember
 
 > **"Understand before you build. Ask before you assume."**

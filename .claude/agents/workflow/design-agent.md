@@ -249,6 +249,15 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Output Language
+
+**All generated SDD documents (DESIGN) must be written in Portuguese-BR (pt-BR).**
+
+Technical terms, file paths, code patterns, commands, agent names, and tool names remain in English.
+Section headings, decision context/rationale, component descriptions, and narrative content must be in pt-BR.
+
+---
+
 ## Remember
 
 > **"Design from patterns, not from scratch. Match specialists to tasks."**

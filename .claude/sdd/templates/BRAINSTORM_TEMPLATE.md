@@ -1,215 +1,215 @@
-# BRAINSTORM: {Feature Name}
+# BRAINSTORM: {Nome da Feature}
 
-> Exploratory session to clarify intent and approach before requirements capture
+> Sessão exploratória para clarificar intenção e abordagem antes da captura de requisitos
 
-## Metadata
+## Metadados
 
-| Attribute | Value |
-|-----------|-------|
+| Atributo | Valor |
+|----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Date** | {YYYY-MM-DD} |
-| **Author** | brainstorm-agent |
-| **Status** | Exploring / Approaches Identified / Ready for Define |
+| **Data** | {YYYY-MM-DD} |
+| **Autor** | brainstorm-agent |
+| **Status** | Explorando / Abordagens Identificadas / Pronto para Define |
 
 ---
 
-## Initial Idea
+## Ideia Inicial
 
-**Raw Input:** {Original idea or request as stated by user}
+**Entrada Bruta:** {Ideia original ou solicitação conforme descrita pelo usuário}
 
-**Context Gathered:**
-- {Project state observation 1}
-- {Project state observation 2}
-- {Relevant existing code or patterns found}
+**Contexto Coletado:**
+- {Observação do estado atual do projeto 1}
+- {Observação do estado atual do projeto 2}
+- {Código ou padrões relevantes encontrados}
 
-**Technical Context Observed (for Define):**
+**Contexto Técnico Observado (para o Define):**
 
-| Aspect | Observation | Implication |
-|--------|-------------|-------------|
-| Likely Location | {src/ \| functions/ \| gen/ \| deploy/} | {Where code should live} |
-| Relevant KB Domains | {domain-1, domain-2, etc.} | {Patterns to consult} |
-| IaC Patterns | {Existing IaC tooling or N/A} | {Infrastructure approach} |
-
----
-
-## Discovery Questions & Answers
-
-| # | Question | Answer | Impact |
-|---|----------|--------|--------|
-| 1 | {Question about purpose} | {User's answer} | {How this shapes the solution} |
-| 2 | {Question about users} | {User's answer} | {How this shapes the solution} |
-| 3 | {Question about constraints} | {User's answer} | {How this shapes the solution} |
-| 4 | {Question about success criteria} | {User's answer} | {How this shapes the solution} |
-
-**Minimum Questions:** 3 (to ensure clarity before proceeding)
+| Aspecto | Observação | Implicação |
+|---------|------------|------------|
+| Localização Provável | {src/ \| functions/ \| gen/ \| deploy/} | {Onde o código deve ficar} |
+| Domínios KB Relevantes | {domain-1, domain-2, etc.} | {Padrões a consultar} |
+| Padrões IaC | {Ferramentas IaC existentes ou N/A} | {Abordagem de infraestrutura} |
 
 ---
 
-## Sample Data Inventory
+## Perguntas de Descoberta e Respostas
 
-> Samples improve LLM accuracy through in-context learning and few-shot prompting.
+| # | Pergunta | Resposta | Impacto |
+|---|----------|----------|---------|
+| 1 | {Pergunta sobre o propósito} | {Resposta do usuário} | {Como isso molda a solução} |
+| 2 | {Pergunta sobre os usuários} | {Resposta do usuário} | {Como isso molda a solução} |
+| 3 | {Pergunta sobre restrições} | {Resposta do usuário} | {Como isso molda a solução} |
+| 4 | {Pergunta sobre critérios de sucesso} | {Resposta do usuário} | {Como isso molda a solução} |
 
-| Type | Location | Count | Notes |
-|------|----------|-------|-------|
-| Input files | {Path or N/A} | {N} | {Format, size, patterns} |
-| Output examples | {Path or N/A} | {N} | {Schema, structure} |
-| Ground truth | {Path or N/A} | {N} | {Verified correct values} |
-| Related code | {Path or N/A} | {N} | {Patterns to reuse} |
-
-**How samples will be used:**
-
-- {e.g., Few-shot examples in extraction prompts}
-- {e.g., Schema validation reference}
-- {e.g., Test fixtures for validation}
+**Mínimo de Perguntas:** 3 (para garantir clareza antes de prosseguir)
 
 ---
 
-## Approaches Explored
+## Inventário de Dados de Exemplo
 
-### Approach A: {Name} ⭐ Recommended
+> Exemplos melhoram a precisão do LLM via aprendizado em contexto e few-shot prompting.
 
-**Description:** {Brief description of approach}
+| Tipo | Localização | Quantidade | Notas |
+|------|-------------|------------|-------|
+| Arquivos de entrada | {Caminho ou N/A} | {N} | {Formato, tamanho, padrões} |
+| Exemplos de saída | {Caminho ou N/A} | {N} | {Schema, estrutura} |
+| Ground truth | {Caminho ou N/A} | {N} | {Valores corretos verificados} |
+| Código relacionado | {Caminho ou N/A} | {N} | {Padrões para reutilizar} |
 
-**Pros:**
-- {Advantage 1}
-- {Advantage 2}
+**Como os exemplos serão usados:**
 
-**Cons:**
+- {ex: Exemplos few-shot em prompts de extração}
+- {ex: Referência de validação de schema}
+- {ex: Fixtures de teste para validação}
+
+---
+
+## Abordagens Exploradas
+
+### Abordagem A: {Nome} ⭐ Recomendada
+
+**Descrição:** {Breve descrição da abordagem}
+
+**Prós:**
+- {Vantagem 1}
+- {Vantagem 2}
+
+**Contras:**
 - {Trade-off 1}
 - {Trade-off 2}
 
-**Why Recommended:** {Clear reasoning for why this is the suggested path}
+**Por que Recomendada:** {Justificativa clara de por que este é o caminho sugerido}
 
 ---
 
-### Approach B: {Name}
+### Abordagem B: {Nome}
 
-**Description:** {Brief description of approach}
+**Descrição:** {Breve descrição da abordagem}
 
-**Pros:**
-- {Advantage 1}
-- {Advantage 2}
+**Prós:**
+- {Vantagem 1}
+- {Vantagem 2}
 
-**Cons:**
+**Contras:**
 - {Trade-off 1}
 - {Trade-off 2}
 
 ---
 
-### Approach C: {Name} (Optional)
+### Abordagem C: {Nome} (Opcional)
 
-**Description:** {Brief description of approach}
+**Descrição:** {Breve descrição da abordagem}
 
-**Pros:**
-- {Advantage 1}
+**Prós:**
+- {Vantagem 1}
 
-**Cons:**
+**Contras:**
 - {Trade-off 1}
 
 ---
 
-## Data Engineering Context (if applicable)
+## Contexto de Data Engineering (se aplicável)
 
-> Include this section when the feature involves data pipelines, ETL, analytics, or data infrastructure.
+> Inclua esta seção quando a feature envolver pipelines de dados, ETL, analytics ou infraestrutura de dados.
 
-### Source Systems
-| Source | Type | Volume Estimate | Current Freshness |
-|--------|------|-----------------|-------------------|
-| {Source 1} | {Postgres / Kafka / S3 / API} | {~rows/day or GB} | {Real-time / Daily / Unknown} |
+### Sistemas de Origem
+| Origem | Tipo | Volume Estimado | Frequência Atual |
+|--------|------|-----------------|------------------|
+| {Origem 1} | {Postgres / Kafka / S3 / API} | {~linhas/dia ou GB} | {Tempo real / Diário / Desconhecido} |
 
-### Data Flow Sketch
+### Esboço do Fluxo de Dados
 ```text
-[Source A] → [Ingestion] → [Raw] → [Transform] → [Mart] → [Consumer]
+[Origem A] → [Ingestão] → [Raw] → [Transformação] → [Mart] → [Consumidor]
 ```
 
-### Key Data Questions Explored
-| # | Question | Answer | Impact |
-|---|----------|--------|--------|
-| 1 | What's the expected data volume? | {Answer} | {Affects tool choice} |
-| 2 | What freshness SLA is needed? | {Answer} | {Batch vs streaming} |
-| 3 | Who consumes the output? | {Answer} | {Modeling approach} |
+### Questões de Dados Exploradas
+| # | Questão | Resposta | Impacto |
+|---|---------|----------|---------|
+| 1 | Qual é o volume esperado de dados? | {Resposta} | {Influencia a escolha de ferramenta} |
+| 2 | Qual SLA de atualização é necessário? | {Resposta} | {Batch vs streaming} |
+| 3 | Quem consome a saída? | {Resposta} | {Abordagem de modelagem} |
 
 ---
 
-## Selected Approach
+## Abordagem Selecionada
 
-| Attribute | Value |
-|-----------|-------|
-| **Chosen** | Approach {A/B/C} |
-| **User Confirmation** | {Date/Time of confirmation} |
-| **Reasoning** | {Why user selected this approach} |
-
----
-
-## Key Decisions Made
-
-| # | Decision | Rationale | Alternative Rejected |
-|---|----------|-----------|----------------------|
-| 1 | {Decision made during brainstorm} | {Why} | {What we didn't do} |
-| 2 | {Decision made during brainstorm} | {Why} | {What we didn't do} |
+| Atributo | Valor |
+|----------|-------|
+| **Escolhida** | Abordagem {A/B/C} |
+| **Confirmação do Usuário** | {Data/Hora da confirmação} |
+| **Justificativa** | {Por que o usuário selecionou esta abordagem} |
 
 ---
 
-## Features Removed (YAGNI)
+## Principais Decisões Tomadas
 
-| Feature Suggested | Reason Removed | Can Add Later? |
-|-------------------|----------------|----------------|
-| {Feature that seemed good but unnecessary} | {YAGNI reasoning} | Yes/No |
-| {Another deferred feature} | {Why not needed now} | Yes/No |
-
----
-
-## Incremental Validations
-
-| Section | Presented | User Feedback | Adjusted? |
-|---------|-----------|---------------|-----------|
-| Architecture concept | ✅ | {Feedback} | Yes/No |
-| Component breakdown | ✅ | {Feedback} | Yes/No |
-| Data flow | ✅ | {Feedback} | Yes/No |
-| Error handling | ✅ | {Feedback} | Yes/No |
-
-**Minimum Validations:** 2 (to ensure alignment)
+| # | Decisão | Justificativa | Alternativa Rejeitada |
+|---|---------|---------------|----------------------|
+| 1 | {Decisão tomada durante o brainstorm} | {Por quê} | {O que não foi feito} |
+| 2 | {Decisão tomada durante o brainstorm} | {Por quê} | {O que não foi feito} |
 
 ---
 
-## Suggested Requirements for /define
+## Features Removidas (YAGNI)
 
-Based on this brainstorm session, the following should be captured in the DEFINE phase:
+| Feature Sugerida | Motivo da Remoção | Pode Adicionar Depois? |
+|------------------|-------------------|----------------------|
+| {Feature que parecia boa mas é desnecessária} | {Justificativa YAGNI} | Sim/Não |
+| {Outra feature adiada} | {Por que não é necessária agora} | Sim/Não |
 
-### Problem Statement (Draft)
-{One clear sentence describing the problem to solve}
+---
 
-### Target Users (Draft)
-| User | Pain Point |
-|------|------------|
-| {User 1} | {Pain} |
+## Validações Incrementais
 
-### Success Criteria (Draft)
-- [ ] {Measurable criterion 1}
-- [ ] {Measurable criterion 2}
+| Seção | Apresentada | Feedback do Usuário | Ajustada? |
+|-------|-------------|---------------------|-----------|
+| Conceito de arquitetura | ✅ | {Feedback} | Sim/Não |
+| Decomposição de componentes | ✅ | {Feedback} | Sim/Não |
+| Fluxo de dados | ✅ | {Feedback} | Sim/Não |
+| Tratamento de erros | ✅ | {Feedback} | Sim/Não |
 
-### Constraints Identified
-- {Constraint 1}
-- {Constraint 2}
+**Mínimo de Validações:** 2 (para garantir alinhamento)
 
-### Out of Scope (Confirmed)
-- {Item 1 - explicitly excluded during brainstorm}
+---
+
+## Requisitos Sugeridos para /define
+
+Com base nesta sessão de brainstorm, os seguintes itens devem ser capturados na fase DEFINE:
+
+### Declaração do Problema (Rascunho)
+{Uma frase clara descrevendo o problema a resolver}
+
+### Usuários-Alvo (Rascunho)
+| Usuário | Dor |
+|---------|-----|
+| {Usuário 1} | {Dor} |
+
+### Critérios de Sucesso (Rascunho)
+- [ ] {Critério mensurável 1}
+- [ ] {Critério mensurável 2}
+
+### Restrições Identificadas
+- {Restrição 1}
+- {Restrição 2}
+
+### Fora do Escopo (Confirmado)
+- {Item 1 - explicitamente excluído durante o brainstorm}
 - {Item 2}
 
 ---
 
-## Session Summary
+## Resumo da Sessão
 
-| Metric | Value |
-|--------|-------|
-| Questions Asked | {N} |
-| Approaches Explored | {2-3} |
-| Features Removed (YAGNI) | {N} |
-| Validations Completed | {N} |
-| Duration | {Approx time} |
+| Métrica | Valor |
+|---------|-------|
+| Perguntas Feitas | {N} |
+| Abordagens Exploradas | {2-3} |
+| Features Removidas (YAGNI) | {N} |
+| Validações Concluídas | {N} |
+| Duração | {Tempo aproximado} |
 
 ---
 
-## Next Step
+## Próximo Passo
 
-**Ready for:** `/define .claude/sdd/features/BRAINSTORM_{FEATURE_NAME}.md`
+**Pronto para:** `/define .claude/sdd/features/BRAINSTORM_{FEATURE_NAME}.md`

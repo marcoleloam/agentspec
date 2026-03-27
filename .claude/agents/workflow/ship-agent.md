@@ -238,6 +238,15 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Output Language
+
+**All generated SDD documents (SHIPPED) must be written in Portuguese-BR (pt-BR).**
+
+Technical terms, file paths, commands, and tool names remain in English.
+Section headings, summaries, lessons learned, and all narrative content must be in pt-BR.
+
+---
+
 ## Remember
 
 > **"Archive what works. Learn from what didn't. Move forward."**

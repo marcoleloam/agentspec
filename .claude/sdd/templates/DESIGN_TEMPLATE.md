@@ -1,257 +1,257 @@
-# DESIGN: {Feature Name}
+# DESIGN: {Nome da Feature}
 
-> Technical design for implementing {Feature Name}
+> Design técnico para implementar {Nome da Feature}
 
-## Metadata
+## Metadados
 
-| Attribute | Value |
-|-----------|-------|
+| Atributo | Valor |
+|----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Date** | {YYYY-MM-DD} |
-| **Author** | design-agent |
+| **Data** | {YYYY-MM-DD} |
+| **Autor** | design-agent |
 | **DEFINE** | [DEFINE_{FEATURE}.md](./DEFINE_{FEATURE}.md) |
-| **Status** | Draft / Ready for Build |
+| **Status** | Rascunho / Pronto para Build |
 
 ---
 
-## Architecture Overview
+## Visão Geral da Arquitetura
 
 ```text
 ┌─────────────────────────────────────────────────────┐
-│                   SYSTEM DIAGRAM                     │
+│                  DIAGRAMA DO SISTEMA                 │
 ├─────────────────────────────────────────────────────┤
 │                                                      │
-│  {ASCII diagram showing components and data flow}   │
+│  {Diagrama ASCII mostrando componentes e fluxo}     │
 │                                                      │
-│  [Input] → [Component A] → [Component B] → [Output] │
-│                ↓                 ↓                   │
-│           [Storage]         [External API]          │
+│  [Entrada] → [Componente A] → [Componente B] → [Saída] │
+│                  ↓                 ↓                 │
+│            [Armazenamento]    [API Externa]          │
 │                                                      │
 └─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Components
+## Componentes
 
-| Component | Purpose | Technology |
-|-----------|---------|------------|
-| {Component A} | {What it does} | {Tech stack} |
-| {Component B} | {What it does} | {Tech stack} |
-| {Component C} | {What it does} | {Tech stack} |
-
----
-
-## Key Decisions
-
-### Decision 1: {Decision Name}
-
-| Attribute | Value |
-|-----------|-------|
-| **Status** | Accepted |
-| **Date** | {YYYY-MM-DD} |
-
-**Context:** {Why this decision was needed}
-
-**Choice:** {What we decided to do}
-
-**Rationale:** {Why this is the right choice}
-
-**Alternatives Rejected:**
-1. {Option A} - Rejected because {reason}
-2. {Option B} - Rejected because {reason}
-
-**Consequences:**
-- {Trade-off we accept}
-- {Benefit we gain}
+| Componente | Propósito | Tecnologia |
+|------------|-----------|------------|
+| {Componente A} | {O que ele faz} | {Stack tecnológica} |
+| {Componente B} | {O que ele faz} | {Stack tecnológica} |
+| {Componente C} | {O que ele faz} | {Stack tecnológica} |
 
 ---
 
-### Decision 2: {Decision Name}
+## Decisões Principais
 
-{Repeat structure above}
+### Decisão 1: {Nome da Decisão}
 
----
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita |
+| **Data** | {YYYY-MM-DD} |
 
-## File Manifest
+**Contexto:** {Por que esta decisão foi necessária}
 
-| # | File | Action | Purpose | Agent | Dependencies |
-|---|------|--------|---------|-------|--------------|
-| 1 | `{path/to/file.py}` | Create | {Purpose} | @{agent-name} | None |
-| 2 | `{path/to/config.yaml}` | Create | {Purpose} | @{agent-name} | None |
-| 3 | `{path/to/handler.py}` | Create | {Purpose} | @{agent-name} | 1, 2 |
-| 4 | `{path/to/test.py}` | Create | {Purpose} | @{agent-name} | 3 |
+**Escolha:** {O que decidimos fazer}
 
-**Total Files:** {N}
+**Justificativa:** {Por que esta é a escolha correta}
 
----
+**Alternativas Rejeitadas:**
+1. {Opção A} - Rejeitada porque {motivo}
+2. {Opção B} - Rejeitada porque {motivo}
 
-## Agent Assignment Rationale
-
-> Agents discovered from `.claude/agents/` - Build phase invokes matched specialists.
-
-| Agent | Files Assigned | Why This Agent |
-|-------|----------------|----------------|
-| @{agent-1} | 1, 3 | {Specialization match: e.g., "API routing patterns"} |
-| @{agent-2} | 2 | {Specialization match: e.g., "data validation models"} |
-| @{agent-3} | 4 | {Specialization match: e.g., "test fixtures"} |
-| (general) | {if any} | {No specialist found - Build handles directly} |
-
-**Agent Discovery:**
-- Scanned: `.claude/agents/**/*.md`
-- Matched by: File type, purpose keywords, path patterns, KB domains
+**Consequências:**
+- {Trade-off que aceitamos}
+- {Benefício que obtemos}
 
 ---
 
-## Code Patterns
+### Decisão 2: {Nome da Decisão}
 
-### Pattern 1: {Pattern Name}
+{Repetir estrutura acima}
+
+---
+
+## Manifesto de Arquivos
+
+| # | Arquivo | Ação | Propósito | Agente | Dependências |
+|---|---------|------|-----------|--------|--------------|
+| 1 | `{caminho/para/arquivo.py}` | Criar | {Propósito} | @{nome-agente} | Nenhuma |
+| 2 | `{caminho/para/config.yaml}` | Criar | {Propósito} | @{nome-agente} | Nenhuma |
+| 3 | `{caminho/para/handler.py}` | Criar | {Propósito} | @{nome-agente} | 1, 2 |
+| 4 | `{caminho/para/test.py}` | Criar | {Propósito} | @{nome-agente} | 3 |
+
+**Total de Arquivos:** {N}
+
+---
+
+## Justificativa de Atribuição de Agentes
+
+> Agentes descobertos em `.claude/agents/` - a fase de Build invoca os especialistas correspondentes.
+
+| Agente | Arquivos Atribuídos | Por Que Este Agente |
+|--------|---------------------|---------------------|
+| @{agente-1} | 1, 3 | {Correspondência de especialização: ex., "padrões de roteamento de API"} |
+| @{agente-2} | 2 | {Correspondência de especialização: ex., "modelos de validação de dados"} |
+| @{agente-3} | 4 | {Correspondência de especialização: ex., "fixtures de teste"} |
+| (direto) | {se houver} | {Nenhum especialista encontrado - Build executa diretamente} |
+
+**Descoberta de Agentes:**
+- Escaneado: `.claude/agents/**/*.md`
+- Correspondido por: Tipo de arquivo, palavras-chave de propósito, padrões de caminho, domínios KB
+
+---
+
+## Padrões de Código
+
+### Padrão 1: {Nome do Padrão}
 
 ```python
-# {Brief description of when to use this pattern}
+# {Breve descrição de quando usar este padrão}
 
-{Copy-paste ready code snippet}
+{Trecho de código pronto para copiar e colar}
 ```
 
-### Pattern 2: {Pattern Name}
+### Padrão 2: {Nome do Padrão}
 
 ```python
-{Copy-paste ready code snippet}
+{Trecho de código pronto para copiar e colar}
 ```
 
-### Pattern 3: Configuration Structure
+### Padrão 3: Estrutura de Configuração
 
 ```yaml
-# config.yaml structure
-{YAML configuration template}
+# estrutura do config.yaml
+{Template de configuração YAML}
 ```
 
 ---
 
-## Data Flow
+## Fluxo de Dados
 
 ```text
-1. {Step 1: e.g., "User submits request via API"}
+1. {Passo 1: ex., "Usuário envia requisição via API"}
    │
    ▼
-2. {Step 2: e.g., "Request validated and queued"}
+2. {Passo 2: ex., "Requisição validada e enfileirada"}
    │
    ▼
-3. {Step 3: e.g., "Background worker processes request"}
+3. {Passo 3: ex., "Worker em background processa a requisição"}
    │
    ▼
-4. {Step 4: e.g., "Results stored in database"}
+4. {Passo 4: ex., "Resultados armazenados no banco de dados"}
 ```
 
 ---
 
-## Integration Points
+## Pontos de Integração
 
-| External System | Integration Type | Authentication |
-|-----------------|-----------------|----------------|
-| {System A} | {REST API / SDK / Queue} | {Method} |
-| {System B} | {REST API / SDK / Queue} | {Method} |
-
----
-
-## Testing Strategy
-
-| Test Type | Scope | Files | Tools | Coverage Goal |
-|-----------|-------|-------|-------|---------------|
-| Unit | Functions | `{test files}` | {test framework} | 80% |
-| Integration | API calls | `{integration test files}` | {test framework + mocks} | Key paths |
-| E2E | Full flow | Manual | - | Happy path |
+| Sistema Externo | Tipo de Integração | Autenticação |
+|----------------|-------------------|--------------|
+| {Sistema A} | {REST API / SDK / Queue} | {Método} |
+| {Sistema B} | {REST API / SDK / Queue} | {Método} |
 
 ---
 
-## Error Handling
+## Estratégia de Testes
 
-| Error Type | Handling Strategy | Retry? |
-|------------|-------------------|--------|
-| {Error A} | {How to handle} | Yes/No |
-| {Error B} | {How to handle} | Yes/No |
-| {Error C} | {How to handle} | Yes/No |
-
----
-
-## Configuration
-
-| Config Key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `{key_1}` | string | `{default}` | {What it controls} |
-| `{key_2}` | int | `{default}` | {What it controls} |
-| `{key_3}` | bool | `{default}` | {What it controls} |
+| Tipo de Teste | Escopo | Arquivos | Ferramentas | Meta de Cobertura |
+|---------------|--------|----------|-------------|-------------------|
+| Unitário | Funções | `{arquivos de teste}` | {framework de teste} | 80% |
+| Integração | Chamadas de API | `{arquivos de teste de integração}` | {framework + mocks} | Caminhos principais |
+| E2E | Fluxo completo | Manual | - | Caminho feliz |
 
 ---
 
-## Security Considerations
+## Tratamento de Erros
 
-- {Security consideration 1}
-- {Security consideration 2}
-- {Security consideration 3}
-
----
-
-## Observability
-
-| Aspect | Implementation |
-|--------|----------------|
-| Logging | {Approach: e.g., "Structured JSON logging"} |
-| Metrics | {Approach: e.g., "Custom metrics via monitoring service"} |
-| Tracing | {Approach: e.g., "OpenTelemetry spans"} |
+| Tipo de Erro | Estratégia de Tratamento | Retry? |
+|-------------|-------------------------|--------|
+| {Erro A} | {Como tratar} | Sim/Não |
+| {Erro B} | {Como tratar} | Sim/Não |
+| {Erro C} | {Como tratar} | Sim/Não |
 
 ---
 
-## Pipeline Architecture (if applicable)
+## Configuração
 
-> Include this section when the feature involves data pipelines, ETL, or analytics.
+| Chave de Config | Tipo | Padrão | Descrição |
+|----------------|------|--------|-----------|
+| `{chave_1}` | string | `{padrão}` | {O que controla} |
+| `{chave_2}` | int | `{padrão}` | {O que controla} |
+| `{chave_3}` | bool | `{padrão}` | {O que controla} |
 
-### DAG Diagram
+---
+
+## Considerações de Segurança
+
+- {Consideração de segurança 1}
+- {Consideração de segurança 2}
+- {Consideração de segurança 3}
+
+---
+
+## Observabilidade
+
+| Aspecto | Implementação |
+|---------|---------------|
+| Logging | {Abordagem: ex., "Logging estruturado em JSON"} |
+| Métricas | {Abordagem: ex., "Métricas customizadas via serviço de monitoramento"} |
+| Tracing | {Abordagem: ex., "Spans OpenTelemetry"} |
+
+---
+
+## Arquitetura de Pipeline (se aplicável)
+
+> Inclua esta seção quando a feature envolver pipelines de dados, ETL ou analytics.
+
+### Diagrama do DAG
 
 ```text
-[Source A] ──extract──→ [Raw Layer] ──transform──→ [Staging] ──model──→ [Marts]
-[Source B] ──extract──↗       ↓                       ↓              ↓
-                          [Archive]            [Quality Gate]   [Dashboard]
+[Origem A] ──extrai──→ [Camada Raw] ──transforma──→ [Staging] ──modela──→ [Marts]
+[Origem B] ──extrai──↗       ↓                          ↓               ↓
+                          [Arquivo]            [Gate de Qualidade]  [Dashboard]
 ```
 
-### Partition Strategy
+### Estratégia de Particionamento
 
-| Table | Partition Key | Granularity | Rationale |
-|-------|-------------|-------------|-----------|
-| {table_1} | {column} | {daily / monthly} | {Query patterns, volume} |
+| Tabela | Chave de Partição | Granularidade | Justificativa |
+|--------|-------------------|---------------|---------------|
+| {tabela_1} | {coluna} | {diário / mensal} | {Padrões de query, volume} |
 
-### Incremental Strategy
+### Estratégia Incremental
 
-| Model | Strategy | Key Column | Lookback |
-|-------|----------|------------|----------|
-| {model_1} | {incremental_by_time / unique_key / full_refresh} | {column} | {N days} |
+| Modelo | Estratégia | Coluna-Chave | Lookback |
+|--------|------------|--------------|----------|
+| {modelo_1} | {incremental_by_time / unique_key / full_refresh} | {coluna} | {N dias} |
 
-### Schema Evolution Plan
+### Plano de Evolução de Schema
 
-| Change Type | Handling | Rollback |
-|-------------|----------|----------|
-| New column | {Add with DEFAULT, backfill async} | {Drop column} |
-| Type change | {Dual-write period, then migrate} | {Revert type} |
-| Column removal | {Deprecate in contract, remove after N days} | {Re-add column} |
+| Tipo de Mudança | Tratamento | Rollback |
+|----------------|------------|----------|
+| Nova coluna | {Adicionar com DEFAULT, backfill assíncrono} | {Remover coluna} |
+| Mudança de tipo | {Período de dual-write, depois migrar} | {Reverter tipo} |
+| Remoção de coluna | {Deprecar no contrato, remover após N dias} | {Re-adicionar coluna} |
 
-### Data Quality Gates
+### Gates de Qualidade de Dados
 
-| Gate | Tool | Threshold | Action on Failure |
-|------|------|-----------|-------------------|
-| {Null check on PKs} | {dbt test / GE} | {0 nulls} | {Block pipeline} |
-| {Row count delta} | {dbt test / GE} | {<10% variance} | {Alert + continue} |
-| {Freshness check} | {dbt source freshness} | {< N hours} | {Alert} |
-
----
-
-## Revision History
-
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | {YYYY-MM-DD} | design-agent | Initial version |
+| Gate | Ferramenta | Threshold | Ação em Falha |
+|------|------------|-----------|---------------|
+| {Verificação de nulls em PKs} | {dbt test / GE} | {0 nulls} | {Bloquear pipeline} |
+| {Delta de contagem de linhas} | {dbt test / GE} | {<10% de variação} | {Alertar + continuar} |
+| {Verificação de atualização} | {dbt source freshness} | {< N horas} | {Alertar} |
 
 ---
 
-## Next Step
+## Histórico de Revisões
 
-**Ready for:** `/build .claude/sdd/features/DESIGN_{FEATURE_NAME}.md`
+| Versão | Data | Autor | Mudanças |
+|--------|------|-------|----------|
+| 1.0 | {YYYY-MM-DD} | design-agent | Versão inicial |
+
+---
+
+## Próximo Passo
+
+**Pronto para:** `/build .claude/sdd/features/DESIGN_{FEATURE_NAME}.md`

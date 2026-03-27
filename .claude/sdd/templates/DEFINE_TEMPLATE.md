@@ -1,189 +1,189 @@
-# DEFINE: {Feature Name}
+# DEFINE: {Nome da Feature}
 
-> One-sentence description of what we're building
+> Descrição em uma frase do que estamos construindo
 
-## Metadata
+## Metadados
 
-| Attribute | Value |
-|-----------|-------|
+| Atributo | Valor |
+|----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Date** | {YYYY-MM-DD} |
-| **Author** | {author} |
-| **Status** | {Draft / In Progress / Needs Clarification / Ready for Design} |
+| **Data** | {YYYY-MM-DD} |
+| **Autor** | {autor} |
+| **Status** | {Rascunho / Em Andamento / Precisa de Esclarecimento / Pronto para Design} |
 | **Clarity Score** | {X}/15 |
 
 ---
 
-## Problem Statement
+## Declaração do Problema
 
-{1-2 sentences describing the pain point we're solving. Be specific about who has the problem and what the impact is.}
-
----
-
-## Target Users
-
-| User | Role | Pain Point |
-|------|------|------------|
-| {User 1} | {Their role} | {What frustrates them} |
-| {User 2} | {Their role} | {What frustrates them} |
+{1-2 frases descrevendo o problema que estamos resolvendo. Seja específico sobre quem tem o problema e qual é o impacto.}
 
 ---
 
-## Goals
+## Usuários-Alvo
 
-What success looks like (prioritized):
-
-| Priority | Goal |
-|----------|------|
-| **MUST** | {Primary goal - non-negotiable for MVP} |
-| **MUST** | {Another critical goal} |
-| **SHOULD** | {Important but can defer if timeline tight} |
-| **COULD** | {Nice-to-have if time permits} |
-
-**Priority Guide:**
-- **MUST** = MVP fails without this
-- **SHOULD** = Important, but workaround exists
-- **COULD** = Nice-to-have, cut first if needed
+| Usuário | Papel | Dor |
+|---------|-------|-----|
+| {Usuário 1} | {Papel} | {O que os frustra} |
+| {Usuário 2} | {Papel} | {O que os frustra} |
 
 ---
 
-## Success Criteria
+## Objetivos
 
-Measurable outcomes (must include numbers):
+O que significa sucesso (priorizado):
 
-- [ ] {Metric 1: e.g., "Handle 1000 requests per minute"}
-- [ ] {Metric 2: e.g., "Achieve 99.9% uptime"}
-- [ ] {Metric 3: e.g., "Response time under 200ms"}
+| Prioridade | Objetivo |
+|------------|----------|
+| **MUST** | {Objetivo primário - inegociável para o MVP} |
+| **MUST** | {Outro objetivo crítico} |
+| **SHOULD** | {Importante, mas pode ser adiado se o prazo apertar} |
+| **COULD** | {Nice-to-have se houver tempo} |
 
----
-
-## Acceptance Tests
-
-| ID | Scenario | Given | When | Then |
-|----|----------|-------|------|------|
-| AT-001 | {Happy path} | {Initial state} | {Action} | {Expected result} |
-| AT-002 | {Error case} | {Initial state} | {Action} | {Expected result} |
-| AT-003 | {Edge case} | {Initial state} | {Action} | {Expected result} |
+**Guia de Prioridade:**
+- **MUST** = O MVP falha sem isso
+- **SHOULD** = Importante, mas existe alternativa
+- **COULD** = Nice-to-have, cortar primeiro se necessário
 
 ---
 
-## Out of Scope
+## Critérios de Sucesso
 
-Explicitly NOT included in this feature:
+Resultados mensuráveis (devem incluir números):
 
-- {Item 1: What we're NOT doing}
-- {Item 2: What's deferred to future}
-- {Item 3: What's explicitly excluded}
-
----
-
-## Constraints
-
-| Type | Constraint | Impact |
-|------|------------|--------|
-| Technical | {e.g., "Must use existing database schema"} | {How this affects design} |
-| Timeline | {e.g., "Must ship by Q1"} | {How this affects scope} |
-| Resource | {e.g., "No additional infrastructure budget"} | {How this affects approach} |
+- [ ] {Métrica 1: ex., "Processar 1000 requisições por minuto"}
+- [ ] {Métrica 2: ex., "Atingir 99,9% de disponibilidade"}
+- [ ] {Métrica 3: ex., "Tempo de resposta abaixo de 200ms"}
 
 ---
 
-## Technical Context
+## Testes de Aceitação
 
-> Essential context for Design phase - prevents misplaced files and missed infrastructure needs.
-
-| Aspect | Value | Notes |
-|--------|-------|-------|
-| **Deployment Location** | {src/ \| functions/ \| gen/ \| deploy/ \| custom path} | {Why this location} |
-| **KB Domains** | {List domains from .claude/kb/ relevant to this feature} | {Which patterns to consult} |
-| **IaC Impact** | {New resources \| Modify existing \| None \| TBD} | {Infrastructure changes needed} |
-
-**Why This Matters:**
-
-- **Location** → Design phase uses correct project structure, prevents misplaced files
-- **KB Domains** → Design phase pulls correct patterns from `.claude/kb/`
-- **IaC Impact** → Triggers infrastructure planning, avoids "works locally" failures
+| ID | Cenário | Dado | Quando | Então |
+|----|---------|------|--------|-------|
+| AT-001 | {Caminho feliz} | {Estado inicial} | {Ação} | {Resultado esperado} |
+| AT-002 | {Caso de erro} | {Estado inicial} | {Ação} | {Resultado esperado} |
+| AT-003 | {Caso extremo} | {Estado inicial} | {Ação} | {Resultado esperado} |
 
 ---
 
-## Data Contract (if applicable)
+## Fora do Escopo
 
-> Include this section when the feature involves data pipelines, ETL, or analytics.
+Explicitamente NÃO incluído nesta feature:
 
-### Source Inventory
-| Source | Type | Volume | Freshness | Owner |
-|--------|------|--------|-----------|-------|
-| {source_1} | {Postgres / Kafka / S3 / API} | {~rows/day} | {SLA} | {Team} |
-
-### Schema Contract
-| Column | Type | Constraints | PII? |
-|--------|------|-------------|------|
-| {column_1} | {INT / VARCHAR / DECIMAL} | {NOT NULL, UNIQUE} | {Yes/No} |
-
-### Freshness SLAs
-| Layer | Target | Measurement |
-|-------|--------|-------------|
-| Raw / Staging | {Within X minutes of source change} | {Timestamp comparison} |
-| Marts | {Refreshed by HH:MM UTC daily} | {DAG completion time} |
-
-### Completeness Metrics
-- {e.g., 99.9% of source records present within SLA}
-- {e.g., Zero null primary keys across all models}
-
-### Lineage Requirements
-- {e.g., Column-level lineage from source to mart}
-- {e.g., Impact analysis before schema changes}
+- {Item 1: O que NÃO estamos fazendo}
+- {Item 2: O que está adiado para o futuro}
+- {Item 3: O que está explicitamente excluído}
 
 ---
 
-## Assumptions
+## Restrições
 
-Assumptions that if wrong could invalidate the design:
-
-| ID | Assumption | If Wrong, Impact | Validated? |
-|----|------------|------------------|------------|
-| A-001 | {e.g., "Database can handle expected load"} | {Would need caching layer} | [ ] |
-| A-002 | {e.g., "Request volume stays under 1000/hour"} | {Would need rate limiting} | [ ] |
-| A-003 | {e.g., "Users have modern browsers"} | {Would need polyfills for legacy support} | [ ] |
-
-**Note:** Validate critical assumptions before DESIGN phase. Unvalidated assumptions become risks.
+| Tipo | Restrição | Impacto |
+|------|-----------|---------|
+| Técnica | {ex., "Deve usar o schema de banco de dados existente"} | {Como isso afeta o design} |
+| Prazo | {ex., "Deve estar pronto no Q1"} | {Como isso afeta o escopo} |
+| Recurso | {ex., "Sem orçamento adicional de infraestrutura"} | {Como isso afeta a abordagem} |
 
 ---
 
-## Clarity Score Breakdown
+## Contexto Técnico
 
-| Element | Score (0-3) | Notes |
-|---------|-------------|-------|
-| Problem | {0-3} | {Why this score} |
-| Users | {0-3} | {Why this score} |
-| Goals | {0-3} | {Why this score} |
-| Success | {0-3} | {Why this score} |
-| Scope | {0-3} | {Why this score} |
+> Contexto essencial para a fase de Design - evita arquivos mal posicionados e necessidades de infraestrutura perdidas.
+
+| Aspecto | Valor | Notas |
+|---------|-------|-------|
+| **Localização de Deploy** | {src/ \| functions/ \| gen/ \| deploy/ \| caminho customizado} | {Por que esta localização} |
+| **Domínios KB** | {Liste os domínios de .claude/kb/ relevantes para esta feature} | {Quais padrões consultar} |
+| **Impacto IaC** | {Novos recursos \| Modificar existentes \| Nenhum \| A definir} | {Mudanças de infraestrutura necessárias} |
+
+**Por Que Isso Importa:**
+
+- **Localização** → Fase de Design usa a estrutura correta do projeto, evita arquivos mal posicionados
+- **Domínios KB** → Fase de Design puxa os padrões corretos de `.claude/kb/`
+- **Impacto IaC** → Aciona o planejamento de infraestrutura, evita falhas do tipo "funciona local"
+
+---
+
+## Contrato de Dados (se aplicável)
+
+> Inclua esta seção quando a feature envolver pipelines de dados, ETL ou analytics.
+
+### Inventário de Origens
+| Origem | Tipo | Volume | Frequência | Responsável |
+|--------|------|--------|------------|-------------|
+| {origem_1} | {Postgres / Kafka / S3 / API} | {~linhas/dia} | {SLA} | {Time} |
+
+### Contrato de Schema
+| Coluna | Tipo | Restrições | PII? |
+|--------|------|------------|------|
+| {coluna_1} | {INT / VARCHAR / DECIMAL} | {NOT NULL, UNIQUE} | {Sim/Não} |
+
+### SLAs de Atualização
+| Camada | Meta | Medição |
+|--------|------|---------|
+| Raw / Staging | {Dentro de X minutos após mudança na origem} | {Comparação de timestamp} |
+| Marts | {Atualizado até HH:MM UTC diariamente} | {Tempo de conclusão do DAG} |
+
+### Métricas de Completude
+- {ex., 99,9% dos registros da origem presentes dentro do SLA}
+- {ex., Zero chaves primárias nulas em todos os modelos}
+
+### Requisitos de Lineage
+- {ex., Lineage em nível de coluna da origem ao mart}
+- {ex., Análise de impacto antes de mudanças de schema}
+
+---
+
+## Premissas
+
+Premissas que, se incorretas, podem invalidar o design:
+
+| ID | Premissa | Se Errada, Impacto | Validada? |
+|----|----------|-------------------|-----------|
+| A-001 | {ex., "O banco de dados suporta a carga esperada"} | {Precisaria de camada de cache} | [ ] |
+| A-002 | {ex., "O volume de requisições fica abaixo de 1000/hora"} | {Precisaria de rate limiting} | [ ] |
+| A-003 | {ex., "Usuários têm browsers modernos"} | {Precisaria de polyfills para suporte legado} | [ ] |
+
+**Nota:** Valide premissas críticas antes da fase de DESIGN. Premissas não validadas se tornam riscos.
+
+---
+
+## Detalhamento do Clarity Score
+
+| Elemento | Score (0-3) | Notas |
+|----------|-------------|-------|
+| Problema | {0-3} | {Por que este score} |
+| Usuários | {0-3} | {Por que este score} |
+| Objetivos | {0-3} | {Por que este score} |
+| Sucesso | {0-3} | {Por que este score} |
+| Escopo | {0-3} | {Por que este score} |
 | **Total** | **{X}/15** | |
 
-**Scoring Guide:**
-- 0 = Missing entirely
-- 1 = Vague or incomplete
-- 2 = Clear but missing details
-- 3 = Crystal clear, actionable
+**Guia de Pontuação:**
+- 0 = Totalmente ausente
+- 1 = Vago ou incompleto
+- 2 = Claro mas faltam detalhes
+- 3 = Cristalino e acionável
 
-**Minimum to proceed: 12/15**
-
----
-
-## Open Questions
-
-{List any remaining questions that need answers before Design phase. If none, state "None - ready for Design."}
+**Mínimo para prosseguir: 12/15**
 
 ---
 
-## Revision History
+## Questões em Aberto
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | {YYYY-MM-DD} | define-agent | Initial version |
+{Liste quaisquer perguntas restantes que precisam de resposta antes da fase de Design. Se nenhuma, escreva "Nenhuma - pronto para Design."}
 
 ---
 
-## Next Step
+## Histórico de Revisões
 
-**Ready for:** `/design .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
+| Versão | Data | Autor | Mudanças |
+|--------|------|-------|----------|
+| 1.0 | {YYYY-MM-DD} | define-agent | Versão inicial |
+
+---
+
+## Próximo Passo
+
+**Pronto para:** `/design .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`

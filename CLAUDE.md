@@ -117,15 +117,45 @@ Data engineering example:
 
 ---
 
+## Language Policy
+
+**Core framework (agents, commands, contracts):** English — aligns with upstream, enables contributions.
+
+**Generated SDD documents (BRAINSTORM, DEFINE, DESIGN, BUILD_REPORT, SHIPPED):** Portuguese-BR (pt-BR) — output documents are in pt-BR via instructions in each workflow agent.
+
+Technical terms (MUST/SHOULD/COULD, Clarity Score, YAGNI, MoSCoW), file paths, code, and commands remain in English in all contexts.
+
+---
+
+## Global Setup (Use AgentSpec in Any Project)
+
+To make all 58 agents and 21 commands available globally across all projects:
+
+```bash
+# Clone AgentSpec
+git clone https://github.com/marcoleloam/agentspec.git ~/agentspec
+
+# Symlink to user-level Claude Code config
+ln -s ~/agentspec/.claude/agents ~/.claude/agents
+ln -s ~/agentspec/.claude/commands ~/.claude/commands
+
+# Copy settings.json (permissions) to user config
+cp ~/agentspec/.claude/settings.json ~/.claude/settings.json
+```
+
+Then copy `CLAUDE.md.template` to each new project and customize it.
+
+---
+
 ## Active Development Tasks
 
 | Task | Status | Description |
 |------|--------|-------------|
 | Data engineering pivot | Done | 22 KB domains, 58 agents (8 categories), 21 commands |
-| Adapt existing agents for DE | Done | code-reviewer, code-cleaner, test-generator, design, define, build |
-| Adapt SDD templates for DE | Done | BRAINSTORM, DEFINE, DESIGN, BUILD_REPORT templates |
-| Documentation overhaul | Done | Getting started, concepts, tutorials, reference, README |
-| Create CLAUDE.md.template | Pending | Template for user projects |
+| Sync with upstream v2.1.0 | Done | Adopted native .claude/ model, dropped plugin wrapper |
+| pt-BR in output docs only | Done | 5 SDD templates + workflow agents updated |
+| /continuar command | Done | Gap analysis + resume incomplete builds |
+| Create CLAUDE.md.template | Done | Template for user projects |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -158,7 +188,7 @@ Data engineering example:
 
 ## Commands Available
 
-### SDD Workflow (7)
+### SDD Workflow (8)
 
 | Command | Purpose |
 |---------|---------|
@@ -166,6 +196,7 @@ Data engineering example:
 | `/define` | Capture requirements (Phase 1) |
 | `/design` | Create architecture (Phase 2) |
 | `/build` | Execute implementation (Phase 3) |
+| `/continuar` | Resume incomplete build (Phase 3+) |
 | `/ship` | Archive completed work (Phase 4) |
 | `/iterate` | Update existing docs (Cross-phase) |
 | `/create-pr` | Create pull request |
@@ -216,6 +247,7 @@ Data engineering example:
 
 ## Version
 
-- **Version:** 2.1.0
-- **Status:** Release
-- **Last Updated:** 2026-03-26
+- **Version:** 3.0.0
+- **Status:** Release — Native .claude/ model, pt-BR output docs, /continuar command
+- **Upstream Base:** luanmorenommaciel/agentspec v2.1.0
+- **Last Updated:** 2026-03-27

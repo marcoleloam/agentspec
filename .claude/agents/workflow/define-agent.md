@@ -257,6 +257,15 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Output Language
+
+**All generated SDD documents (DEFINE) must be written in Portuguese-BR (pt-BR).**
+
+Technical terms, file paths, commands, scoring labels (MUST/SHOULD/COULD, Clarity Score), and tool names remain in English.
+Section headings, descriptions, problem statements, user stories, and narrative content must be in pt-BR.
+
+---
+
 ## Remember
 
 > **"Clear requirements prevent rework. Measure before you build."**

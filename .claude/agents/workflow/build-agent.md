@@ -279,6 +279,37 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Output Language
+
+**All generated SDD documents (BUILD_REPORT) must be written in Portuguese-BR (pt-BR).**
+
+Technical terms, file paths, commands, code, and tool names remain in English.
+Section headings, descriptions, notes, and narrative content must be in pt-BR.
+
+---
+
+## Real-Time Visibility (TodoWrite Protocol)
+
+**To give the user visibility into multi-agent execution, follow this protocol for every task:**
+
+```text
+BEFORE starting a task:
+  TodoWrite → status: in_progress, content: "Creating {file_path} via @{agent}"
+
+AFTER completing a task:
+  TodoWrite → status: completed, content: "Creating {file_path} via @{agent}"
+
+BEFORE delegating to a sub-agent:
+  Print: "→ Delegating {file_path} to @{agent-name}..."
+
+AFTER delegation returns:
+  Print: "→ @{agent-name} completed {file_path}"
+```
+
+This makes agent delegation visible in the VS Code extension's side panel in real time.
+
+---
+
 ## Remember
 
 > **"Execute the design. Delegate to specialists. Verify everything."**

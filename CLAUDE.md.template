@@ -1,0 +1,113 @@
+# {Your Project Name}
+
+> {One sentence describing your project}
+
+---
+
+## Project Context
+
+**What:** {Brief description of what this project does}
+
+**Stack:** {Tech stack — e.g., Python / FastAPI / PostgreSQL / dbt / Airflow}
+
+**AgentSpec:** SDD workflow enabled — use `/brainstorm`, `/define`, `/design`, `/build`, `/ship`
+
+---
+
+## Repository Structure
+
+```text
+{project-name}/
+├── src/                     # Application code
+├── tests/                   # Test suite
+├── .claude/                 # Claude Code config (AgentSpec)
+│   ├── agents/              # 58 specialized agents (via symlink or copy)
+│   ├── commands/            # 21 slash commands
+│   ├── kb/                  # Knowledge Base domains
+│   └── sdd/                 # SDD documents
+│       ├── features/        # Active: BRAINSTORM_, DEFINE_, DESIGN_
+│       ├── reports/         # BUILD_REPORT_
+│       └── archive/         # Shipped features
+└── CLAUDE.md                # This file
+```
+
+---
+
+## Development Workflow (SDD)
+
+All development follows the 5-phase SDD workflow:
+
+```bash
+# Phase 0 — Explore (optional)
+/brainstorm "What I want to build"
+
+# Phase 1 — Capture requirements
+/define FEATURE_NAME
+
+# Phase 2 — Design architecture
+/design .claude/sdd/features/DEFINE_FEATURE_NAME.md
+
+# Phase 3 — Build implementation
+/build .claude/sdd/features/DESIGN_FEATURE_NAME.md
+
+# Phase 4 — Archive when done
+/ship .claude/sdd/features/DEFINE_FEATURE_NAME.md
+
+# Cross-phase — When requirements change
+/iterate .claude/sdd/features/DEFINE_FEATURE_NAME.md "what changed"
+
+# Resume incomplete build
+/continuar FEATURE_NAME
+```
+
+**Language:** All SDD documents (BRAINSTORM, DEFINE, DESIGN, BUILD_REPORT, SHIPPED) are generated in **Portuguese-BR (pt-BR)**. Code, commands, and file paths remain in English.
+
+---
+
+## Knowledge Base Domains
+
+Domains active for this project (from `.claude/kb/`):
+
+| Domain | Use For |
+|--------|---------|
+| {domain-1} | {What you use it for} |
+| {domain-2} | {What you use it for} |
+
+> Add domains by running `/create-kb domain-name`
+
+---
+
+## Coding Standards
+
+- {Language/framework convention 1}
+- {Language/framework convention 2}
+- {Testing requirement}
+
+---
+
+## Key Commands for This Project
+
+| Command | When to Use |
+|---------|-------------|
+| `/define` | Starting a new feature |
+| `/design` | Planning the implementation |
+| `/build` | Executing the implementation |
+| `/review` | Before creating a PR |
+| `/data-quality` | Adding quality checks to pipelines |
+| `/schema` | Designing new data models |
+
+---
+
+## Active Features
+
+| Feature | Phase | Status |
+|---------|-------|--------|
+| {Feature 1} | Define | In Progress |
+
+---
+
+## Version
+
+- **Project Version:** {x.y.z}
+- **AgentSpec Version:** 3.0.0
+- **Last Updated:** {YYYY-MM-DD}
