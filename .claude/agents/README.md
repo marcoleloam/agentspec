@@ -1,8 +1,8 @@
 # AgentSpec Agents
 
-AgentSpec deploys **58 specialized agents** across **8 categories**, each built on a **three-tier template system** with mandatory **KB-First knowledge resolution**. Every agent carries a cognitive framework that enforces structured confidence scoring, provenance tracking, and explicit stop conditions -- turning raw LLM capability into disciplined, auditable domain expertise.
+AgentSpec deploys **63 specialized agents** across **9 categories**, each built on a **three-tier template system** with mandatory **KB-First knowledge resolution**. Every agent carries a cognitive framework that enforces structured confidence scoring, provenance tracking, and explicit stop conditions -- turning raw LLM capability into disciplined, auditable domain expertise.
 
-`58 agents | 8 categories | 3 tiers (T1/T2/T3) | 22 KB domains | 100% template compliance`
+`63 agents | 9 categories | 3 tiers (T1/T2/T3) | 28 KB domains | 100% template compliance`
 
 ---
 
@@ -40,7 +40,7 @@ User
   |
   v
 Orchestrator (Claude Code)
-  |-- reads 58 agent descriptions from frontmatter
+  |-- reads 63 agent descriptions from frontmatter
   |-- pattern-matches message to capabilities
   |-- selects best-fit agent
   v
@@ -220,7 +220,19 @@ Implementation specialists for data pipelines and processing.
 | `ai-data-engineer` | T2 | sonnet | RAG pipelines, vector DBs, feature stores |
 | `qdrant-specialist` | T3 | opus | Qdrant vector database, collection management |
 
-### 7. Dev (4 agents)
+### 7. Frontend (5 agents)
+
+React, Tailwind CSS, UX, accessibility, and frontend architecture.
+
+| Agent | Tier | Model | Purpose |
+|-------|------|-------|---------|
+| `react-developer` | T2 | sonnet | React/Next.js components, hooks, RSC, state, data fetching |
+| `css-specialist` | T2 | sonnet | Tailwind CSS, design tokens, responsive, dark mode, cva variants |
+| `ux-designer` | T2 | opus | User flows, information architecture, wireframes, usability |
+| `frontend-architect` | T2 | opus | SSR/CSR strategy, performance, caching, deployment |
+| `a11y-specialist` | T2 | sonnet | WCAG 2.1 AA, ARIA, keyboard navigation, screen readers |
+
+### 8. Dev (4 agents)
 
 Developer tools and productivity.
 
@@ -231,7 +243,7 @@ Developer tools and productivity.
 | `meeting-analyst` | T2 | sonnet | Extract decisions and action items from meetings |
 | `shell-script-specialist` | T2 | sonnet | Production-grade Bash scripts, automation, deployment scripts |
 
-### 8. Workflow (6 agents)
+### 9. Workflow (6 agents)
 
 Drive the SDD workflow phases.
 
@@ -282,6 +294,21 @@ Cloud <-> Data Engineering:
 Architect <-> Data Engineering:
   genai-architect -> ai-data-engineer (RAG data layer), streaming-engineer (real-time)
   ai-prompt-specialist -> ai-data-engineer (extraction pipelines)
+
+Frontend <-> Frontend:
+  react-developer <-> css-specialist (component logic vs styling)
+  react-developer <-> frontend-architect (implementation vs architecture)
+  css-specialist <-> ux-designer (styling vs UX flows)
+  a11y-specialist -> react-developer (fix component for a11y)
+  frontend-architect -> react-developer (implementation details)
+
+Workflow <-> Frontend:
+  build-agent -> react-developer, css-specialist, a11y-specialist (frontend delegation)
+  design-agent -> frontend-architect (architecture), ux-designer (UX flows)
+
+Frontend <-> Python:
+  code-reviewer -> a11y-specialist (accessibility audit), css-specialist (design system)
+  test-generator -> react-developer (component tests with Testing Library)
 
 Dev <-> All:
   prompt-crafter -> any agent (agent matching engine)

@@ -10,10 +10,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
-[![Version](https://img.shields.io/badge/version-3.0.0-green.svg)](CHANGELOG.md)
-[![Agents](https://img.shields.io/badge/agents-58-orange.svg)](.claude/agents/)
+[![Version](https://img.shields.io/badge/version-3.1.0-green.svg)](CHANGELOG.md)
+[![Agents](https://img.shields.io/badge/agents-63-orange.svg)](.claude/agents/)
 [![Commands](https://img.shields.io/badge/commands-22-blue.svg)](.claude/commands/)
-[![KB Domains](https://img.shields.io/badge/KB%20domains-22-blue.svg)](.claude/kb/)
+[![KB Domains](https://img.shields.io/badge/KB%20domains-28-blue.svg)](.claude/kb/)
 
 [Quick Start](#quick-start) | [Commands](#commands) | [Documentation](docs/) | [Contributing](CONTRIBUTING.md)
 
@@ -27,7 +27,7 @@ AI-assisted development without structure produces inconsistent results: halluci
 
 ## The Solution
 
-AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code — a 5-phase workflow backed by 22 knowledge base domains, 58 specialized agents, and 22 slash commands. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
+AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code — a 5-phase workflow backed by 28 knowledge base domains, 63 specialized agents, and 22 slash commands. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
 
 ```text
 /brainstorm  →  /define  →  /design  →  /build  →  /ship
@@ -59,7 +59,7 @@ cd $env:USERPROFILE\agentspec
 powershell -ExecutionPolicy Bypass -File install-win.ps1
 ```
 
-The installer creates symlinks from `~/.claude/` (or `%APPDATA%\Claude\` on Windows) to the cloned repo. All 58 agents and 22 commands become available globally in every project.
+The installer creates symlinks from `~/.claude/` (or `%APPDATA%\Claude\` on Windows) to the cloned repo. All 63 agents and 22 commands become available globally in every project.
 
 **Update anytime:**
 
@@ -86,12 +86,12 @@ Workflow ativo — documentos gerados em pt-BR.
 | `/define` | Capturar requisitos |
 | `/design` | Planejar arquitetura |
 | `/build` | Implementar |
-| `/continuar` | Retomar build incompleto |
-| `/ship` | Arquivar feature concluída |
+| `/continue` | Retomar build incompleto |
+| `/ship` | Arquivar feature concluida |
 
 SDD docs: `.claude/sdd/features/` | Reports: `.claude/sdd/reports/`
 
-**AgentSpec Version:** 3.0.0
+**AgentSpec Version:** 3.1.0
 EOF
 ```
 
@@ -111,12 +111,12 @@ cp ~/agentspec/CLAUDE.md.template ./CLAUDE.md
 | Phase | Command | What It Does | Quality Gate |
 |-------|---------|--------------|--------------|
 | **Brainstorm** | `/brainstorm` | Explore approaches, YAGNI, 1 question at a time | 3+ questions, 2+ approaches |
-| **Define** | `/define` | Requirements + MoSCoW goals + data contracts | Clarity Score ≥ 12/15 |
+| **Define** | `/define` | Requirements + MoSCoW goals + data contracts | Clarity Score >= 12/15 |
 | **Design** | `/design` | Architecture + ADRs + file manifest with agent assignment | Complete manifest |
 | **Build** | `/build` | Execute + agent delegation + verification | All tests pass |
 | **Ship** | `/ship` | Archive with lessons learned | Acceptance verified |
 
-**Didn't finish the build?** Use `/continuar` for gap analysis — implements only what's missing without restarting.
+**Didn't finish the build?** Use `/continue` for gap analysis — implements only what's missing without restarting.
 
 **Requirements changed mid-stream?** Use `/iterate` to update any phase document with automatic cascade detection.
 
@@ -132,7 +132,7 @@ cp ~/agentspec/CLAUDE.md.template ./CLAUDE.md
 | `/define` | Capture requirements (Phase 1) |
 | `/design` | Create architecture (Phase 2) |
 | `/build` | Execute implementation (Phase 3) |
-| `/continuar` | Resume incomplete build (Phase 3+) |
+| `/continue` | Resume incomplete build (Phase 3+) |
 | `/ship` | Archive completed work (Phase 4) |
 | `/iterate` | Update docs mid-stream (Cross-phase) |
 | `/create-pr` | Create pull request |
@@ -165,7 +165,7 @@ cp ~/agentspec/CLAUDE.md.template ./CLAUDE.md
 
 ## Agents
 
-58 specialized agents automatically matched to tasks during `/build`:
+63 specialized agents automatically matched to tasks during `/build`:
 
 | Category | Count | Examples |
 |----------|-------|---------|
@@ -173,6 +173,7 @@ cp ~/agentspec/CLAUDE.md.template ./CLAUDE.md
 | **Architect** | 8 | schema-designer, pipeline-architect, medallion-architect, lakehouse-architect |
 | **Cloud** | 10 | aws-data-architect, gcp-data-architect, lambda-builder, ci-cd-specialist |
 | **Platform** | 6 | fabric-architect, fabric-pipeline-developer, fabric-ai-specialist |
+| **Frontend** | 5 | react-developer, css-specialist, ux-designer, frontend-architect, a11y-specialist |
 | **Python** | 6 | python-developer, code-reviewer, code-cleaner, llm-specialist |
 | **Test** | 3 | test-generator, data-quality-analyst, data-contracts-engineer |
 | **Data Engineering** | 15 | dbt-specialist, spark-engineer, airflow-specialist, sql-optimizer, streaming-engineer |
@@ -182,7 +183,7 @@ cp ~/agentspec/CLAUDE.md.template ./CLAUDE.md
 
 ## Knowledge Base
 
-22 KB domains consulted by agents before generating any recommendation:
+28 KB domains consulted by agents before generating any recommendation:
 
 | Category | Domains |
 |----------|---------|
@@ -191,6 +192,7 @@ cp ~/agentspec/CLAUDE.md.template ./CLAUDE.md
 | **Infrastructure** | `lakehouse`, `lakeflow`, `cloud-platforms`, `terraform` |
 | **Cloud** | `aws`, `gcp`, `microsoft-fabric` |
 | **AI & Modern Stack** | `ai-data-engineering`, `modern-stack`, `genai`, `prompt-engineering` |
+| **Frontend** | `react`, `nextjs`, `tailwind-css`, `accessibility`, `design-systems`, `frontend-patterns` |
 | **Foundations** | `pydantic`, `python`, `testing` |
 
 ---
@@ -204,9 +206,9 @@ agentspec/
 ├── CLAUDE.md.template       # Template for user projects
 │
 └── .claude/
-    ├── agents/              # 58 specialized agents (8 categories)
+    ├── agents/              # 63 specialized agents (9 categories)
     ├── commands/            # 22 slash commands (5 categories)
-    ├── kb/                  # 22 Knowledge Base domains
+    ├── kb/                  # 28 Knowledge Base domains
     ├── sdd/
     │   ├── architecture/    # WORKFLOW_CONTRACTS.yaml
     │   ├── templates/       # 5 phase templates (pt-BR)

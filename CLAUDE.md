@@ -6,7 +6,7 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, specialized for data engineering with 58 agents, 21 commands, and 22 KB domains.
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 63 agents (data engineering + frontend), 21 commands, and 28 KB domains.
 
 **Current Status:** v2.1.0 — Data engineering pivot complete with multi-cloud coverage. Linear is the project tracker (source of truth).
 
@@ -17,13 +17,14 @@
 ```text
 agentspec/
 ├── .claude/                 # Claude Code integration
-│   ├── agents/              # 58 specialized agents
+│   ├── agents/              # 63 specialized agents
 │   │   ├── architect/       # 8 system-level design agents
 │   │   ├── cloud/           # 10 AWS, GCP, cloud services, CI/CD
 │   │   ├── platform/        # 6 Microsoft Fabric specialists
 │   │   ├── python/          # 6 Python dev, code quality, prompts
 │   │   ├── test/            # 3 testing, data quality, contracts
 │   │   ├── data-engineering/ # 15 DE implementation specialists
+│   │   ├── frontend/        # 5 React, CSS, UX, a11y, architecture
 │   │   ├── dev/             # 4 developer tools & productivity
 │   │   └── workflow/        # 6 SDD phase agents
 │   │
@@ -41,7 +42,7 @@ agentspec/
 │   │   ├── reports/         # Build reports
 │   │   └── archive/         # Shipped features
 │   │
-│   └── kb/                  # Knowledge Base (22 domains)
+│   └── kb/                  # Knowledge Base (28 domains)
 │       ├── _templates/      # 7 KB domain templates
 │       ├── _index.yaml      # Domain registry
 │       ├── dbt/             # dbt patterns and concepts
@@ -65,7 +66,13 @@ agentspec/
 │       ├── pydantic/        # Validation, LLM output schemas
 │       ├── python/          # Python patterns and idioms
 │       ├── testing/         # pytest, fixtures, CI testing
-│       └── terraform/       # IaC modules, state, workspaces
+│       ├── terraform/       # IaC modules, state, workspaces
+│       ├── react/           # Hooks, RSC, composition, data fetching
+│       ├── nextjs/          # App Router, SSR/CSR, caching, middleware
+│       ├── tailwind-css/    # Utility-first, tokens, responsive, dark mode
+│       ├── accessibility/   # WCAG, aria, keyboard, screen readers
+│       ├── design-systems/  # Tokens, component API, variants, theming
+│       └── frontend-patterns/ # Project structure, auth, performance
 │
 ├── docs/                    # Documentation
 │   ├── getting-started/     # Installation and first pipeline
@@ -129,7 +136,7 @@ Technical terms (MUST/SHOULD/COULD, Clarity Score, YAGNI, MoSCoW), file paths, c
 
 ## Global Setup (Use AgentSpec in Any Project)
 
-To make all 58 agents and 21 commands available globally across all projects:
+To make all 63 agents and 21 commands available globally across all projects:
 
 ```bash
 # Clone AgentSpec
@@ -152,6 +159,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | Task | Status | Description |
 |------|--------|-------------|
 | Data engineering pivot | Done | 22 KB domains, 58 agents (8 categories), 21 commands |
+| Frontend ecosystem | Done | 6 KB domains, 5 agents (frontend category), stack detection |
 | Sync with upstream v2.1.0 | Done | Adopted native .claude/ model, dropped plugin wrapper |
 | pt-BR in output docs only | Done | 5 SDD templates + workflow agents updated |
 | /continuar command | Done | Gap analysis + resume incomplete builds |
@@ -175,7 +183,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 - Clear capabilities list
 - Concrete examples
 - Defined output format
-- `kb_domains` field for DE agents
+- `kb_domains` field for DE and frontend agents
 
 ### KB Domains
 
@@ -234,11 +242,12 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
 | `.claude/sdd/templates/*.md` | Document templates (DE-aware) |
 | `.claude/kb/_templates/*.template` | KB domain templates |
-| `.claude/kb/_index.yaml` | KB domain registry (22 domains) |
+| `.claude/kb/_index.yaml` | KB domain registry (28 domains) |
 | `.claude/agents/README.md` | Agent routing + escalation map |
 | `.claude/agents/architect/` | System-level design agents (schema, pipeline, lakehouse) |
 | `.claude/agents/cloud/` | AWS, GCP, CI/CD, deployment agents |
 | `.claude/agents/platform/` | Microsoft Fabric specialists |
+| `.claude/agents/frontend/` | React, CSS/Tailwind, UX, a11y, architecture |
 | `.claude/agents/python/` | Python dev, code quality, prompt engineering |
 | `.claude/agents/test/` | Testing, data quality, data contracts |
 | `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst |
@@ -247,7 +256,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 
 ## Version
 
-- **Version:** 3.0.0
-- **Status:** Release — Native .claude/ model, pt-BR output docs, /continuar command
+- **Version:** 3.1.0
+- **Status:** Release — Frontend ecosystem (5 agents + 6 KB domains), 63 agents total, 28 KB domains
 - **Upstream Base:** luanmorenommaciel/agentspec v2.1.0
-- **Last Updated:** 2026-03-27
+- **Last Updated:** 2026-03-29

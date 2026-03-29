@@ -463,6 +463,19 @@ build:
       - "sqlfluff lint {file} --dialect {dialect}"
       - "great_expectations suite run {suite}"
 
+  frontend_delegation:
+    description: "When DESIGN contains frontend architecture, Build delegates to frontend agents"
+    agent_map:
+      react_components: "react-developer"
+      css_styling: "css-specialist"
+      ux_flows: "ux-designer"
+      frontend_architecture: "frontend-architect"
+      accessibility_audit: "a11y-specialist"
+    fe_verification:
+      - "npx tsc --noEmit"
+      - "npx eslint {file}"
+      - "npx next build"
+
   anti_patterns:
     - improvising: "Creating files not in manifest"
     - skipping_verify: "Not testing after creation"

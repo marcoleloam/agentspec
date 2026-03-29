@@ -35,7 +35,7 @@ shared:
     path: shared/anti-patterns.md
     description: "Cross-agent anti-pattern library referenced by all data engineering agents"
 
-# Domain Registry — 22 Domains
+# Domain Registry — 28 Domains (22 DE + 6 Frontend)
 domains:
 
   # ─── Core Data Engineering ─────────────────────────────────────────
@@ -1053,4 +1053,195 @@ domains:
         confidence: 0.90
       - name: remote-state
         path: patterns/remote-state.md
+        confidence: 0.90
+
+  # ─── Frontend Development ──────────────────────────────────────
+
+  react:
+    name: react
+    description: "React development patterns — hooks, Server Components, state management, composition"
+    path: react/
+    mcp_validated: "2026-03-29"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: hooks-patterns
+        path: concepts/hooks-patterns.md
+        confidence: 0.90
+      - name: server-components
+        path: concepts/server-components.md
+        confidence: 0.90
+      - name: state-management
+        path: concepts/state-management.md
+        confidence: 0.90
+      - name: rendering-patterns
+        path: concepts/rendering-patterns.md
+        confidence: 0.90
+    patterns:
+      - name: component-composition
+        path: patterns/component-composition.md
+        confidence: 0.90
+      - name: form-handling
+        path: patterns/form-handling.md
+        confidence: 0.90
+      - name: data-fetching
+        path: patterns/data-fetching.md
+        confidence: 0.90
+      - name: testing-components
+        path: patterns/testing-components.md
+        confidence: 0.90
+
+  nextjs:
+    name: nextjs
+    description: "Next.js App Router patterns — rendering strategies, caching, middleware, deployment"
+    path: nextjs/
+    mcp_validated: "2026-03-29"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: app-router
+        path: concepts/app-router.md
+        confidence: 0.90
+      - name: rendering-strategies
+        path: concepts/rendering-strategies.md
+        confidence: 0.90
+      - name: caching
+        path: concepts/caching.md
+        confidence: 0.90
+      - name: middleware
+        path: concepts/middleware.md
+        confidence: 0.90
+    patterns:
+      - name: api-routes
+        path: patterns/api-routes.md
+        confidence: 0.90
+      - name: auth-patterns
+        path: patterns/auth-patterns.md
+        confidence: 0.90
+      - name: image-optimization
+        path: patterns/image-optimization.md
+        confidence: 0.90
+      - name: deployment
+        path: patterns/deployment.md
+        confidence: 0.90
+
+  tailwind-css:
+    name: tailwind-css
+    description: "Tailwind CSS utility-first patterns — design tokens, responsive design, dark mode, animations"
+    path: tailwind-css/
+    mcp_validated: "2026-03-29"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: utility-first
+        path: concepts/utility-first.md
+        confidence: 0.90
+      - name: design-tokens
+        path: concepts/design-tokens.md
+        confidence: 0.90
+      - name: responsive-design
+        path: concepts/responsive-design.md
+        confidence: 0.90
+    patterns:
+      - name: component-styling
+        path: patterns/component-styling.md
+        confidence: 0.90
+      - name: dark-mode
+        path: patterns/dark-mode.md
+        confidence: 0.90
+      - name: animations
+        path: patterns/animations.md
+        confidence: 0.90
+      - name: cn-utility
+        path: patterns/cn-utility.md
+        confidence: 0.90
+
+  accessibility:
+    name: accessibility
+    description: "Web accessibility — WCAG 2.1 AA, aria attributes, keyboard navigation, screen readers"
+    path: accessibility/
+    mcp_validated: "2026-03-29"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: wcag-guidelines
+        path: concepts/wcag-guidelines.md
+        confidence: 0.90
+      - name: aria-patterns
+        path: concepts/aria-patterns.md
+        confidence: 0.90
+      - name: keyboard-navigation
+        path: concepts/keyboard-navigation.md
+        confidence: 0.90
+    patterns:
+      - name: form-accessibility
+        path: patterns/form-accessibility.md
+        confidence: 0.90
+      - name: modal-dialog
+        path: patterns/modal-dialog.md
+        confidence: 0.90
+      - name: table-accessibility
+        path: patterns/table-accessibility.md
+        confidence: 0.90
+
+  design-systems:
+    name: design-systems
+    description: "Design system architecture — token tiers, component APIs, variants, theming"
+    path: design-systems/
+    mcp_validated: "2026-03-29"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: token-architecture
+        path: concepts/token-architecture.md
+        confidence: 0.90
+      - name: component-api
+        path: concepts/component-api.md
+        confidence: 0.90
+      - name: documentation
+        path: concepts/documentation.md
+        confidence: 0.90
+    patterns:
+      - name: variant-pattern
+        path: patterns/variant-pattern.md
+        confidence: 0.90
+      - name: shadcn-patterns
+        path: patterns/shadcn-patterns.md
+        confidence: 0.90
+      - name: theme-switching
+        path: patterns/theme-switching.md
+        confidence: 0.90
+
+  frontend-patterns:
+    name: frontend-patterns
+    description: "Cross-cutting frontend patterns — project structure, error handling, performance, auth, API integration"
+    path: frontend-patterns/
+    mcp_validated: "2026-03-29"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: project-structure
+        path: concepts/project-structure.md
+        confidence: 0.90
+      - name: error-handling
+        path: concepts/error-handling.md
+        confidence: 0.90
+      - name: performance
+        path: concepts/performance.md
+        confidence: 0.90
+    patterns:
+      - name: api-integration
+        path: patterns/api-integration.md
+        confidence: 0.90
+      - name: auth-flow
+        path: patterns/auth-flow.md
+        confidence: 0.90
+      - name: optimistic-updates
+        path: patterns/optimistic-updates.md
         confidence: 0.90

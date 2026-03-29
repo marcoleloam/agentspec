@@ -48,7 +48,7 @@ else
 fi
 
 echo ""
-echo "✅ Done! AgentSpec v3.0.0 is now available globally."
+echo "✅ Done! AgentSpec v3.1.0 is now available globally."
 echo ""
 echo "Next steps:"
 echo "  1. Copy the project template to any new project:"
