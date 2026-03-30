@@ -1,7 +1,7 @@
 {
   "name": "agentspec",
   "version": "3.2.0",
-  "description": "Spec-Driven Development framework for Data Engineering + Frontend — 63 agents, 28 KB domains, 5-phase SDD workflow, 29 commands",
+  "description": "Spec-Driven Development framework for Data Engineering + Frontend — 65 agents, 28 KB domains, 5-phase SDD workflow, 29 commands",
   "author": {
     "name": "Marco Aurelio Almeida Monteiro",
     "url": "https://github.com/marcoleloam"
