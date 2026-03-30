@@ -162,6 +162,30 @@ Before saving, verify:
 
 ---
 
+## Multi-Agent Mode
+
+When the input touches **3+ KB domains** (e.g., streaming + react + nextjs + frontend-patterns), the define phase benefits from specialist consultation. Use the `--multi` flag:
+
+```bash
+# Auto-detect: suggests multi-agent if 3+ domains detected
+/define .claude/sdd/features/BRAINSTORM_SALES_DASHBOARD.md
+
+# Force multi-agent mode
+/define --multi .claude/sdd/features/BRAINSTORM_SALES_DASHBOARD.md
+```
+
+**What multi-agent adds:**
+- Consults 3-4 domain specialists in parallel
+- Catches missing requirements from each domain
+- Identifies hidden technical constraints
+- Validates success criteria are realistic
+- Cost: ~3x more tokens than single-agent
+
+**When to use:** Cross-domain systems (DE + frontend, streaming + ML, etc.)
+**When NOT to use:** Single-domain features, simple CRUD, well-understood problems
+
+---
+
 ## Tips
 
 1. **Be Specific** - "Improve performance" → "Reduce API latency to <200ms"
@@ -173,7 +197,8 @@ Before saving, verify:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-agent.md`
+- Agent (single): `${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-agent.md`
+- Agent (multi): `${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-multiagent.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/DEFINE_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Previous Phase: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/brainstorm.md` (optional)

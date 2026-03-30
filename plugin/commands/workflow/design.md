@@ -156,6 +156,30 @@ Before saving, verify:
 
 ---
 
+## Multi-Agent Mode
+
+When the DEFINE document lists **3+ KB domains**, the design phase benefits from specialist validation. Use the `--multi` flag:
+
+```bash
+# Auto-detect: suggests multi-agent if 3+ domains in DEFINE
+/design .claude/sdd/features/DEFINE_SALES_DASHBOARD.md
+
+# Force multi-agent mode
+/design --multi .claude/sdd/features/DEFINE_SALES_DASHBOARD.md
+```
+
+**What multi-agent adds:**
+- Drafts architecture first, then consults 3-4 domain specialists
+- Specialists validate decisions from their domain perspective
+- Catches cross-domain risks, incompatibilities, and version issues
+- Adds "Consulta Multi-Agente" section with risk attribution
+- Cost: ~2x more tokens than single-agent
+
+**When to use:** Cross-domain architectures, production systems, unfamiliar domains
+**When NOT to use:** Single-domain features, prototypes, well-understood patterns
+
+---
+
 ## Tips
 
 1. **Diagram First** - ASCII art clarifies thinking
@@ -168,7 +192,8 @@ Before saving, verify:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-agent.md`
+- Agent (single): `${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-agent.md`
+- Agent (multi): `${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-multiagent.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/DESIGN_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Next Phase: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/build.md`
