@@ -1,0 +1,35 @@
+{
+  "name": "agentspec",
+  "version": "3.2.0",
+  "description": "Spec-Driven Development framework for Data Engineering + Frontend — 66 agents, 28 KB domains, 5-phase SDD workflow, 29 commands",
+  "author": {
+    "name": "Marco Aurelio Almeida Monteiro",
+    "url": "https://github.com/marcoleloam"
+  },
+  "upstream": {
+    "name": "Luan Moreno",
+    "url": "https://github.com/luanmorenommaciel/agentspec",
+    "version": "3.0.0"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/marcoleloam/agentspec",
+  "homepage": "https://github.com/marcoleloam/agentspec",
+  "keywords": [
+    "data-engineering",
+    "frontend",
+    "sdd",
+    "spec-driven-development",
+    "dbt",
+    "spark",
+    "airflow",
+    "pipeline",
+    "schema-design",
+    "data-quality",
+    "lakehouse",
+    "medallion",
+    "streaming",
+    "react",
+    "nextjs",
+    "tailwind"
+  ]
+}

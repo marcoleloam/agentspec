@@ -169,6 +169,7 @@ Before saving, verify:
 ## References
 
 - Agent: `.claude/agents/workflow/design-agent.md`
+- Multi-agent variant: `/design-m` (`.claude/commands/workflow/design-m.md`)
 - Template: `.claude/sdd/templates/DESIGN_TEMPLATE.md`
 - Contracts: `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Next Phase: `.claude/commands/workflow/build.md`

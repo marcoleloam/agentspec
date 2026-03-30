@@ -6,9 +6,9 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 63 agents (data engineering + frontend), 21 commands, and 28 KB domains.
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 66 agents (data engineering + frontend), 29 commands, 28 KB domains, and 4 skills.
 
-**Current Status:** v2.1.0 — Data engineering pivot complete with multi-cloud coverage. Linear is the project tracker (source of truth).
+**Current Status:** v3.2.0 — Plugin distribution system adopted from upstream v3.0.0. Linear is the project tracker (source of truth).
 
 ---
 
@@ -26,10 +26,10 @@ agentspec/
 │   │   ├── data-engineering/ # 15 DE implementation specialists
 │   │   ├── frontend/        # 5 React, CSS, UX, a11y, architecture
 │   │   ├── dev/             # 4 developer tools & productivity
-│   │   └── workflow/        # 6 SDD phase agents
+│   │   └── workflow/        # 9 SDD phase agents (incl. 3 multiagent variants)
 │   │
-│   ├── commands/            # 21 slash commands
-│   │   ├── workflow/        # SDD commands (7)
+│   ├── commands/            # 29 slash commands
+│   │   ├── workflow/        # SDD commands (8)
 │   │   ├── data-engineering/ # DE commands (8)
 │   │   ├── core/            # Utility commands (4)
 │   │   ├── knowledge/       # KB commands (1)
@@ -80,6 +80,24 @@ agentspec/
 │   ├── tutorials/           # dbt, star schema, Spark, streaming tutorials
 │   └── reference/           # Full catalog: agents, commands, KB domains
 │
+├── plugin/                  # Distributable Claude Code plugin
+│   ├── .claude-plugin/      # Manifest + marketplace config
+│   ├── agents/              # Path-rewritten agents
+│   ├── commands/            # Path-rewritten commands
+│   ├── skills/              # 4 skills (2 original + 2 plugin-only)
+│   ├── hooks/               # SessionStart workspace init
+│   ├── scripts/             # init-workspace.sh
+│   ├── kb/                  # Path-rewritten KB domains
+│   └── sdd/                 # Templates + architecture (no workspace)
+│
+├── plugin-extras/           # Plugin-only content (merged by build)
+│   ├── skills/              # sdd-workflow, data-engineering-guide
+│   ├── hooks/               # hooks.json
+│   └── scripts/             # init-workspace.sh
+│
+├── build-plugin.sh          # Packaging script (.claude/ → plugin/)
+├── install.sh               # Legacy symlink installer (Unix)
+├── install-win.ps1          # Legacy symlink installer (Windows)
 ├── CHANGELOG.md             # Version history
 ├── CONTRIBUTING.md          # Contribution guide
 ├── SECURITY.md              # Security policy
@@ -134,20 +152,31 @@ Technical terms (MUST/SHOULD/COULD, Clarity Score, YAGNI, MoSCoW), file paths, c
 
 ---
 
-## Global Setup (Use AgentSpec in Any Project)
+## Installation (Use AgentSpec in Any Project)
 
-To make all 63 agents and 21 commands available globally across all projects:
+### Option A: Plugin (Recommended)
 
 ```bash
-# Clone AgentSpec
+# Build the plugin
 git clone https://github.com/marcoleloam/agentspec.git ~/agentspec
+cd ~/agentspec && bash build-plugin.sh
 
-# Symlink to user-level Claude Code config
-ln -s ~/agentspec/.claude/agents ~/.claude/agents
-ln -s ~/agentspec/.claude/commands ~/.claude/commands
+# Install via plugin system
+claude plugin marketplace add marcoleloam/agentspec
+claude plugin install agentspec
 
-# Copy settings.json (permissions) to user config
-cp ~/agentspec/.claude/settings.json ~/.claude/settings.json
+# Or test locally
+claude --plugin-dir ~/agentspec/plugin
+```
+
+### Option B: Legacy Symlinks
+
+```bash
+# Unix/macOS
+bash ~/agentspec/install.sh
+
+# Windows PowerShell
+~/agentspec/install-win.ps1
 ```
 
 Then copy `CLAUDE.md.template` to each new project and customize it.
@@ -164,6 +193,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | pt-BR in output docs only | Done | 5 SDD templates + workflow agents updated |
 | /continuar command | Done | Gap analysis + resume incomplete builds |
 | Create CLAUDE.md.template | Done | Template for user projects |
+| Plugin distribution (upstream v3.0.0) | Done | build-plugin.sh, manifests, 2 skills, SessionStart hook |
 | Implement Judge layer | Planned | Spec validation via external LLM |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -251,12 +281,16 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | `.claude/agents/python/` | Python dev, code quality, prompt engineering |
 | `.claude/agents/test/` | Testing, data quality, data contracts |
 | `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst |
+| `build-plugin.sh` | Packages .claude/ into plugin/ with path rewriting |
+| `plugin/.claude-plugin/plugin.json` | Plugin manifest (name, version, metadata) |
+| `plugin-extras/skills/` | Plugin-only skills (sdd-workflow, data-engineering-guide) |
+| `plugin-extras/hooks/hooks.json` | SessionStart hook (creates SDD dirs) |
 
 ---
 
 ## Version
 
-- **Version:** 3.1.0
-- **Status:** Release — Frontend ecosystem (5 agents + 6 KB domains), 63 agents total, 28 KB domains
-- **Upstream Base:** luanmorenommaciel/agentspec v2.1.0
-- **Last Updated:** 2026-03-29
+- **Version:** 3.2.0
+- **Status:** Release — Plugin distribution + frontend ecosystem, 66 agents, 28 KB domains, 4 skills
+- **Upstream Base:** luanmorenommaciel/agentspec v3.0.0
+- **Last Updated:** 2026-03-30

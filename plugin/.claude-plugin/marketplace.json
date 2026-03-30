@@ -1,0 +1,25 @@
+{
+  "plugins": [
+    {
+      "name": "agentspec",
+      "version": "3.2.0",
+      "description": "Spec-Driven Development framework for Data Engineering + Frontend — 66 agents, 28 KB domains, 5-phase SDD workflow, 29 commands",
+      "source": "./",
+      "keywords": [
+        "data-engineering",
+        "frontend",
+        "sdd",
+        "spec-driven-development",
+        "dbt",
+        "spark",
+        "airflow",
+        "pipeline",
+        "schema-design",
+        "data-quality",
+        "lakehouse",
+        "react",
+        "nextjs"
+      ]
+    }
+  ]
+}

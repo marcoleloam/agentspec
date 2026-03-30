@@ -174,6 +174,7 @@ Before saving, verify:
 ## References
 
 - Agent: `.claude/agents/workflow/define-agent.md`
+- Multi-agent variant: `/define-m` (`.claude/commands/workflow/define-m.md`)
 - Template: `.claude/sdd/templates/DEFINE_TEMPLATE.md`
 - Contracts: `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Previous Phase: `.claude/commands/workflow/brainstorm.md` (optional)
