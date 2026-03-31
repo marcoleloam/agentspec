@@ -13,50 +13,52 @@ echo ""
 # Create ~/.claude if it doesn't exist
 mkdir -p "$CLAUDE_DIR"
 
-# Symlink agents
-if [ -L "$CLAUDE_DIR/agents" ]; then
-  echo "↻  agents: updating symlink"
-  rm "$CLAUDE_DIR/agents"
-  ln -s "$AGENTSPEC_DIR/.claude/agents" "$CLAUDE_DIR/agents"
-elif [ -d "$CLAUDE_DIR/agents" ]; then
-  echo "⚠  agents: directory already exists at ~/.claude/agents"
-  echo "   Remove it manually and re-run if you want AgentSpec to manage it."
-else
-  echo "→  agents: creating symlink"
-  ln -s "$AGENTSPEC_DIR/.claude/agents" "$CLAUDE_DIR/agents"
-fi
+# Symlink all core components
+for dir in agents commands kb sdd skills; do
+  if [ -L "$CLAUDE_DIR/$dir" ]; then
+    echo "↻  $dir: updating symlink"
+    rm "$CLAUDE_DIR/$dir"
+    ln -s "$AGENTSPEC_DIR/.claude/$dir" "$CLAUDE_DIR/$dir"
+  elif [ -d "$CLAUDE_DIR/$dir" ]; then
+    echo "⚠  $dir: directory already exists at ~/.claude/$dir"
+    echo "   Remove it manually and re-run if you want AgentSpec to manage it."
+  else
+    echo "→  $dir: creating symlink"
+    ln -s "$AGENTSPEC_DIR/.claude/$dir" "$CLAUDE_DIR/$dir"
+  fi
+done
 
-# Symlink commands
-if [ -L "$CLAUDE_DIR/commands" ]; then
-  echo "↻  commands: updating symlink"
-  rm "$CLAUDE_DIR/commands"
-  ln -s "$AGENTSPEC_DIR/.claude/commands" "$CLAUDE_DIR/commands"
-elif [ -d "$CLAUDE_DIR/commands" ]; then
-  echo "⚠  commands: directory already exists at ~/.claude/commands"
-  echo "   Remove it manually and re-run if you want AgentSpec to manage it."
+# Symlink settings.json (bypassPermissions + pre-approved tools)
+if [ -L "$CLAUDE_DIR/settings.json" ]; then
+  echo "↻  settings.json: updating symlink"
+  rm "$CLAUDE_DIR/settings.json"
+  ln -s "$AGENTSPEC_DIR/.claude/settings.json" "$CLAUDE_DIR/settings.json"
+elif [ -f "$CLAUDE_DIR/settings.json" ]; then
+  echo "⚠  settings.json: file already exists — backing up and replacing"
+  cp "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.json.bak"
+  rm "$CLAUDE_DIR/settings.json"
+  ln -s "$AGENTSPEC_DIR/.claude/settings.json" "$CLAUDE_DIR/settings.json"
+  echo "   Backup saved to ~/.claude/settings.json.bak"
 else
-  echo "→  commands: creating symlink"
-  ln -s "$AGENTSPEC_DIR/.claude/commands" "$CLAUDE_DIR/commands"
-fi
-
-# Copy settings.json (permissions) — only if not already present
-if [ -f "$CLAUDE_DIR/settings.json" ]; then
-  echo "↷  settings.json: already exists, skipping (not overwriting your config)"
-else
-  echo "→  settings.json: copying permissions config"
-  cp "$AGENTSPEC_DIR/.claude/settings.json" "$CLAUDE_DIR/settings.json"
+  echo "→  settings.json: creating symlink"
+  ln -s "$AGENTSPEC_DIR/.claude/settings.json" "$CLAUDE_DIR/settings.json"
 fi
 
 echo ""
-echo "✅ Done! AgentSpec v3.1.0 is now available globally."
+echo "✅ Done! AgentSpec v3.2.0 is now available globally."
+echo ""
+echo "Symlinked:"
+echo "  agents   → 66 specialized agents"
+echo "  commands → 31 slash commands"
+echo "  kb       → 28 knowledge base domains (374 files)"
+echo "  sdd      → templates, architecture, workflow contracts"
+echo "  skills   → 2 auto-invoked skills"
+echo "  settings → bypassPermissions + pre-approved tools"
 echo ""
 echo "Next steps:"
-echo "  1. Copy the project template to any new project:"
-echo "     cp $AGENTSPEC_DIR/CLAUDE.md.template /path/to/your-project/CLAUDE.md"
-echo ""
-echo "  2. Start using SDD commands in Claude Code:"
+echo "  1. Start using SDD commands in any project:"
 echo "     /brainstorm, /define, /design, /build, /ship"
 echo ""
-echo "  To update AgentSpec later:"
+echo "  2. To update AgentSpec later:"
 echo "     cd $AGENTSPEC_DIR && git pull"
 echo "     (symlinks update automatically)"
