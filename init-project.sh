@@ -22,36 +22,57 @@ echo "Source: $SOURCE"
 echo "Target: $(cd "${1:-.}" && pwd)/.claude"
 echo ""
 
-# Check if .claude already exists
-if [ -d "$TARGET/agents" ]; then
-  echo "⚠  .claude/ already exists. Updating..."
-  echo ""
-fi
+# Remove old symlinks or directories (clean slate for shared content)
+for dir in agents commands kb skills; do
+  if [ -L "$TARGET/$dir" ]; then
+    echo "↻  Removing old symlink: $dir"
+    rm "$TARGET/$dir"
+  elif [ -d "$TARGET/$dir" ]; then
+    echo "↻  Removing old copy: $dir"
+    rm -rf "$TARGET/$dir"
+  fi
+done
 
-# Copy everything
-cp -r "$SOURCE/agents" "$TARGET/agents" 2>/dev/null || mkdir -p "$TARGET/agents" && cp -r "$SOURCE/agents/"* "$TARGET/agents/"
-cp -r "$SOURCE/commands" "$TARGET/commands" 2>/dev/null || mkdir -p "$TARGET/commands" && cp -r "$SOURCE/commands/"* "$TARGET/commands/"
-cp -r "$SOURCE/kb" "$TARGET/kb" 2>/dev/null || mkdir -p "$TARGET/kb" && cp -r "$SOURCE/kb/"* "$TARGET/kb/"
-cp -r "$SOURCE/skills" "$TARGET/skills" 2>/dev/null || mkdir -p "$TARGET/skills" && cp -r "$SOURCE/skills/"* "$TARGET/skills/"
+# Remove old SDD symlinks
+for subdir in templates architecture; do
+  if [ -L "$TARGET/sdd/$subdir" ]; then
+    echo "↻  Removing old symlink: sdd/$subdir"
+    rm "$TARGET/sdd/$subdir"
+  elif [ -d "$TARGET/sdd/$subdir" ]; then
+    rm -rf "$TARGET/sdd/$subdir"
+  fi
+done
+
+# Create .claude/ if needed
+mkdir -p "$TARGET"
+
+# Copy shared content
+for dir in agents commands kb skills; do
+  cp -r "$SOURCE/$dir" "$TARGET/$dir"
+  echo "→  Copied $dir/"
+done
 
 # SDD: copy templates + architecture, create local workspace
-mkdir -p "$TARGET/sdd/templates" "$TARGET/sdd/architecture"
 mkdir -p "$TARGET/sdd/features" "$TARGET/sdd/reports" "$TARGET/sdd/archive"
-cp -r "$SOURCE/sdd/templates/"* "$TARGET/sdd/templates/" 2>/dev/null || true
-cp -r "$SOURCE/sdd/architecture/"* "$TARGET/sdd/architecture/" 2>/dev/null || true
+cp -r "$SOURCE/sdd/templates" "$TARGET/sdd/templates"
+cp -r "$SOURCE/sdd/architecture" "$TARGET/sdd/architecture"
+echo "→  Copied sdd/templates/"
+echo "→  Copied sdd/architecture/"
+
 # Copy SDD index files
 for f in _index.md README.md; do
   [ -f "$SOURCE/sdd/$f" ] && cp "$SOURCE/sdd/$f" "$TARGET/sdd/$f"
 done
 
+# Summary
+echo ""
 echo "✅ Done!"
 echo ""
-echo "Installed:"
 AGENT_COUNT=$(find "$TARGET/agents" -name "*.md" ! -name "README.md" ! -name "_template.md" 2>/dev/null | wc -l | tr -d ' ')
 KB_COUNT=$(find "$TARGET/kb" -maxdepth 1 -type d ! -path "$TARGET/kb" ! -name "_templates" ! -name "shared" 2>/dev/null | wc -l | tr -d ' ')
 echo "  $AGENT_COUNT agents"
 echo "  $KB_COUNT KB domains"
 echo "  5 SDD templates"
 echo ""
-echo "To update later:"
+echo "To update later: re-run this script (safe to repeat)"
 echo "  bash $SCRIPT_DIR/init-project.sh $(cd "${1:-.}" && pwd)"
