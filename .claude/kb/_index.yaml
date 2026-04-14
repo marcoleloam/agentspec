@@ -35,7 +35,7 @@ shared:
     path: shared/anti-patterns.md
     description: "Cross-agent anti-pattern library referenced by all data engineering agents"
 
-# Domain Registry — 28 Domains (22 DE + 6 Frontend)
+# Domain Registry — 29 Domains (23 DE + 6 Frontend)
 domains:
 
   # ─── Core Data Engineering ─────────────────────────────────────────
@@ -1245,3 +1245,44 @@ domains:
       - name: optimistic-updates
         path: patterns/optimistic-updates.md
         confidence: 0.90
+
+  n8n:
+    name: n8n
+    description: "Workflow automation patterns, node configuration, and integration design for n8n"
+    path: n8n/
+    mcp_validated: "2026-04-14"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: workflow-fundamentals
+        path: concepts/workflow-fundamentals.md
+        confidence: 0.90
+      - name: node-types
+        path: concepts/node-types.md
+        confidence: 0.90
+      - name: expressions-data
+        path: concepts/expressions-data.md
+        confidence: 0.90
+      - name: credentials-auth
+        path: concepts/credentials-auth.md
+        confidence: 0.90
+    patterns:
+      - name: webhook-processing
+        path: patterns/webhook-processing.md
+        confidence: 0.92
+      - name: api-integration
+        path: patterns/api-integration.md
+        confidence: 0.92
+      - name: database-operations
+        path: patterns/database-operations.md
+        confidence: 0.92
+      - name: error-handling
+        path: patterns/error-handling.md
+        confidence: 0.92
+      - name: ai-agent-workflow
+        path: patterns/ai-agent-workflow.md
+        confidence: 0.92
+      - name: scheduled-automation
+        path: patterns/scheduled-automation.md
+        confidence: 0.92
