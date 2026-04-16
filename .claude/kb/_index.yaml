@@ -1,1288 +1,1605 @@
-# Knowledge Base Index
-# Machine-readable registry for KB domains
-
-version: "2.1"
-last_updated: "2026-03-26"
-
-# File Size Limits (SINGLE SOURCE OF TRUTH)
+version: '2.1'
+last_updated: '2026-03-26'
 limits:
   quick_reference: 100
   concept: 150
   pattern: 200
   spec: null
   reference: null
-
-# Templates
 templates:
-  - name: concept
-    path: _templates/concept.md.template
-  - name: pattern
-    path: _templates/pattern.md.template
-  - name: index
-    path: _templates/index.md.template
-  - name: quick-reference
-    path: _templates/quick-reference.md.template
-  - name: spec
-    path: _templates/spec.yaml.template
-  - name: test-case
-    path: _templates/test-case.json.template
-  - name: domain-manifest
-    path: _templates/domain-manifest.yaml.template
-
-# Shared Resources
+- name: concept
+  path: _templates/concept.md.template
+- name: pattern
+  path: _templates/pattern.md.template
+- name: index
+  path: _templates/index.md.template
+- name: quick-reference
+  path: _templates/quick-reference.md.template
+- name: spec
+  path: _templates/spec.yaml.template
+- name: test-case
+  path: _templates/test-case.json.template
+- name: domain-manifest
+  path: _templates/domain-manifest.yaml.template
 shared:
   anti-patterns:
     path: shared/anti-patterns.md
-    description: "Cross-agent anti-pattern library referenced by all data engineering agents"
-
-# Domain Registry — 29 Domains (23 DE + 6 Frontend)
+    description: Cross-agent anti-pattern library referenced by all data engineering
+      agents
 domains:
-
-  # ─── Core Data Engineering ─────────────────────────────────────────
-
   dbt:
     name: dbt
-    description: "dbt development patterns — Fusion Engine, Mesh, Semantic Layer, models, macros, tests"
+    description: dbt development patterns — Fusion Engine, Mesh, Semantic Layer, models,
+      macros, tests
     path: dbt/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: model-types
-        path: concepts/model-types.md
-        confidence: 0.95
-      - name: incremental-strategies
-        path: concepts/incremental-strategies.md
-        confidence: 0.95
-      - name: testing-framework
-        path: concepts/testing-framework.md
-        confidence: 0.95
-      - name: fusion-engine
-        path: concepts/fusion-engine.md
-        confidence: 0.90
-      - name: mesh-architecture
-        path: concepts/mesh-architecture.md
-        confidence: 0.90
+    - name: model-types
+      path: concepts/model-types.md
+      confidence: 0.95
+    - name: incremental-strategies
+      path: concepts/incremental-strategies.md
+      confidence: 0.95
+    - name: testing-framework
+      path: concepts/testing-framework.md
+      confidence: 0.95
+    - name: fusion-engine
+      path: concepts/fusion-engine.md
+      confidence: 0.9
+    - name: mesh-architecture
+      path: concepts/mesh-architecture.md
+      confidence: 0.9
     patterns:
-      - name: incremental-model
-        path: patterns/incremental-model.md
-        confidence: 0.95
-      - name: snapshot-scd2
-        path: patterns/snapshot-scd2.md
-        confidence: 0.95
-      - name: generic-tests
-        path: patterns/generic-tests.md
-        confidence: 0.95
-      - name: macro-patterns
-        path: patterns/macro-patterns.md
-        confidence: 0.95
-      - name: semantic-layer
-        path: patterns/semantic-layer.md
-        confidence: 0.90
-
+    - name: incremental-model
+      path: patterns/incremental-model.md
+      confidence: 0.95
+    - name: snapshot-scd2
+      path: patterns/snapshot-scd2.md
+      confidence: 0.95
+    - name: generic-tests
+      path: patterns/generic-tests.md
+      confidence: 0.95
+    - name: macro-patterns
+      path: patterns/macro-patterns.md
+      confidence: 0.95
+    - name: semantic-layer
+      path: patterns/semantic-layer.md
+      confidence: 0.9
   spark:
     name: spark
-    description: "PySpark and Spark SQL patterns — DataFrames, performance, Real-Time Mode, Delta integration"
+    description: PySpark and Spark SQL patterns — DataFrames, performance, Real-Time
+      Mode, Delta integration
     path: spark/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: dataframe-api
-        path: concepts/dataframe-api.md
-        confidence: 0.95
-      - name: partitioning
-        path: concepts/partitioning.md
-        confidence: 0.95
-      - name: catalyst-optimizer
-        path: concepts/catalyst-optimizer.md
-        confidence: 0.90
-      - name: real-time-mode
-        path: concepts/real-time-mode.md
-        confidence: 0.90
-      - name: spark-connect
-        path: concepts/spark-connect.md
-        confidence: 0.90
+    - name: dataframe-api
+      path: concepts/dataframe-api.md
+      confidence: 0.95
+    - name: partitioning
+      path: concepts/partitioning.md
+      confidence: 0.95
+    - name: catalyst-optimizer
+      path: concepts/catalyst-optimizer.md
+      confidence: 0.9
+    - name: real-time-mode
+      path: concepts/real-time-mode.md
+      confidence: 0.9
+    - name: spark-connect
+      path: concepts/spark-connect.md
+      confidence: 0.9
     patterns:
-      - name: read-write-patterns
-        path: patterns/read-write-patterns.md
-        confidence: 0.95
-      - name: window-functions
-        path: patterns/window-functions.md
-        confidence: 0.95
-      - name: performance-tuning
-        path: patterns/performance-tuning.md
-        confidence: 0.95
-      - name: delta-integration
-        path: patterns/delta-integration.md
-        confidence: 0.90
-
+    - name: read-write-patterns
+      path: patterns/read-write-patterns.md
+      confidence: 0.95
+    - name: window-functions
+      path: patterns/window-functions.md
+      confidence: 0.95
+    - name: performance-tuning
+      path: patterns/performance-tuning.md
+      confidence: 0.95
+    - name: delta-integration
+      path: patterns/delta-integration.md
+      confidence: 0.9
   airflow:
     name: airflow
-    description: "Orchestration patterns — Airflow 3.x TaskFlow, Dagster, Prefect comparison, DAG design"
+    description: Orchestration patterns — Airflow 3.x TaskFlow, Dagster, Prefect comparison,
+      DAG design
     path: airflow/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: dag-design
-        path: concepts/dag-design.md
-        confidence: 0.95
-      - name: operators
-        path: concepts/operators.md
-        confidence: 0.95
-      - name: task-dependencies
-        path: concepts/task-dependencies.md
-        confidence: 0.95
-      - name: orchestrator-comparison
-        path: concepts/orchestrator-comparison.md
-        confidence: 0.90
+    - name: dag-design
+      path: concepts/dag-design.md
+      confidence: 0.95
+    - name: operators
+      path: concepts/operators.md
+      confidence: 0.95
+    - name: task-dependencies
+      path: concepts/task-dependencies.md
+      confidence: 0.95
+    - name: orchestrator-comparison
+      path: concepts/orchestrator-comparison.md
+      confidence: 0.9
     patterns:
-      - name: dag-factory
-        path: patterns/dag-factory.md
-        confidence: 0.95
-      - name: sensors-triggers
-        path: patterns/sensors-triggers.md
-        confidence: 0.95
-      - name: dynamic-task-mapping
-        path: patterns/dynamic-task-mapping.md
-        confidence: 0.90
-      - name: error-handling
-        path: patterns/error-handling.md
-        confidence: 0.95
-
+    - name: dag-factory
+      path: patterns/dag-factory.md
+      confidence: 0.95
+    - name: sensors-triggers
+      path: patterns/sensors-triggers.md
+      confidence: 0.95
+    - name: dynamic-task-mapping
+      path: patterns/dynamic-task-mapping.md
+      confidence: 0.9
+    - name: error-handling
+      path: patterns/error-handling.md
+      confidence: 0.95
   sql-patterns:
     name: sql-patterns
-    description: "Cross-dialect SQL — window functions, CTEs, deduplication, DuckDB/Snowflake/BigQuery/Spark"
+    description: Cross-dialect SQL — window functions, CTEs, deduplication, DuckDB/Snowflake/BigQuery/Spark
     path: sql-patterns/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: window-functions
-        path: concepts/window-functions.md
-        confidence: 0.95
-      - name: cte-patterns
-        path: concepts/cte-patterns.md
-        confidence: 0.95
-      - name: set-operations
-        path: concepts/set-operations.md
-        confidence: 0.95
+    - name: window-functions
+      path: concepts/window-functions.md
+      confidence: 0.95
+    - name: cte-patterns
+      path: concepts/cte-patterns.md
+      confidence: 0.95
+    - name: set-operations
+      path: concepts/set-operations.md
+      confidence: 0.95
     patterns:
-      - name: deduplication
-        path: patterns/deduplication.md
-        confidence: 0.95
-      - name: gap-and-island
-        path: patterns/gap-and-island.md
-        confidence: 0.90
-      - name: pivot-unpivot
-        path: patterns/pivot-unpivot.md
-        confidence: 0.90
-      - name: cross-dialect
-        path: patterns/cross-dialect.md
-        confidence: 0.90
-
+    - name: deduplication
+      path: patterns/deduplication.md
+      confidence: 0.95
+    - name: gap-and-island
+      path: patterns/gap-and-island.md
+      confidence: 0.9
+    - name: pivot-unpivot
+      path: patterns/pivot-unpivot.md
+      confidence: 0.9
+    - name: cross-dialect
+      path: patterns/cross-dialect.md
+      confidence: 0.9
   streaming:
     name: streaming
-    description: "Stream processing — Flink, Kafka, Spark Streaming, RisingWave, Materialize, CDC"
+    description: Stream processing — Flink, Kafka, Spark Streaming, RisingWave, Materialize,
+      CDC
     path: streaming/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: stream-processing-fundamentals
-        path: concepts/stream-processing-fundamentals.md
-        confidence: 0.95
-      - name: flink-architecture
-        path: concepts/flink-architecture.md
-        confidence: 0.90
-      - name: kafka-fundamentals
-        path: concepts/kafka-fundamentals.md
-        confidence: 0.95
-      - name: streaming-databases
-        path: concepts/streaming-databases.md
-        confidence: 0.85
+    - name: stream-processing-fundamentals
+      path: concepts/stream-processing-fundamentals.md
+      confidence: 0.95
+    - name: flink-architecture
+      path: concepts/flink-architecture.md
+      confidence: 0.9
+    - name: kafka-fundamentals
+      path: concepts/kafka-fundamentals.md
+      confidence: 0.95
+    - name: streaming-databases
+      path: concepts/streaming-databases.md
+      confidence: 0.85
     patterns:
-      - name: flink-sql-patterns
-        path: patterns/flink-sql-patterns.md
-        confidence: 0.90
-      - name: kafka-producer-consumer
-        path: patterns/kafka-producer-consumer.md
-        confidence: 0.95
-      - name: spark-streaming-patterns
-        path: patterns/spark-streaming-patterns.md
-        confidence: 0.90
-      - name: cdc-patterns
-        path: patterns/cdc-patterns.md
-        confidence: 0.90
-
-  # ─── Data Design & Quality ─────────────────────────────────────────
-
+    - name: flink-sql-patterns
+      path: patterns/flink-sql-patterns.md
+      confidence: 0.9
+    - name: kafka-producer-consumer
+      path: patterns/kafka-producer-consumer.md
+      confidence: 0.95
+    - name: spark-streaming-patterns
+      path: patterns/spark-streaming-patterns.md
+      confidence: 0.9
+    - name: cdc-patterns
+      path: patterns/cdc-patterns.md
+      confidence: 0.9
   data-modeling:
     name: data-modeling
-    description: "Schema design — dimensional modeling, Data Vault, SCD types, schema evolution"
+    description: Schema design — dimensional modeling, Data Vault, SCD types, schema
+      evolution
     path: data-modeling/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: dimensional-modeling
-        path: concepts/dimensional-modeling.md
-        confidence: 0.95
-      - name: scd-types
-        path: concepts/scd-types.md
-        confidence: 0.95
-      - name: normalization
-        path: concepts/normalization.md
-        confidence: 0.95
-      - name: schema-evolution
-        path: concepts/schema-evolution.md
-        confidence: 0.90
+    - name: dimensional-modeling
+      path: concepts/dimensional-modeling.md
+      confidence: 0.95
+    - name: scd-types
+      path: concepts/scd-types.md
+      confidence: 0.95
+    - name: normalization
+      path: concepts/normalization.md
+      confidence: 0.95
+    - name: schema-evolution
+      path: concepts/schema-evolution.md
+      confidence: 0.9
     patterns:
-      - name: star-schema
-        path: patterns/star-schema.md
-        confidence: 0.95
-      - name: data-vault
-        path: patterns/data-vault.md
-        confidence: 0.90
-      - name: one-big-table
-        path: patterns/one-big-table.md
-        confidence: 0.90
-      - name: schema-migration
-        path: patterns/schema-migration.md
-        confidence: 0.90
-
+    - name: star-schema
+      path: patterns/star-schema.md
+      confidence: 0.95
+    - name: data-vault
+      path: patterns/data-vault.md
+      confidence: 0.9
+    - name: one-big-table
+      path: patterns/one-big-table.md
+      confidence: 0.9
+    - name: schema-migration
+      path: patterns/schema-migration.md
+      confidence: 0.9
   data-quality:
     name: data-quality
-    description: "Data quality, contracts, and observability — Soda, GE, dbt tests, ODCS, Monte Carlo"
+    description: Data quality, contracts, and observability — Soda, GE, dbt tests,
+      ODCS, Monte Carlo
     path: data-quality/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: data-contracts
-        path: concepts/data-contracts.md
-        confidence: 0.90
-      - name: quality-dimensions
-        path: concepts/quality-dimensions.md
-        confidence: 0.95
-      - name: observability
-        path: concepts/observability.md
-        confidence: 0.90
-      - name: soda-core
-        path: concepts/soda-core.md
-        confidence: 0.90
+    - name: data-contracts
+      path: concepts/data-contracts.md
+      confidence: 0.9
+    - name: quality-dimensions
+      path: concepts/quality-dimensions.md
+      confidence: 0.95
+    - name: observability
+      path: concepts/observability.md
+      confidence: 0.9
+    - name: soda-core
+      path: concepts/soda-core.md
+      confidence: 0.9
     patterns:
-      - name: great-expectations
-        path: patterns/great-expectations.md
-        confidence: 0.95
-      - name: dbt-testing
-        path: patterns/dbt-testing.md
-        confidence: 0.95
-      - name: schema-validation
-        path: patterns/schema-validation.md
-        confidence: 0.90
-      - name: data-contract-authoring
-        path: patterns/data-contract-authoring.md
-        confidence: 0.90
-
-  # ─── Infrastructure & Platforms ────────────────────────────────────
-
+    - name: great-expectations
+      path: patterns/great-expectations.md
+      confidence: 0.95
+    - name: dbt-testing
+      path: patterns/dbt-testing.md
+      confidence: 0.95
+    - name: schema-validation
+      path: patterns/schema-validation.md
+      confidence: 0.9
+    - name: data-contract-authoring
+      path: patterns/data-contract-authoring.md
+      confidence: 0.9
   lakehouse:
     name: lakehouse
-    description: "Open table formats and catalogs — Iceberg v3, Delta Lake 4.1, DuckLake, Unity, Gravitino"
+    description: Open table formats and catalogs — Iceberg v3, Delta Lake 4.1, DuckLake,
+      Unity, Gravitino
     path: lakehouse/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: iceberg-v3
-        path: concepts/iceberg-v3.md
-        confidence: 0.90
-      - name: delta-lake
-        path: concepts/delta-lake.md
-        confidence: 0.90
-      - name: catalog-wars
-        path: concepts/catalog-wars.md
-        confidence: 0.90
-      - name: ducklake
-        path: concepts/ducklake.md
-        confidence: 0.85
+    - name: iceberg-v3
+      path: concepts/iceberg-v3.md
+      confidence: 0.9
+    - name: delta-lake
+      path: concepts/delta-lake.md
+      confidence: 0.9
+    - name: catalog-wars
+      path: concepts/catalog-wars.md
+      confidence: 0.9
+    - name: ducklake
+      path: concepts/ducklake.md
+      confidence: 0.85
     patterns:
-      - name: iceberg-operations
-        path: patterns/iceberg-operations.md
-        confidence: 0.90
-      - name: delta-operations
-        path: patterns/delta-operations.md
-        confidence: 0.90
-      - name: catalog-setup
-        path: patterns/catalog-setup.md
-        confidence: 0.85
-      - name: migration-to-open-formats
-        path: patterns/migration-to-open-formats.md
-        confidence: 0.90
-
+    - name: iceberg-operations
+      path: patterns/iceberg-operations.md
+      confidence: 0.9
+    - name: delta-operations
+      path: patterns/delta-operations.md
+      confidence: 0.9
+    - name: catalog-setup
+      path: patterns/catalog-setup.md
+      confidence: 0.85
+    - name: migration-to-open-formats
+      path: patterns/migration-to-open-formats.md
+      confidence: 0.9
   cloud-platforms:
     name: cloud-platforms
-    description: "Cloud data platforms — Snowflake Cortex, Databricks LakeFlow, BigQuery AI, cross-platform"
+    description: Cloud data platforms — Snowflake Cortex, Databricks LakeFlow, BigQuery
+      AI, cross-platform
     path: cloud-platforms/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: snowflake-cortex
-        path: concepts/snowflake-cortex.md
-        confidence: 0.90
-      - name: databricks-lakeflow
-        path: concepts/databricks-lakeflow.md
-        confidence: 0.90
-      - name: bigquery-ai
-        path: concepts/bigquery-ai.md
-        confidence: 0.90
-      - name: cross-platform-patterns
-        path: concepts/cross-platform-patterns.md
-        confidence: 0.90
+    - name: snowflake-cortex
+      path: concepts/snowflake-cortex.md
+      confidence: 0.9
+    - name: databricks-lakeflow
+      path: concepts/databricks-lakeflow.md
+      confidence: 0.9
+    - name: bigquery-ai
+      path: concepts/bigquery-ai.md
+      confidence: 0.9
+    - name: cross-platform-patterns
+      path: concepts/cross-platform-patterns.md
+      confidence: 0.9
     patterns:
-      - name: snowflake-patterns
-        path: patterns/snowflake-patterns.md
-        confidence: 0.90
-      - name: databricks-patterns
-        path: patterns/databricks-patterns.md
-        confidence: 0.90
-      - name: bigquery-patterns
-        path: patterns/bigquery-patterns.md
-        confidence: 0.90
-      - name: cost-optimization
-        path: patterns/cost-optimization.md
-        confidence: 0.90
-
+    - name: snowflake-patterns
+      path: patterns/snowflake-patterns.md
+      confidence: 0.9
+    - name: databricks-patterns
+      path: patterns/databricks-patterns.md
+      confidence: 0.9
+    - name: bigquery-patterns
+      path: patterns/bigquery-patterns.md
+      confidence: 0.9
+    - name: cost-optimization
+      path: patterns/cost-optimization.md
+      confidence: 0.9
   medallion:
     name: medallion
-    description: "Medallion Architecture — Bronze/Silver/Gold layer design, data quality progression, schema evolution"
+    description: Medallion Architecture — Bronze/Silver/Gold layer design, data quality
+      progression, schema evolution
     path: medallion/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: bronze-layer
-        path: concepts/bronze-layer.md
-        confidence: 0.95
-      - name: silver-layer
-        path: concepts/silver-layer.md
-        confidence: 0.95
-      - name: gold-layer
-        path: concepts/gold-layer.md
-        confidence: 0.95
-      - name: domain-modeling
-        path: concepts/domain-modeling.md
-        confidence: 0.90
+    - name: bronze-layer
+      path: concepts/bronze-layer.md
+      confidence: 0.95
+    - name: silver-layer
+      path: concepts/silver-layer.md
+      confidence: 0.95
+    - name: gold-layer
+      path: concepts/gold-layer.md
+      confidence: 0.95
+    - name: domain-modeling
+      path: concepts/domain-modeling.md
+      confidence: 0.9
     patterns:
-      - name: layer-transitions
-        path: patterns/layer-transitions.md
-        confidence: 0.95
-      - name: data-quality-gates
-        path: patterns/data-quality-gates.md
-        confidence: 0.90
-      - name: incremental-loading
-        path: patterns/incremental-loading.md
-        confidence: 0.90
-      - name: schema-evolution
-        path: patterns/schema-evolution.md
-        confidence: 0.90
-
-  # ─── Cloud Platform Deep Dives ─────────────────────────────────
-
+    - name: layer-transitions
+      path: patterns/layer-transitions.md
+      confidence: 0.95
+    - name: data-quality-gates
+      path: patterns/data-quality-gates.md
+      confidence: 0.9
+    - name: incremental-loading
+      path: patterns/incremental-loading.md
+      confidence: 0.9
+    - name: schema-evolution
+      path: patterns/schema-evolution.md
+      confidence: 0.9
   aws:
     name: aws
-    description: "AWS data engineering — Lambda, S3, Glue, Redshift, MWAA, SAM deployment"
+    description: AWS data engineering — Lambda, S3, Glue, Redshift, MWAA, SAM deployment
     path: aws/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: lambda/quick-reference.md
     concepts:
-      - name: lambda-handler
-        path: lambda/concepts/lambda-handler.md
-        confidence: 0.95
-      - name: sam-templates
-        path: lambda/concepts/sam-templates.md
-        confidence: 0.95
-      - name: iam-policies
-        path: lambda/concepts/iam-policies.md
-        confidence: 0.90
-      - name: layers
-        path: lambda/concepts/layers.md
-        confidence: 0.90
-      - name: s3-triggers
-        path: lambda/concepts/s3-triggers.md
-        confidence: 0.90
-      - name: aws-cli
-        path: deployment/concepts/aws-cli.md
-        confidence: 0.90
-      - name: sam-cli
-        path: deployment/concepts/sam-cli.md
-        confidence: 0.90
-      - name: environments
-        path: deployment/concepts/environments.md
-        confidence: 0.90
+    - name: lambda-handler
+      path: lambda/concepts/lambda-handler.md
+      confidence: 0.95
+    - name: sam-templates
+      path: lambda/concepts/sam-templates.md
+      confidence: 0.95
+    - name: iam-policies
+      path: lambda/concepts/iam-policies.md
+      confidence: 0.9
+    - name: layers
+      path: lambda/concepts/layers.md
+      confidence: 0.9
+    - name: s3-triggers
+      path: lambda/concepts/s3-triggers.md
+      confidence: 0.9
+    - name: aws-cli
+      path: deployment/concepts/aws-cli.md
+      confidence: 0.9
+    - name: sam-cli
+      path: deployment/concepts/sam-cli.md
+      confidence: 0.9
+    - name: environments
+      path: deployment/concepts/environments.md
+      confidence: 0.9
     patterns:
-      - name: file-processing
-        path: lambda/patterns/file-processing.md
-        confidence: 0.95
-      - name: error-handling
-        path: lambda/patterns/error-handling.md
-        confidence: 0.95
-      - name: powertools-logging
-        path: lambda/patterns/powertools-logging.md
-        confidence: 0.90
-      - name: parquet-output
-        path: lambda/patterns/parquet-output.md
-        confidence: 0.90
-      - name: sam-deploy
-        path: deployment/patterns/sam-deploy.md
-        confidence: 0.90
-      - name: s3-operations
-        path: deployment/patterns/s3-operations.md
-        confidence: 0.90
-      - name: local-testing
-        path: deployment/patterns/local-testing.md
-        confidence: 0.90
-
+    - name: file-processing
+      path: lambda/patterns/file-processing.md
+      confidence: 0.95
+    - name: error-handling
+      path: lambda/patterns/error-handling.md
+      confidence: 0.95
+    - name: powertools-logging
+      path: lambda/patterns/powertools-logging.md
+      confidence: 0.9
+    - name: parquet-output
+      path: lambda/patterns/parquet-output.md
+      confidence: 0.9
+    - name: sam-deploy
+      path: deployment/patterns/sam-deploy.md
+      confidence: 0.9
+    - name: s3-operations
+      path: deployment/patterns/s3-operations.md
+      confidence: 0.9
+    - name: local-testing
+      path: deployment/patterns/local-testing.md
+      confidence: 0.9
   gcp:
     name: gcp
-    description: "Google Cloud Platform — Cloud Run, Pub/Sub, GCS, BigQuery, IAM, Secret Manager"
+    description: Google Cloud Platform — Cloud Run, Pub/Sub, GCS, BigQuery, IAM, Secret
+      Manager
     path: gcp/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: cloud-run
-        path: concepts/cloud-run.md
-        confidence: 0.90
-      - name: pubsub
-        path: concepts/pubsub.md
-        confidence: 0.90
-      - name: gcs
-        path: concepts/gcs.md
-        confidence: 0.90
-      - name: bigquery
-        path: concepts/bigquery.md
-        confidence: 0.90
-      - name: iam
-        path: concepts/iam.md
-        confidence: 0.90
-      - name: secret-manager
-        path: concepts/secret-manager.md
-        confidence: 0.90
+    - name: cloud-run
+      path: concepts/cloud-run.md
+      confidence: 0.9
+    - name: pubsub
+      path: concepts/pubsub.md
+      confidence: 0.9
+    - name: gcs
+      path: concepts/gcs.md
+      confidence: 0.9
+    - name: bigquery
+      path: concepts/bigquery.md
+      confidence: 0.9
+    - name: iam
+      path: concepts/iam.md
+      confidence: 0.9
+    - name: secret-manager
+      path: concepts/secret-manager.md
+      confidence: 0.9
     patterns:
-      - name: cloud-run-scaling
-        path: patterns/cloud-run-scaling.md
-        confidence: 0.90
-      - name: event-driven-pipeline
-        path: patterns/event-driven-pipeline.md
-        confidence: 0.90
-      - name: gcs-triggered-workflow
-        path: patterns/gcs-triggered-workflow.md
-        confidence: 0.90
-      - name: multi-bucket-pipeline
-        path: patterns/multi-bucket-pipeline.md
-        confidence: 0.90
-      - name: pubsub-fanout
-        path: patterns/pubsub-fanout.md
-        confidence: 0.90
-
+    - name: cloud-run-scaling
+      path: patterns/cloud-run-scaling.md
+      confidence: 0.9
+    - name: event-driven-pipeline
+      path: patterns/event-driven-pipeline.md
+      confidence: 0.9
+    - name: gcs-triggered-workflow
+      path: patterns/gcs-triggered-workflow.md
+      confidence: 0.9
+    - name: multi-bucket-pipeline
+      path: patterns/multi-bucket-pipeline.md
+      confidence: 0.9
+    - name: pubsub-fanout
+      path: patterns/pubsub-fanout.md
+      confidence: 0.9
   microsoft-fabric:
     name: microsoft-fabric
-    description: "Microsoft Fabric — Lakehouse, Data Warehouse, Pipelines, Real-Time Analytics, KQL, CI/CD, AI"
+    description: Microsoft Fabric — Lakehouse, Data Warehouse, Pipelines, Real-Time
+      Analytics, KQL, CI/CD, AI
     path: microsoft-fabric/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      # 01 — Logging & Monitoring
-      - name: eventhouse-basics
-        path: 01-logging-monitoring/concepts/eventhouse-basics.md
-        confidence: 0.90
-      - name: kql-queries
-        path: 01-logging-monitoring/concepts/kql-queries.md
-        confidence: 0.90
-      - name: alerting-rules
-        path: 01-logging-monitoring/concepts/alerting-rules.md
-        confidence: 0.90
-      # 02 — Data Engineering
-      - name: lakehouse
-        path: 02-data-engineering/concepts/lakehouse.md
-        confidence: 0.90
-      - name: spark-notebooks
-        path: 02-data-engineering/concepts/spark-notebooks.md
-        confidence: 0.90
-      - name: dataflow-gen2
-        path: 02-data-engineering/concepts/dataflow-gen2.md
-        confidence: 0.90
-      - name: shortcuts
-        path: 02-data-engineering/concepts/shortcuts.md
-        confidence: 0.90
-      # 03 — Architecture Patterns
-      - name: workspace-design
-        path: 03-architecture-patterns/concepts/workspace-design.md
-        confidence: 0.90
-      - name: capacity-planning
-        path: 03-architecture-patterns/concepts/capacity-planning.md
-        confidence: 0.90
-      - name: workload-selection
-        path: 03-architecture-patterns/concepts/workload-selection.md
-        confidence: 0.90
-      # 04 — Data Warehouse
-      - name: warehouse-basics
-        path: 04-data-warehouse/concepts/warehouse-basics.md
-        confidence: 0.90
-      - name: t-sql-advanced
-        path: 04-data-warehouse/concepts/t-sql-advanced.md
-        confidence: 0.90
-      - name: direct-lake
-        path: 04-data-warehouse/concepts/direct-lake.md
-        confidence: 0.90
-      # 05 — APIs & SDKs
-      - name: fabric-rest-api
-        path: 05-apis-sdks/concepts/fabric-rest-api.md
-        confidence: 0.90
-      - name: rest-api
-        path: 05-apis-sdks/concepts/rest-api.md
-        confidence: 0.90
-      - name: semantic-link
-        path: 05-apis-sdks/concepts/semantic-link.md
-        confidence: 0.85
-      # 06 — Governance & Security
-      - name: rls-security
-        path: 06-governance-security/concepts/rls-security.md
-        confidence: 0.90
-      - name: cls-security
-        path: 06-governance-security/concepts/cls-security.md
-        confidence: 0.90
-      - name: ddm-masking
-        path: 06-governance-security/concepts/ddm-masking.md
-        confidence: 0.90
-      - name: purview-integration
-        path: 06-governance-security/concepts/purview-integration.md
-        confidence: 0.85
-      # 07 — CI/CD & Automation
-      - name: git-integration
-        path: 07-cicd-automation/concepts/git-integration.md
-        confidence: 0.90
-      - name: deployment-rules
-        path: 07-cicd-automation/concepts/deployment-rules.md
-        confidence: 0.90
-      - name: environment-promotion
-        path: 07-cicd-automation/concepts/environment-promotion.md
-        confidence: 0.90
-      # 08 — AI Capabilities
-      - name: copilot-ml
-        path: 08-ai-capabilities/concepts/copilot-ml.md
-        confidence: 0.85
-      - name: copilot-customization
-        path: 08-ai-capabilities/concepts/copilot-customization.md
-        confidence: 0.85
-      - name: ml-model-lifecycle
-        path: 08-ai-capabilities/concepts/ml-model-lifecycle.md
-        confidence: 0.85
+    - name: eventhouse-basics
+      path: 01-logging-monitoring/concepts/eventhouse-basics.md
+      confidence: 0.9
+    - name: kql-queries
+      path: 01-logging-monitoring/concepts/kql-queries.md
+      confidence: 0.9
+    - name: alerting-rules
+      path: 01-logging-monitoring/concepts/alerting-rules.md
+      confidence: 0.9
+    - name: lakehouse
+      path: 02-data-engineering/concepts/lakehouse.md
+      confidence: 0.9
+    - name: spark-notebooks
+      path: 02-data-engineering/concepts/spark-notebooks.md
+      confidence: 0.9
+    - name: dataflow-gen2
+      path: 02-data-engineering/concepts/dataflow-gen2.md
+      confidence: 0.9
+    - name: shortcuts
+      path: 02-data-engineering/concepts/shortcuts.md
+      confidence: 0.9
+    - name: workspace-design
+      path: 03-architecture-patterns/concepts/workspace-design.md
+      confidence: 0.9
+    - name: capacity-planning
+      path: 03-architecture-patterns/concepts/capacity-planning.md
+      confidence: 0.9
+    - name: workload-selection
+      path: 03-architecture-patterns/concepts/workload-selection.md
+      confidence: 0.9
+    - name: warehouse-basics
+      path: 04-data-warehouse/concepts/warehouse-basics.md
+      confidence: 0.9
+    - name: t-sql-advanced
+      path: 04-data-warehouse/concepts/t-sql-advanced.md
+      confidence: 0.9
+    - name: direct-lake
+      path: 04-data-warehouse/concepts/direct-lake.md
+      confidence: 0.9
+    - name: fabric-rest-api
+      path: 05-apis-sdks/concepts/fabric-rest-api.md
+      confidence: 0.9
+    - name: rest-api
+      path: 05-apis-sdks/concepts/rest-api.md
+      confidence: 0.9
+    - name: semantic-link
+      path: 05-apis-sdks/concepts/semantic-link.md
+      confidence: 0.85
+    - name: rls-security
+      path: 06-governance-security/concepts/rls-security.md
+      confidence: 0.9
+    - name: cls-security
+      path: 06-governance-security/concepts/cls-security.md
+      confidence: 0.9
+    - name: ddm-masking
+      path: 06-governance-security/concepts/ddm-masking.md
+      confidence: 0.9
+    - name: purview-integration
+      path: 06-governance-security/concepts/purview-integration.md
+      confidence: 0.85
+    - name: git-integration
+      path: 07-cicd-automation/concepts/git-integration.md
+      confidence: 0.9
+    - name: deployment-rules
+      path: 07-cicd-automation/concepts/deployment-rules.md
+      confidence: 0.9
+    - name: environment-promotion
+      path: 07-cicd-automation/concepts/environment-promotion.md
+      confidence: 0.9
+    - name: copilot-ml
+      path: 08-ai-capabilities/concepts/copilot-ml.md
+      confidence: 0.85
+    - name: copilot-customization
+      path: 08-ai-capabilities/concepts/copilot-customization.md
+      confidence: 0.85
+    - name: ml-model-lifecycle
+      path: 08-ai-capabilities/concepts/ml-model-lifecycle.md
+      confidence: 0.85
     patterns:
-      # 01 — Logging & Monitoring
-      - name: real-time-dashboard
-        path: 01-logging-monitoring/patterns/real-time-dashboard.md
-        confidence: 0.90
-      - name: error-tracking
-        path: 01-logging-monitoring/patterns/error-tracking.md
-        confidence: 0.90
-      - name: workspace-monitoring
-        path: 01-logging-monitoring/patterns/workspace-monitoring.md
-        confidence: 0.90
-      # 02 — Data Engineering
-      - name: copy-activity
-        path: 02-data-engineering/patterns/copy-activity.md
-        confidence: 0.90
-      - name: incremental-load
-        path: 02-data-engineering/patterns/incremental-load.md
-        confidence: 0.90
-      - name: delta-lake-optimization
-        path: 02-data-engineering/patterns/delta-lake-optimization.md
-        confidence: 0.90
-      # 03 — Architecture Patterns
-      - name: lakehouse-vs-warehouse
-        path: 03-architecture-patterns/patterns/lakehouse-vs-warehouse.md
-        confidence: 0.90
-      - name: medallion-fabric
-        path: 03-architecture-patterns/patterns/medallion-fabric.md
-        confidence: 0.90
-      - name: hybrid-architecture
-        path: 03-architecture-patterns/patterns/hybrid-architecture.md
-        confidence: 0.90
-      # 04 — Data Warehouse
-      - name: star-schema
-        path: 04-data-warehouse/patterns/star-schema.md
-        confidence: 0.90
-      - name: t-sql-patterns
-        path: 04-data-warehouse/patterns/t-sql-patterns.md
-        confidence: 0.90
-      - name: slowly-changing-dimensions
-        path: 04-data-warehouse/patterns/slowly-changing-dimensions.md
-        confidence: 0.90
-      # 05 — APIs & SDKs
-      - name: python-sdk-automation
-        path: 05-apis-sdks/patterns/python-sdk-automation.md
-        confidence: 0.90
-      - name: sdk-automation
-        path: 05-apis-sdks/patterns/sdk-automation.md
-        confidence: 0.90
-      - name: power-bi-api
-        path: 05-apis-sdks/patterns/power-bi-api.md
-        confidence: 0.85
-      # 06 — Governance & Security
-      - name: data-masking
-        path: 06-governance-security/patterns/data-masking.md
-        confidence: 0.90
-      - name: sensitivity-labels
-        path: 06-governance-security/patterns/sensitivity-labels.md
-        confidence: 0.90
-      - name: compliance-audit
-        path: 06-governance-security/patterns/compliance-audit.md
-        confidence: 0.90
-      # 07 — CI/CD & Automation
-      - name: deployment-pipelines
-        path: 07-cicd-automation/patterns/deployment-pipelines.md
-        confidence: 0.90
-      - name: git-branching
-        path: 07-cicd-automation/patterns/git-branching.md
-        confidence: 0.90
-      - name: azure-devops-pipeline
-        path: 07-cicd-automation/patterns/azure-devops-pipeline.md
-        confidence: 0.90
-      # 08 — AI Capabilities
-      - name: ai-skills
-        path: 08-ai-capabilities/patterns/ai-skills.md
-        confidence: 0.85
-      - name: ai-skill-integration
-        path: 08-ai-capabilities/patterns/ai-skill-integration.md
-        confidence: 0.85
-      - name: prediction-pipeline
-        path: 08-ai-capabilities/patterns/prediction-pipeline.md
-        confidence: 0.85
-
+    - name: real-time-dashboard
+      path: 01-logging-monitoring/patterns/real-time-dashboard.md
+      confidence: 0.9
+    - name: error-tracking
+      path: 01-logging-monitoring/patterns/error-tracking.md
+      confidence: 0.9
+    - name: workspace-monitoring
+      path: 01-logging-monitoring/patterns/workspace-monitoring.md
+      confidence: 0.9
+    - name: copy-activity
+      path: 02-data-engineering/patterns/copy-activity.md
+      confidence: 0.9
+    - name: incremental-load
+      path: 02-data-engineering/patterns/incremental-load.md
+      confidence: 0.9
+    - name: delta-lake-optimization
+      path: 02-data-engineering/patterns/delta-lake-optimization.md
+      confidence: 0.9
+    - name: lakehouse-vs-warehouse
+      path: 03-architecture-patterns/patterns/lakehouse-vs-warehouse.md
+      confidence: 0.9
+    - name: medallion-fabric
+      path: 03-architecture-patterns/patterns/medallion-fabric.md
+      confidence: 0.9
+    - name: hybrid-architecture
+      path: 03-architecture-patterns/patterns/hybrid-architecture.md
+      confidence: 0.9
+    - name: star-schema
+      path: 04-data-warehouse/patterns/star-schema.md
+      confidence: 0.9
+    - name: t-sql-patterns
+      path: 04-data-warehouse/patterns/t-sql-patterns.md
+      confidence: 0.9
+    - name: slowly-changing-dimensions
+      path: 04-data-warehouse/patterns/slowly-changing-dimensions.md
+      confidence: 0.9
+    - name: python-sdk-automation
+      path: 05-apis-sdks/patterns/python-sdk-automation.md
+      confidence: 0.9
+    - name: sdk-automation
+      path: 05-apis-sdks/patterns/sdk-automation.md
+      confidence: 0.9
+    - name: power-bi-api
+      path: 05-apis-sdks/patterns/power-bi-api.md
+      confidence: 0.85
+    - name: data-masking
+      path: 06-governance-security/patterns/data-masking.md
+      confidence: 0.9
+    - name: sensitivity-labels
+      path: 06-governance-security/patterns/sensitivity-labels.md
+      confidence: 0.9
+    - name: compliance-audit
+      path: 06-governance-security/patterns/compliance-audit.md
+      confidence: 0.9
+    - name: deployment-pipelines
+      path: 07-cicd-automation/patterns/deployment-pipelines.md
+      confidence: 0.9
+    - name: git-branching
+      path: 07-cicd-automation/patterns/git-branching.md
+      confidence: 0.9
+    - name: azure-devops-pipeline
+      path: 07-cicd-automation/patterns/azure-devops-pipeline.md
+      confidence: 0.9
+    - name: ai-skills
+      path: 08-ai-capabilities/patterns/ai-skills.md
+      confidence: 0.85
+    - name: ai-skill-integration
+      path: 08-ai-capabilities/patterns/ai-skill-integration.md
+      confidence: 0.85
+    - name: prediction-pipeline
+      path: 08-ai-capabilities/patterns/prediction-pipeline.md
+      confidence: 0.85
   lakeflow:
     name: lakeflow
-    description: "Databricks Lakeflow — DLT pipelines, materialized views, streaming tables, expectations, DABs"
+    description: Databricks Lakeflow — DLT pipelines, materialized views, streaming
+      tables, expectations, DABs
     path: lakeflow/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: core-concepts
-        path: concepts/core-concepts.md
-        confidence: 0.90
-      - name: getting-started
-        path: concepts/getting-started.md
-        confidence: 0.90
+    - name: core-concepts
+      path: concepts/core-concepts.md
+      confidence: 0.9
+    - name: getting-started
+      path: concepts/getting-started.md
+      confidence: 0.9
     patterns:
-      - name: bronze-ingestion
-        path: patterns/bronze-ingestion.md
-        confidence: 0.90
-      - name: silver-cleansing
-        path: patterns/silver-cleansing.md
-        confidence: 0.90
-      - name: gold-aggregation
-        path: patterns/gold-aggregation.md
-        confidence: 0.90
-      - name: sql-tables
-        path: patterns/sql-tables.md
-        confidence: 0.90
-      - name: sql-streaming
-        path: patterns/sql-streaming.md
-        confidence: 0.90
-      - name: python-decorators
-        path: patterns/python-decorators.md
-        confidence: 0.90
-      - name: python-streaming
-        path: patterns/python-streaming.md
-        confidence: 0.90
-      - name: expectations
-        path: patterns/expectations.md
-        confidence: 0.90
-      - name: expectations-advanced
-        path: patterns/expectations-advanced.md
-        confidence: 0.90
-      - name: cdc-apply-changes
-        path: patterns/cdc-apply-changes.md
-        confidence: 0.90
-      - name: cdc-example
-        path: patterns/cdc-example.md
-        confidence: 0.90
-      - name: dabs-deployment
-        path: patterns/dabs-deployment.md
-        confidence: 0.90
+    - name: bronze-ingestion
+      path: patterns/bronze-ingestion.md
+      confidence: 0.9
+    - name: silver-cleansing
+      path: patterns/silver-cleansing.md
+      confidence: 0.9
+    - name: gold-aggregation
+      path: patterns/gold-aggregation.md
+      confidence: 0.9
+    - name: sql-tables
+      path: patterns/sql-tables.md
+      confidence: 0.9
+    - name: sql-streaming
+      path: patterns/sql-streaming.md
+      confidence: 0.9
+    - name: python-decorators
+      path: patterns/python-decorators.md
+      confidence: 0.9
+    - name: python-streaming
+      path: patterns/python-streaming.md
+      confidence: 0.9
+    - name: expectations
+      path: patterns/expectations.md
+      confidence: 0.9
+    - name: expectations-advanced
+      path: patterns/expectations-advanced.md
+      confidence: 0.9
+    - name: cdc-apply-changes
+      path: patterns/cdc-apply-changes.md
+      confidence: 0.9
+    - name: cdc-example
+      path: patterns/cdc-example.md
+      confidence: 0.9
+    - name: dabs-deployment
+      path: patterns/dabs-deployment.md
+      confidence: 0.9
     reference:
-      - name: pipeline-configuration
-        path: reference/pipeline-configuration.md
-      - name: materialized-views
-        path: reference/materialized-views.md
-      - name: parameters
-        path: reference/parameters.md
-      - name: serverless-pipelines
-        path: reference/serverless-pipelines.md
-      - name: stateful-processing
-        path: reference/stateful-processing.md
-      - name: unity-catalog
-        path: reference/unity-catalog.md
-      - name: limitations
-        path: reference/limitations.md
-
-  # ─── AI & Prompt Engineering ─────────────────────────────────────
-
+    - name: pipeline-configuration
+      path: reference/pipeline-configuration.md
+    - name: materialized-views
+      path: reference/materialized-views.md
+    - name: parameters
+      path: reference/parameters.md
+    - name: serverless-pipelines
+      path: reference/serverless-pipelines.md
+    - name: stateful-processing
+      path: reference/stateful-processing.md
+    - name: unity-catalog
+      path: reference/unity-catalog.md
+    - name: limitations
+      path: reference/limitations.md
   ai-data-engineering:
     name: ai-data-engineering
-    description: "AI data engineering — RAG pipelines, vector DBs, feature stores, LLMOps, embeddings"
+    description: AI data engineering — RAG pipelines, vector DBs, feature stores,
+      LLMOps, embeddings
     path: ai-data-engineering/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: rag-pipelines
-        path: concepts/rag-pipelines.md
-        confidence: 0.90
-      - name: vector-databases
-        path: concepts/vector-databases.md
-        confidence: 0.90
-      - name: feature-stores
-        path: concepts/feature-stores.md
-        confidence: 0.90
-      - name: embedding-pipelines
-        path: concepts/embedding-pipelines.md
-        confidence: 0.90
-      - name: llmops-patterns
-        path: concepts/llmops-patterns.md
-        confidence: 0.85
+    - name: rag-pipelines
+      path: concepts/rag-pipelines.md
+      confidence: 0.9
+    - name: vector-databases
+      path: concepts/vector-databases.md
+      confidence: 0.9
+    - name: feature-stores
+      path: concepts/feature-stores.md
+      confidence: 0.9
+    - name: embedding-pipelines
+      path: concepts/embedding-pipelines.md
+      confidence: 0.9
+    - name: llmops-patterns
+      path: concepts/llmops-patterns.md
+      confidence: 0.85
     patterns:
-      - name: rag-pipeline-implementation
-        path: patterns/rag-pipeline-implementation.md
-        confidence: 0.90
-      - name: vector-db-operations
-        path: patterns/vector-db-operations.md
-        confidence: 0.90
-      - name: feature-engineering
-        path: patterns/feature-engineering.md
-        confidence: 0.90
-      - name: text-to-sql
-        path: patterns/text-to-sql.md
-        confidence: 0.85
-      - name: training-data-pipelines
-        path: patterns/training-data-pipelines.md
-        confidence: 0.85
-
+    - name: rag-pipeline-implementation
+      path: patterns/rag-pipeline-implementation.md
+      confidence: 0.9
+    - name: vector-db-operations
+      path: patterns/vector-db-operations.md
+      confidence: 0.9
+    - name: feature-engineering
+      path: patterns/feature-engineering.md
+      confidence: 0.9
+    - name: text-to-sql
+      path: patterns/text-to-sql.md
+      confidence: 0.85
+    - name: training-data-pipelines
+      path: patterns/training-data-pipelines.md
+      confidence: 0.85
   modern-stack:
     name: modern-stack
-    description: "Modern data tools — DuckDB, Polars, SQLMesh, Malloy, Evidence.dev, local-first analytics"
+    description: Modern data tools — DuckDB, Polars, SQLMesh, Malloy, Evidence.dev,
+      local-first analytics
     path: modern-stack/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: duckdb
-        path: concepts/duckdb.md
-        confidence: 0.90
-      - name: polars
-        path: concepts/polars.md
-        confidence: 0.90
-      - name: sqlmesh
-        path: concepts/sqlmesh.md
-        confidence: 0.85
-      - name: analytics-engineering
-        path: concepts/analytics-engineering.md
-        confidence: 0.85
+    - name: duckdb
+      path: concepts/duckdb.md
+      confidence: 0.9
+    - name: polars
+      path: concepts/polars.md
+      confidence: 0.9
+    - name: sqlmesh
+      path: concepts/sqlmesh.md
+      confidence: 0.85
+    - name: analytics-engineering
+      path: concepts/analytics-engineering.md
+      confidence: 0.85
     patterns:
-      - name: duckdb-patterns
-        path: patterns/duckdb-patterns.md
-        confidence: 0.90
-      - name: polars-patterns
-        path: patterns/polars-patterns.md
-        confidence: 0.90
-      - name: sqlmesh-workflow
-        path: patterns/sqlmesh-workflow.md
-        confidence: 0.85
-      - name: local-first-analytics
-        path: patterns/local-first-analytics.md
-        confidence: 0.85
-
+    - name: duckdb-patterns
+      path: patterns/duckdb-patterns.md
+      confidence: 0.9
+    - name: polars-patterns
+      path: patterns/polars-patterns.md
+      confidence: 0.9
+    - name: sqlmesh-workflow
+      path: patterns/sqlmesh-workflow.md
+      confidence: 0.85
+    - name: local-first-analytics
+      path: patterns/local-first-analytics.md
+      confidence: 0.85
   prompt-engineering:
     name: prompt-engineering
-    description: "Prompt engineering — chain-of-thought, structured extraction, few-shot, system prompts"
+    description: Prompt engineering — chain-of-thought, structured extraction, few-shot,
+      system prompts
     path: prompt-engineering/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: chain-of-thought
-        path: concepts/chain-of-thought.md
-        confidence: 0.90
-      - name: few-shot-prompting
-        path: concepts/few-shot-prompting.md
-        confidence: 0.90
-      - name: output-formatting
-        path: concepts/output-formatting.md
-        confidence: 0.90
-      - name: structured-extraction
-        path: concepts/structured-extraction.md
-        confidence: 0.90
-      - name: system-prompts
-        path: concepts/system-prompts.md
-        confidence: 0.90
+    - name: chain-of-thought
+      path: concepts/chain-of-thought.md
+      confidence: 0.9
+    - name: few-shot-prompting
+      path: concepts/few-shot-prompting.md
+      confidence: 0.9
+    - name: output-formatting
+      path: concepts/output-formatting.md
+      confidence: 0.9
+    - name: structured-extraction
+      path: concepts/structured-extraction.md
+      confidence: 0.9
+    - name: system-prompts
+      path: concepts/system-prompts.md
+      confidence: 0.9
     patterns:
-      - name: document-extraction
-        path: patterns/document-extraction.md
-        confidence: 0.90
-      - name: multi-pass-extraction
-        path: patterns/multi-pass-extraction.md
-        confidence: 0.90
-      - name: prompt-template
-        path: patterns/prompt-template.md
-        confidence: 0.90
-      - name: validation-prompts
-        path: patterns/validation-prompts.md
-        confidence: 0.90
-
+    - name: document-extraction
+      path: patterns/document-extraction.md
+      confidence: 0.9
+    - name: multi-pass-extraction
+      path: patterns/multi-pass-extraction.md
+      confidence: 0.9
+    - name: prompt-template
+      path: patterns/prompt-template.md
+      confidence: 0.9
+    - name: validation-prompts
+      path: patterns/validation-prompts.md
+      confidence: 0.9
   genai:
     name: genai
-    description: "GenAI architecture — multi-agent systems, RAG, state machines, tool calling, guardrails"
+    description: GenAI architecture — multi-agent systems, RAG, state machines, tool
+      calling, guardrails
     path: genai/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: multi-agent-systems
-        path: concepts/multi-agent-systems.md
-        confidence: 0.90
-      - name: rag-architecture
-        path: concepts/rag-architecture.md
-        confidence: 0.90
-      - name: state-machines
-        path: concepts/state-machines.md
-        confidence: 0.90
-      - name: tool-calling
-        path: concepts/tool-calling.md
-        confidence: 0.90
-      - name: guardrails
-        path: concepts/guardrails.md
-        confidence: 0.90
+    - name: multi-agent-systems
+      path: concepts/multi-agent-systems.md
+      confidence: 0.9
+    - name: rag-architecture
+      path: concepts/rag-architecture.md
+      confidence: 0.9
+    - name: state-machines
+      path: concepts/state-machines.md
+      confidence: 0.9
+    - name: tool-calling
+      path: concepts/tool-calling.md
+      confidence: 0.9
+    - name: guardrails
+      path: concepts/guardrails.md
+      confidence: 0.9
     patterns:
-      - name: agentic-workflow
-        path: patterns/agentic-workflow.md
-        confidence: 0.90
-      - name: chatbot-architecture
-        path: patterns/chatbot-architecture.md
-        confidence: 0.90
-      - name: evaluation-framework
-        path: patterns/evaluation-framework.md
-        confidence: 0.90
-      - name: rag-pipeline
-        path: patterns/rag-pipeline.md
-        confidence: 0.90
-
-  # ─── Development Foundations ─────────────────────────────────────
-
+    - name: agentic-workflow
+      path: patterns/agentic-workflow.md
+      confidence: 0.9
+    - name: chatbot-architecture
+      path: patterns/chatbot-architecture.md
+      confidence: 0.9
+    - name: evaluation-framework
+      path: patterns/evaluation-framework.md
+      confidence: 0.9
+    - name: rag-pipeline
+      path: patterns/rag-pipeline.md
+      confidence: 0.9
   pydantic:
     name: pydantic
-    description: "Pydantic patterns — BaseModel, validators, LLM output validation, extraction schemas"
+    description: Pydantic patterns — BaseModel, validators, LLM output validation,
+      extraction schemas
     path: pydantic/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: base-model
-        path: concepts/base-model.md
-        confidence: 0.95
-      - name: field-types
-        path: concepts/field-types.md
-        confidence: 0.95
-      - name: nested-models
-        path: concepts/nested-models.md
-        confidence: 0.90
-      - name: validators
-        path: concepts/validators.md
-        confidence: 0.95
+    - name: base-model
+      path: concepts/base-model.md
+      confidence: 0.95
+    - name: field-types
+      path: concepts/field-types.md
+      confidence: 0.95
+    - name: nested-models
+      path: concepts/nested-models.md
+      confidence: 0.9
+    - name: validators
+      path: concepts/validators.md
+      confidence: 0.95
     patterns:
-      - name: custom-validators
-        path: patterns/custom-validators.md
-        confidence: 0.95
-      - name: error-handling
-        path: patterns/error-handling.md
-        confidence: 0.90
-      - name: extraction-schema
-        path: patterns/extraction-schema.md
-        confidence: 0.90
-      - name: llm-output-validation
-        path: patterns/llm-output-validation.md
-        confidence: 0.90
-
+    - name: custom-validators
+      path: patterns/custom-validators.md
+      confidence: 0.95
+    - name: error-handling
+      path: patterns/error-handling.md
+      confidence: 0.9
+    - name: extraction-schema
+      path: patterns/extraction-schema.md
+      confidence: 0.9
+    - name: llm-output-validation
+      path: patterns/llm-output-validation.md
+      confidence: 0.9
   python:
     name: python
-    description: "Python patterns — dataclasses, type hints, generators, async, project structure"
+    description: Python patterns — dataclasses, type hints, generators, async, project
+      structure
     path: python/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: dataclasses
-        path: concepts/dataclasses.md
-        confidence: 0.95
-      - name: type-hints
-        path: concepts/type-hints.md
-        confidence: 0.95
-      - name: generators
-        path: concepts/generators.md
-        confidence: 0.90
-      - name: context-managers
-        path: concepts/context-managers.md
-        confidence: 0.90
+    - name: dataclasses
+      path: concepts/dataclasses.md
+      confidence: 0.95
+    - name: type-hints
+      path: concepts/type-hints.md
+      confidence: 0.95
+    - name: generators
+      path: concepts/generators.md
+      confidence: 0.9
+    - name: context-managers
+      path: concepts/context-managers.md
+      confidence: 0.9
     patterns:
-      - name: clean-architecture
-        path: patterns/clean-architecture.md
-        confidence: 0.90
-      - name: error-handling
-        path: patterns/error-handling.md
-        confidence: 0.90
-      - name: file-parser
-        path: patterns/file-parser.md
-        confidence: 0.90
-      - name: functional-patterns
-        path: patterns/functional-patterns.md
-        confidence: 0.90
-
+    - name: clean-architecture
+      path: patterns/clean-architecture.md
+      confidence: 0.9
+    - name: error-handling
+      path: patterns/error-handling.md
+      confidence: 0.9
+    - name: file-parser
+      path: patterns/file-parser.md
+      confidence: 0.9
+    - name: functional-patterns
+      path: patterns/functional-patterns.md
+      confidence: 0.9
   testing:
     name: testing
-    description: "Testing patterns — pytest, fixtures, mocking, parametrize, integration tests, Spark testing"
+    description: Testing patterns — pytest, fixtures, mocking, parametrize, integration
+      tests, Spark testing
     path: testing/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: pytest-basics
-        path: concepts/pytest-basics.md
-        confidence: 0.95
-      - name: fixtures
-        path: concepts/fixtures.md
-        confidence: 0.95
-      - name: mocking
-        path: concepts/mocking.md
-        confidence: 0.90
-      - name: parametrize
-        path: concepts/parametrize.md
-        confidence: 0.90
+    - name: pytest-basics
+      path: concepts/pytest-basics.md
+      confidence: 0.95
+    - name: fixtures
+      path: concepts/fixtures.md
+      confidence: 0.95
+    - name: mocking
+      path: concepts/mocking.md
+      confidence: 0.9
+    - name: parametrize
+      path: concepts/parametrize.md
+      confidence: 0.9
     patterns:
-      - name: unit-test-patterns
-        path: patterns/unit-test-patterns.md
-        confidence: 0.95
-      - name: fixture-factories
-        path: patterns/fixture-factories.md
-        confidence: 0.90
-      - name: integration-tests
-        path: patterns/integration-tests.md
-        confidence: 0.90
-      - name: spark-testing
-        path: patterns/spark-testing.md
-        confidence: 0.90
-
+    - name: unit-test-patterns
+      path: patterns/unit-test-patterns.md
+      confidence: 0.95
+    - name: fixture-factories
+      path: patterns/fixture-factories.md
+      confidence: 0.9
+    - name: integration-tests
+      path: patterns/integration-tests.md
+      confidence: 0.9
+    - name: spark-testing
+      path: patterns/spark-testing.md
+      confidence: 0.9
   terraform:
     name: terraform
-    description: "Terraform IaC — resources, modules, providers, state, workspaces, GCP/AWS patterns"
+    description: Terraform IaC — resources, modules, providers, state, workspaces,
+      GCP/AWS patterns
     path: terraform/
-    mcp_validated: "2026-03-26"
+    mcp_validated: '2026-03-26'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: resources
-        path: concepts/resources.md
-        confidence: 0.95
-      - name: modules
-        path: concepts/modules.md
-        confidence: 0.95
-      - name: providers
-        path: concepts/providers.md
-        confidence: 0.90
-      - name: state
-        path: concepts/state.md
-        confidence: 0.90
-      - name: variables
-        path: concepts/variables.md
-        confidence: 0.90
-      - name: workspaces
-        path: concepts/workspaces.md
-        confidence: 0.90
+    - name: resources
+      path: concepts/resources.md
+      confidence: 0.95
+    - name: modules
+      path: concepts/modules.md
+      confidence: 0.95
+    - name: providers
+      path: concepts/providers.md
+      confidence: 0.9
+    - name: state
+      path: concepts/state.md
+      confidence: 0.9
+    - name: variables
+      path: concepts/variables.md
+      confidence: 0.9
+    - name: workspaces
+      path: concepts/workspaces.md
+      confidence: 0.9
     patterns:
-      - name: gcs-module
-        path: patterns/gcs-module.md
-        confidence: 0.90
-      - name: cloud-run-module
-        path: patterns/cloud-run-module.md
-        confidence: 0.90
-      - name: bigquery-module
-        path: patterns/bigquery-module.md
-        confidence: 0.90
-      - name: pubsub-module
-        path: patterns/pubsub-module.md
-        confidence: 0.90
-      - name: iam-module
-        path: patterns/iam-module.md
-        confidence: 0.90
-      - name: remote-state
-        path: patterns/remote-state.md
-        confidence: 0.90
-
-  # ─── Frontend Development ──────────────────────────────────────
-
+    - name: gcs-module
+      path: patterns/gcs-module.md
+      confidence: 0.9
+    - name: cloud-run-module
+      path: patterns/cloud-run-module.md
+      confidence: 0.9
+    - name: bigquery-module
+      path: patterns/bigquery-module.md
+      confidence: 0.9
+    - name: pubsub-module
+      path: patterns/pubsub-module.md
+      confidence: 0.9
+    - name: iam-module
+      path: patterns/iam-module.md
+      confidence: 0.9
+    - name: remote-state
+      path: patterns/remote-state.md
+      confidence: 0.9
   react:
     name: react
-    description: "React development patterns — hooks, Server Components, state management, composition"
+    description: React development patterns — hooks, Server Components, state management,
+      composition
     path: react/
-    mcp_validated: "2026-03-29"
+    mcp_validated: '2026-03-29'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: hooks-patterns
-        path: concepts/hooks-patterns.md
-        confidence: 0.90
-      - name: server-components
-        path: concepts/server-components.md
-        confidence: 0.90
-      - name: state-management
-        path: concepts/state-management.md
-        confidence: 0.90
-      - name: rendering-patterns
-        path: concepts/rendering-patterns.md
-        confidence: 0.90
+    - name: hooks-patterns
+      path: concepts/hooks-patterns.md
+      confidence: 0.9
+    - name: server-components
+      path: concepts/server-components.md
+      confidence: 0.9
+    - name: state-management
+      path: concepts/state-management.md
+      confidence: 0.9
+    - name: rendering-patterns
+      path: concepts/rendering-patterns.md
+      confidence: 0.9
     patterns:
-      - name: component-composition
-        path: patterns/component-composition.md
-        confidence: 0.90
-      - name: form-handling
-        path: patterns/form-handling.md
-        confidence: 0.90
-      - name: data-fetching
-        path: patterns/data-fetching.md
-        confidence: 0.90
-      - name: testing-components
-        path: patterns/testing-components.md
-        confidence: 0.90
-
+    - name: component-composition
+      path: patterns/component-composition.md
+      confidence: 0.9
+    - name: form-handling
+      path: patterns/form-handling.md
+      confidence: 0.9
+    - name: data-fetching
+      path: patterns/data-fetching.md
+      confidence: 0.9
+    - name: testing-components
+      path: patterns/testing-components.md
+      confidence: 0.9
   nextjs:
     name: nextjs
-    description: "Next.js App Router patterns — rendering strategies, caching, middleware, deployment"
+    description: Next.js App Router patterns — rendering strategies, caching, middleware,
+      deployment
     path: nextjs/
-    mcp_validated: "2026-03-29"
+    mcp_validated: '2026-03-29'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: app-router
-        path: concepts/app-router.md
-        confidence: 0.90
-      - name: rendering-strategies
-        path: concepts/rendering-strategies.md
-        confidence: 0.90
-      - name: caching
-        path: concepts/caching.md
-        confidence: 0.90
-      - name: middleware
-        path: concepts/middleware.md
-        confidence: 0.90
+    - name: app-router
+      path: concepts/app-router.md
+      confidence: 0.9
+    - name: rendering-strategies
+      path: concepts/rendering-strategies.md
+      confidence: 0.9
+    - name: caching
+      path: concepts/caching.md
+      confidence: 0.9
+    - name: middleware
+      path: concepts/middleware.md
+      confidence: 0.9
     patterns:
-      - name: api-routes
-        path: patterns/api-routes.md
-        confidence: 0.90
-      - name: auth-patterns
-        path: patterns/auth-patterns.md
-        confidence: 0.90
-      - name: image-optimization
-        path: patterns/image-optimization.md
-        confidence: 0.90
-      - name: deployment
-        path: patterns/deployment.md
-        confidence: 0.90
-
+    - name: api-routes
+      path: patterns/api-routes.md
+      confidence: 0.9
+    - name: auth-patterns
+      path: patterns/auth-patterns.md
+      confidence: 0.9
+    - name: image-optimization
+      path: patterns/image-optimization.md
+      confidence: 0.9
+    - name: deployment
+      path: patterns/deployment.md
+      confidence: 0.9
   tailwind-css:
     name: tailwind-css
-    description: "Tailwind CSS utility-first patterns — design tokens, responsive design, dark mode, animations"
+    description: Tailwind CSS utility-first patterns — design tokens, responsive design,
+      dark mode, animations
     path: tailwind-css/
-    mcp_validated: "2026-03-29"
+    mcp_validated: '2026-03-29'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: utility-first
-        path: concepts/utility-first.md
-        confidence: 0.90
-      - name: design-tokens
-        path: concepts/design-tokens.md
-        confidence: 0.90
-      - name: responsive-design
-        path: concepts/responsive-design.md
-        confidence: 0.90
+    - name: utility-first
+      path: concepts/utility-first.md
+      confidence: 0.9
+    - name: design-tokens
+      path: concepts/design-tokens.md
+      confidence: 0.9
+    - name: responsive-design
+      path: concepts/responsive-design.md
+      confidence: 0.9
     patterns:
-      - name: component-styling
-        path: patterns/component-styling.md
-        confidence: 0.90
-      - name: dark-mode
-        path: patterns/dark-mode.md
-        confidence: 0.90
-      - name: animations
-        path: patterns/animations.md
-        confidence: 0.90
-      - name: cn-utility
-        path: patterns/cn-utility.md
-        confidence: 0.90
-
+    - name: component-styling
+      path: patterns/component-styling.md
+      confidence: 0.9
+    - name: dark-mode
+      path: patterns/dark-mode.md
+      confidence: 0.9
+    - name: animations
+      path: patterns/animations.md
+      confidence: 0.9
+    - name: cn-utility
+      path: patterns/cn-utility.md
+      confidence: 0.9
   accessibility:
     name: accessibility
-    description: "Web accessibility — WCAG 2.1 AA, aria attributes, keyboard navigation, screen readers"
+    description: Web accessibility — WCAG 2.1 AA, aria attributes, keyboard navigation,
+      screen readers
     path: accessibility/
-    mcp_validated: "2026-03-29"
+    mcp_validated: '2026-03-29'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: wcag-guidelines
-        path: concepts/wcag-guidelines.md
-        confidence: 0.90
-      - name: aria-patterns
-        path: concepts/aria-patterns.md
-        confidence: 0.90
-      - name: keyboard-navigation
-        path: concepts/keyboard-navigation.md
-        confidence: 0.90
+    - name: wcag-guidelines
+      path: concepts/wcag-guidelines.md
+      confidence: 0.9
+    - name: aria-patterns
+      path: concepts/aria-patterns.md
+      confidence: 0.9
+    - name: keyboard-navigation
+      path: concepts/keyboard-navigation.md
+      confidence: 0.9
     patterns:
-      - name: form-accessibility
-        path: patterns/form-accessibility.md
-        confidence: 0.90
-      - name: modal-dialog
-        path: patterns/modal-dialog.md
-        confidence: 0.90
-      - name: table-accessibility
-        path: patterns/table-accessibility.md
-        confidence: 0.90
-
+    - name: form-accessibility
+      path: patterns/form-accessibility.md
+      confidence: 0.9
+    - name: modal-dialog
+      path: patterns/modal-dialog.md
+      confidence: 0.9
+    - name: table-accessibility
+      path: patterns/table-accessibility.md
+      confidence: 0.9
   design-systems:
     name: design-systems
-    description: "Design system architecture — token tiers, component APIs, variants, theming"
+    description: Design system architecture — token tiers, component APIs, variants,
+      theming
     path: design-systems/
-    mcp_validated: "2026-03-29"
+    mcp_validated: '2026-03-29'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: token-architecture
-        path: concepts/token-architecture.md
-        confidence: 0.90
-      - name: component-api
-        path: concepts/component-api.md
-        confidence: 0.90
-      - name: documentation
-        path: concepts/documentation.md
-        confidence: 0.90
+    - name: token-architecture
+      path: concepts/token-architecture.md
+      confidence: 0.9
+    - name: component-api
+      path: concepts/component-api.md
+      confidence: 0.9
+    - name: documentation
+      path: concepts/documentation.md
+      confidence: 0.9
     patterns:
-      - name: variant-pattern
-        path: patterns/variant-pattern.md
-        confidence: 0.90
-      - name: shadcn-patterns
-        path: patterns/shadcn-patterns.md
-        confidence: 0.90
-      - name: theme-switching
-        path: patterns/theme-switching.md
-        confidence: 0.90
-
+    - name: variant-pattern
+      path: patterns/variant-pattern.md
+      confidence: 0.9
+    - name: shadcn-patterns
+      path: patterns/shadcn-patterns.md
+      confidence: 0.9
+    - name: theme-switching
+      path: patterns/theme-switching.md
+      confidence: 0.9
   frontend-patterns:
     name: frontend-patterns
-    description: "Cross-cutting frontend patterns — project structure, error handling, performance, auth, API integration"
+    description: Cross-cutting frontend patterns — project structure, error handling,
+      performance, auth, API integration
     path: frontend-patterns/
-    mcp_validated: "2026-03-29"
+    mcp_validated: '2026-03-29'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: project-structure
-        path: concepts/project-structure.md
-        confidence: 0.90
-      - name: error-handling
-        path: concepts/error-handling.md
-        confidence: 0.90
-      - name: performance
-        path: concepts/performance.md
-        confidence: 0.90
+    - name: project-structure
+      path: concepts/project-structure.md
+      confidence: 0.9
+    - name: error-handling
+      path: concepts/error-handling.md
+      confidence: 0.9
+    - name: performance
+      path: concepts/performance.md
+      confidence: 0.9
     patterns:
-      - name: api-integration
-        path: patterns/api-integration.md
-        confidence: 0.90
-      - name: auth-flow
-        path: patterns/auth-flow.md
-        confidence: 0.90
-      - name: optimistic-updates
-        path: patterns/optimistic-updates.md
-        confidence: 0.90
-
+    - name: api-integration
+      path: patterns/api-integration.md
+      confidence: 0.9
+    - name: auth-flow
+      path: patterns/auth-flow.md
+      confidence: 0.9
+    - name: optimistic-updates
+      path: patterns/optimistic-updates.md
+      confidence: 0.9
   n8n:
     name: n8n
-    description: "Workflow automation patterns, node configuration, and integration design for n8n"
+    description: Workflow automation patterns, node configuration, and integration
+      design for n8n
     path: n8n/
-    mcp_validated: "2026-04-14"
+    mcp_validated: '2026-04-14'
     entry_points:
       index: index.md
       quick_reference: quick-reference.md
     concepts:
-      - name: workflow-fundamentals
-        path: concepts/workflow-fundamentals.md
-        confidence: 0.90
-      - name: node-types
-        path: concepts/node-types.md
-        confidence: 0.90
-      - name: expressions-data
-        path: concepts/expressions-data.md
-        confidence: 0.90
-      - name: credentials-auth
-        path: concepts/credentials-auth.md
-        confidence: 0.90
+    - name: workflow-fundamentals
+      path: concepts/workflow-fundamentals.md
+      confidence: 0.9
+    - name: node-types
+      path: concepts/node-types.md
+      confidence: 0.9
+    - name: expressions-data
+      path: concepts/expressions-data.md
+      confidence: 0.9
+    - name: credentials-auth
+      path: concepts/credentials-auth.md
+      confidence: 0.9
     patterns:
-      - name: webhook-processing
-        path: patterns/webhook-processing.md
-        confidence: 0.92
-      - name: api-integration
-        path: patterns/api-integration.md
-        confidence: 0.92
-      - name: database-operations
-        path: patterns/database-operations.md
-        confidence: 0.92
-      - name: error-handling
-        path: patterns/error-handling.md
-        confidence: 0.92
-      - name: ai-agent-workflow
-        path: patterns/ai-agent-workflow.md
-        confidence: 0.92
-      - name: scheduled-automation
-        path: patterns/scheduled-automation.md
-        confidence: 0.92
+    - name: webhook-processing
+      path: patterns/webhook-processing.md
+      confidence: 0.92
+    - name: api-integration
+      path: patterns/api-integration.md
+      confidence: 0.92
+    - name: database-operations
+      path: patterns/database-operations.md
+      confidence: 0.92
+    - name: error-handling
+      path: patterns/error-handling.md
+      confidence: 0.92
+    - name: ai-agent-workflow
+      path: patterns/ai-agent-workflow.md
+      confidence: 0.92
+    - name: scheduled-automation
+      path: patterns/scheduled-automation.md
+      confidence: 0.92
+  chainlit:
+    name: Chainlit
+    description: Chainlit conversational interface for ShopAgent — streaming chat
+      with agent step visibility
+    path: chainlit/
+    mcp_validated: '2026-04-12'
+    status: complete
+    agents:
+    - shopagent-builder
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: lifecycle
+      path: concepts/lifecycle.md
+      confidence: 0.95
+    - name: messages
+      path: concepts/messages.md
+      confidence: 0.95
+    - name: steps
+      path: concepts/steps.md
+      confidence: 0.95
+    patterns:
+    - name: langchain-integration
+      path: patterns/langchain-integration.md
+    - name: crewai-integration
+      path: patterns/crewai-integration.md
+    specs:
+    - name: chainlit-config
+      path: specs/chainlit-config.yaml
+  crewai:
+    name: CrewAI
+    description: Multi-agent AI orchestration framework for ShopAgent -- agents, crews,
+      tasks, tools, memory
+    path: crewai/
+    mcp_validated: '2026-02-17'
+    status: complete
+    agents:
+    - genai-architect
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: agents
+      path: concepts/agents.md
+      confidence: 0.95
+    - name: crews
+      path: concepts/crews.md
+      confidence: 0.95
+    - name: tasks
+      path: concepts/tasks.md
+      confidence: 0.95
+    - name: tools
+      path: concepts/tools.md
+      confidence: 0.95
+    - name: memory
+      path: concepts/memory.md
+      confidence: 0.95
+    - name: processes
+      path: concepts/processes.md
+      confidence: 0.95
+    patterns:
+    - name: triage-investigation-report
+      path: patterns/triage-investigation-report.md
+    - name: log-analysis-agent
+      path: patterns/log-analysis-agent.md
+    - name: escalation-workflow
+      path: patterns/escalation-workflow.md
+    - name: slack-integration
+      path: patterns/slack-integration.md
+    - name: circuit-breaker
+      path: patterns/circuit-breaker.md
+    - name: crew-coordination
+      path: patterns/crew-coordination.md
+    - name: shopagent-crew
+      path: patterns/shopagent-crew.md
+    specs:
+    - name: crewai-config
+      path: specs/crewai-config.yaml
+  deepeval:
+    name: DeepEval
+    description: LLM evaluation framework for ShopAgent — test tool selection correctness
+      and answer quality
+    path: deepeval/
+    mcp_validated: '2026-04-12'
+    status: complete
+    agents:
+    - shopagent-builder
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: test-cases
+      path: concepts/test-cases.md
+      confidence: 0.95
+    - name: metrics
+      path: concepts/metrics.md
+      confidence: 0.95
+    patterns:
+    - name: agent-evaluation
+      path: patterns/agent-evaluation.md
+    - name: pytest-integration
+      path: patterns/pytest-integration.md
+    specs:
+    - name: deepeval-config
+      path: specs/deepeval-config.yaml
+  langchain:
+    name: LangChain
+    description: LangChain + LangGraph agent framework for ShopAgent — autonomous
+      SQL vs semantic routing
+    path: langchain/
+    mcp_validated: '2026-04-12'
+    status: complete
+    agents:
+    - shopagent-builder
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: tools
+      path: concepts/tools.md
+      confidence: 0.95
+    - name: chat-models
+      path: concepts/chat-models.md
+      confidence: 0.95
+    - name: react-agent
+      path: concepts/react-agent.md
+      confidence: 0.95
+    - name: routing
+      path: concepts/routing.md
+      confidence: 0.95
+    patterns:
+    - name: react-agent-dual-tools
+      path: patterns/react-agent-dual-tools.md
+    - name: langgraph-routing
+      path: patterns/langgraph-routing.md
+    specs:
+    - name: langchain-config
+      path: specs/langchain-config.yaml
+  langfuse:
+    name: Langfuse
+    description: LLMOps observability platform for tracking LLM calls, costs, latency,
+      and quality
+    path: langfuse/
+    mcp_validated: '2026-02-17'
+    status: complete
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    agents:
+    - ai-data-engineer
+    concepts:
+    - name: traces-spans
+      path: concepts/traces-spans.md
+      confidence: 0.95
+    - name: generations
+      path: concepts/generations.md
+      confidence: 0.95
+    - name: cost-tracking
+      path: concepts/cost-tracking.md
+      confidence: 0.95
+    - name: scoring
+      path: concepts/scoring.md
+      confidence: 0.95
+    - name: prompt-management
+      path: concepts/prompt-management.md
+      confidence: 0.95
+    - name: model-comparison
+      path: concepts/model-comparison.md
+      confidence: 0.95
+    patterns:
+    - name: python-sdk-integration
+      path: patterns/python-sdk-integration.md
+    - name: cloud-run-instrumentation
+      path: patterns/cloud-run-instrumentation.md
+    - name: quality-feedback-loops
+      path: patterns/quality-feedback-loops.md
+    - name: cost-alerting
+      path: patterns/cost-alerting.md
+    - name: trace-linking
+      path: patterns/trace-linking.md
+    - name: dashboard-metrics
+      path: patterns/dashboard-metrics.md
+    specs:
+    - name: langfuse-config
+      path: specs/langfuse-config.yaml
+  llamaindex:
+    name: LlamaIndex
+    description: RAG ingestion and query framework for ShopAgent — JSONL reviews to
+      Qdrant via embeddings
+    path: llamaindex/
+    mcp_validated: '2026-04-12'
+    status: complete
+    agents:
+    - shopagent-builder
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: settings
+      path: concepts/settings.md
+      confidence: 0.95
+    - name: readers
+      path: concepts/readers.md
+      confidence: 0.95
+    - name: vector-store-index
+      path: concepts/vector-store-index.md
+      confidence: 0.95
+    - name: query-engine
+      path: concepts/query-engine.md
+      confidence: 0.95
+    patterns:
+    - name: jsonl-to-qdrant
+      path: patterns/jsonl-to-qdrant.md
+    - name: rag-query-pipeline
+      path: patterns/rag-query-pipeline.md
+    specs:
+    - name: llamaindex-config
+      path: specs/llamaindex-config.yaml
+  qdrant:
+    name: Qdrant Vector Database
+    description: The Memory -- Qdrant vector DB for semantic search, collection management,
+      and RAG pipeline integration
+    path: qdrant/
+    mcp_validated: '2026-02-24'
+    status: complete
+    agents:
+    - genai-architect
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: collections-and-points
+      path: concepts/collections-and-points.md
+      confidence: 0.95
+    patterns:
+    - name: n8n-rag-pipeline
+      path: patterns/n8n-rag-pipeline.md
+    - name: shopagent-reviews-collection
+      path: patterns/shopagent-reviews-collection.md
+  shadowtraffic:
+    name: ShadowTraffic
+    description: Declarative synthetic data generation for ShopAgent e-commerce pipeline
+      — v1.17.0
+    path: shadowtraffic/
+    mcp_validated: '2026-04-12'
+    status: complete
+    agents:
+    - shopagent-builder
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: generators
+      path: concepts/generators.md
+      confidence: 0.95
+    - name: connections
+      path: concepts/connections.md
+      confidence: 0.95
+    - name: functions
+      path: concepts/functions.md
+      confidence: 0.95
+    - name: faker-expressions
+      path: concepts/faker-expressions.md
+      confidence: 0.95
+    patterns:
+    - name: ecommerce-postgres
+      path: patterns/ecommerce-postgres.md
+    - name: staged-seeding
+      path: patterns/staged-seeding.md
+    specs:
+    - name: shadowtraffic-config
+      path: specs/shadowtraffic-config.yaml
+  supabase:
+    name: Supabase
+    description: The Ledger -- Supabase Postgres for structured queries, auth, edge
+      functions, RLS, pgvector
+    path: supabase/
+    mcp_validated: '2026-04-11'
+    status: complete
+    agents:
+    - ai-data-engineer
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+    - name: auth
+      path: concepts/auth.md
+      confidence: 0.95
+    - name: edge-functions
+      path: concepts/edge-functions.md
+      confidence: 0.95
+    - name: pgvector
+      path: concepts/pgvector.md
+      confidence: 0.95
+    - name: pgvector-fundamentals
+      path: concepts/pgvector-fundamentals.md
+      confidence: 0.95
+    - name: realtime
+      path: concepts/realtime.md
+      confidence: 0.95
+    - name: rls
+      path: concepts/rls.md
+      confidence: 0.95
+    - name: rls-policies
+      path: concepts/rls-policies.md
+      confidence: 0.95
+    patterns:
+    - name: conversation-memory
+      path: patterns/conversation-memory.md
+    - name: e2e-testing-cleanup
+      path: patterns/e2e-testing-cleanup.md
+    - name: edge-function-api
+      path: patterns/edge-function-api.md
+    - name: migration-patterns
+      path: patterns/migration-patterns.md
+    - name: multi-tenant-rls
+      path: patterns/multi-tenant-rls.md
+    - name: rag-vector-store
+      path: patterns/rag-vector-store.md
+    - name: rls-multi-tenant
+      path: patterns/rls-multi-tenant.md
+    - name: vector-store-rag
+      path: patterns/vector-store-rag.md
+    - name: webhook-edge-function
+      path: patterns/webhook-edge-function.md
+    - name: shopagent-ledger-queries
+      path: patterns/shopagent-ledger-queries.md
+  aide-slides:
+    name: aide-slides
+    description: AIDE slide deck design system — components, templates, animations,
+      quality rules
+    path: aide-slides/
+    mcp_validated: '2026-04-16'
+    entry_points:
+      index: index.md
+    concepts:
+    - name: design-system
+      path: design-system.md
+      confidence: 0.9
+    - name: slide-types
+      path: slide-types.md
+      confidence: 0.9
+    - name: component-library
+      path: component-library.md
+      confidence: 0.9
+    patterns:
+    - name: advanced-visuals
+      path: advanced-visuals.md
+      confidence: 0.92
+    - name: animation-patterns
+      path: animation-patterns.md
+      confidence: 0.92
+    - name: quality-rules
+      path: quality-rules.md
+      confidence: 0.92
+    - name: slide-engine
+      path: slide-engine.md
+      confidence: 0.92

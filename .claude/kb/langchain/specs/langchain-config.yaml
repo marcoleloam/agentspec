@@ -1,0 +1,93 @@
+schema_version: "1.0"
+domain: langchain
+file_type: api-reference
+last_validated: "2026-04-12"
+source: "https://python.langchain.com/docs/"
+
+records:
+  ChatAnthropic:
+    description: "LangChain wrapper for Claude models with tool binding support"
+    import: "from langchain_anthropic import ChatAnthropic"
+    fields:
+      model:
+        type: string
+        required: true
+        notes: "'claude-sonnet-4-20250514' for ShopAgent"
+      temperature:
+        type: float
+        required: false
+        default: 1.0
+        notes: "Use 0 for deterministic tool routing"
+      max_tokens:
+        type: integer
+        required: false
+        default: 1024
+      streaming:
+        type: boolean
+        required: false
+        default: false
+        notes: "Set True for Chainlit token-by-token streaming"
+      api_key:
+        type: string
+        required: false
+        notes: "Defaults to env ANTHROPIC_API_KEY"
+
+  create_react_agent:
+    description: "Build a ReAct agent from LLM and tools (modern LangGraph API)"
+    import: "from langgraph.prebuilt import create_react_agent"
+    fields:
+      model:
+        type: BaseChatModel
+        required: true
+        notes: "ChatAnthropic instance"
+      tools:
+        type: list
+        required: true
+        notes: "List of @tool-decorated functions"
+      checkpointer:
+        type: BaseCheckpointSaver
+        required: false
+        notes: "For conversation memory across invocations"
+      state_schema:
+        type: type
+        required: false
+        default: "MessagesState"
+      messages_modifier:
+        type: string
+        required: false
+        notes: "System prompt prepended to all messages"
+
+  StateGraph:
+    description: "Custom graph-based agent with explicit routing control"
+    import: "from langgraph.graph import StateGraph, START, END"
+    fields:
+      state_schema:
+        type: type
+        required: true
+        notes: "Usually MessagesState from langgraph.graph.message"
+
+  tool_decorator:
+    description: "Decorator to create LLM-callable tools from Python functions"
+    import: "from langchain.tools import tool"
+    fields:
+      name:
+        type: string
+        required: false
+        default: "function name"
+      description:
+        type: string
+        required: false
+        default: "docstring"
+        notes: "CRITICAL: LLM reads this to decide WHEN to use the tool"
+      args_schema:
+        type: BaseModel
+        required: false
+      return_direct:
+        type: boolean
+        required: false
+        default: false
+
+packages:
+  core: "langchain"
+  anthropic: "langchain-anthropic"
+  langgraph: "langgraph"

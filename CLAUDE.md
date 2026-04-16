@@ -6,7 +6,7 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 67 agents (data engineering + frontend), 29 commands, 29 KB domains, and 4 skills.
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 72 agents (data engineering + frontend), 34 commands, 39 KB domains, and 4 skills.
 
 **Current Status:** v3.2.0 — Plugin distribution system adopted from upstream v3.0.0. Linear is the project tracker (source of truth).
 
@@ -291,6 +291,6 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 ## Version
 
 - **Version:** 3.2.0
-- **Status:** Release — Plugin distribution + frontend ecosystem, 67 agents, 29 KB domains, 4 skills
+- **Status:** Release — Plugin distribution + frontend ecosystem, 72 agents, 39 KB domains, 4 skills
 - **Upstream Base:** luanmorenommaciel/agentspec v3.0.0
 - **Last Updated:** 2026-03-30

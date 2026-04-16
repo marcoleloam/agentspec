@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(*)",
       "Read",
@@ -28,13 +27,22 @@
       "EnterWorktree",
       "ExitWorktree"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "bypassPermissions"
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "n8n-mcp-skills@n8n-mcp-skills": true
+    "n8n-mcp-skills@n8n-mcp-skills": true,
+    "mempalace@mempalace": true
   },
-  "skipDangerousModePermissionPrompt": true,
-  "effortLevel": "high"
+  "extraKnownMarketplaces": {
+    "mempalace": {
+      "source": {
+        "source": "github",
+        "repo": "milla-jovovich/mempalace"
+      }
+    }
+  },
+  "skipDangerousModePermissionPrompt": true
 }

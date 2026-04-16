@@ -1,0 +1,131 @@
+schema_version: "1.0"
+domain: chainlit
+file_type: api-reference
+last_validated: "2026-04-12"
+source: "https://docs.chainlit.io/"
+
+records:
+  Message:
+    description: "Primary content delivery to the user"
+    fields:
+      content:
+        type: string
+        required: true
+        notes: "Markdown supported"
+      author:
+        type: string
+        required: false
+        default: "Assistant"
+      elements:
+        type: list
+        required: false
+        default: "[]"
+        notes: "Attachments: images, files, PDFs"
+      actions:
+        type: list
+        required: false
+        default: "[]"
+        notes: "Interactive buttons"
+      parent_id:
+        type: string
+        required: false
+        notes: "Nest under another message"
+    methods:
+      send:
+        notes: "Finalize and deliver to user — call AFTER streaming completes"
+      stream_token:
+        params: ["token: str"]
+        notes: "Append token to message content — call in loop before send()"
+      update:
+        notes: "Update content of already-sent message"
+
+  Step:
+    description: "Expandable UI element showing agent reasoning or tool execution"
+    fields:
+      name:
+        type: string
+        required: true
+        notes: "Display name: 'SQL Query', 'Qdrant Search', 'AnalystAgent'"
+      type:
+        type: string
+        required: true
+        validation:
+          - "llm"
+          - "tool"
+          - "run"
+          - "embedding"
+          - "retrieval"
+          - "rerank"
+      input:
+        type: string
+        required: false
+        notes: "Shown when step is expanded"
+      output:
+        type: string
+        required: false
+        notes: "Shown when step is expanded"
+      parent_id:
+        type: string
+        required: false
+        notes: "Nest under another step for hierarchy"
+      show_input:
+        type: string
+        required: false
+        default: "json"
+        validation: ["json", "text"]
+
+  user_session:
+    description: "Per-session key-value store — isolated per browser tab"
+    methods:
+      set:
+        params: ["key: str", "value: Any"]
+        notes: "Store agent, crew, or state for this session"
+      get:
+        params: ["key: str"]
+        returns: "Any"
+        notes: "Retrieve stored value — returns None if not set"
+
+  lifecycle_hooks:
+    description: "Async decorators for chat lifecycle events"
+    hooks:
+      on_chat_start:
+        fires: "New browser session opens"
+        params: []
+        notes: "Initialize agent, send welcome message"
+      on_message:
+        fires: "User sends a message"
+        params: ["message: cl.Message"]
+        notes: "message.content has the text"
+      on_stop:
+        fires: "User clicks stop button"
+        params: []
+        notes: "Cancel running tasks, cleanup"
+      on_audio_chunk:
+        fires: "Audio input received"
+        params: ["chunk: cl.AudioChunk"]
+
+  config_toml:
+    description: "Chainlit configuration file (.chainlit/config.toml)"
+    fields:
+      project.name:
+        type: string
+        default: "Chainlit"
+        notes: "App name shown in header"
+      ui.name:
+        type: string
+        notes: "Display name in UI"
+      ui.description:
+        type: string
+        notes: "Subtitle text"
+      features.unsafe_allow_html:
+        type: boolean
+        default: false
+        notes: "Allow HTML in messages (security risk)"
+      features.multi_modal:
+        type: boolean
+        default: true
+        notes: "Allow file uploads"
+
+packages:
+  core: "chainlit"
+  run: "chainlit run app.py -w"

@@ -1,0 +1,181 @@
+schema_version: "1.0"
+domain: shadowtraffic
+file_type: configuration-spec
+last_validated: "2026-04-12"
+source: "https://github.com/ShadowTraffic/shadowtraffic-ai-context"
+
+records:
+  generator:
+    description: "Declares data shape and destination for synthetic data production"
+    fields:
+      table:
+        type: string
+        required: false
+        notes: "Postgres target table name (use with row)"
+      row:
+        type: dict
+        required: false
+        notes: "Postgres record — object with _gen fields"
+      topic:
+        type: string
+        required: false
+        notes: "Generator identifier used in schedule.stages and lookup references"
+      value:
+        type: dict
+        required: false
+        notes: "Kafka message payload — object with _gen fields"
+      directory:
+        type: string
+        required: false
+        notes: "Filesystem output directory path"
+      data:
+        type: dict
+        required: false
+        notes: "Filesystem record — object with _gen fields"
+      localConfigs:
+        type: dict
+        required: false
+        notes: "Per-generator settings"
+        children:
+          throttle:
+            type: integer
+            required: false
+            default: 0
+            notes: "Milliseconds between events (0 = no delay)"
+          maxEvents:
+            type: integer
+            required: false
+            notes: "Stop after N events (omit for continuous streaming)"
+      fileConfigs:
+        type: dict
+        required: false
+        notes: "Filesystem-specific settings"
+        children:
+          fileName:
+            type: string
+            required: false
+            notes: "Output filename (e.g., 'reviews.jsonl')"
+      vars:
+        type: dict
+        required: false
+        notes: "Named variables for reuse — use {_gen: var, var: 'name'} to reference"
+
+  connection:
+    description: "Named destination endpoint for generated data"
+    fields:
+      kind:
+        type: string
+        required: true
+        validation:
+          - "postgres"
+          - "kafka"
+          - "fileSystem"
+          - "s3"
+          - "webhook"
+          - "redis"
+        notes: "Connection type — determines required connectionConfigs"
+      connectionConfigs:
+        type: dict
+        required: false
+        notes: "Connection-specific settings (host, port, db, etc.)"
+        children:
+          host:
+            type: string
+            required: true
+            notes: "Hostname (postgres, kafka)"
+          port:
+            type: integer
+            required: true
+            notes: "Port number (5432 for postgres)"
+          db:
+            type: string
+            required: true
+            notes: "Database name (postgres only)"
+          username:
+            type: string
+            required: true
+            notes: "Auth username (postgres)"
+          password:
+            type: string
+            required: true
+            notes: "Auth password (postgres)"
+      tablePolicy:
+        type: string
+        required: false
+        default: "append"
+        validation:
+          - "dropAndCreate"
+          - "append"
+        notes: "dropAndCreate resets table on each run — use for dev/workshop"
+
+  schedule:
+    description: "Staged execution control for ordered data generation"
+    fields:
+      stages:
+        type: list
+        required: false
+        notes: "Array of stage objects — each stage completes before next begins"
+        items:
+          generators:
+            type: list[string]
+            required: true
+            notes: "Generator topic names to run in this stage"
+          overrides:
+            type: dict
+            required: false
+            notes: "Per-generator config overrides for this stage"
+          comment:
+            type: string
+            required: false
+            notes: "Human-readable stage description"
+
+  functions:
+    description: "Built-in _gen data generation functions"
+    entries:
+      uuid:
+        params: []
+        output: "UUID v4 string"
+      oneOf:
+        params: ["choices: list"]
+        output: "Random element from choices (uniform)"
+      weightedOneOf:
+        params: ["choices: list", "weights: list[float]"]
+        output: "Weighted random element (weights sum to 1.0)"
+      uniformDistribution:
+        params: ["bounds: [min, max]"]
+        output: "Random float in range"
+        modifiers: ["decimals: int"]
+      normalDistribution:
+        params: ["mean: float", "sd: float"]
+        output: "Gaussian random float"
+        modifiers: ["decimals: int"]
+      lookup:
+        params: ["topic: string", "path: list[string]"]
+        output: "Value from another generator's most recent event"
+        notes: "Path must match generator shape: ['row','field'] for Postgres, ['value','field'] for Kafka"
+      string:
+        params: ["expr: string"]
+        output: "Faker-templated string using #{Namespace.method} syntax"
+      var:
+        params: ["var: string"]
+        output: "Value of named variable from generator's vars block"
+      now:
+        params: ["offset: integer (optional, ms)"]
+        output: "ISO 8601 timestamp"
+      boolean:
+        params: []
+        output: "Random true/false"
+      sequentialInteger:
+        params: ["start: integer (optional, default 0)"]
+        output: "Auto-incrementing integer"
+
+docker:
+  image: "shadowtraffic/shadowtraffic:latest"
+  flags:
+    config: "--config /home/config.json"
+    stdout: "--stdout (dry run to console)"
+    sample: "--sample N (stop after N events)"
+    watch: "--watch (reload config on file change)"
+    seed: "--seed N (deterministic output)"
+    lint: "--action lint (validate config without running)"
+    studio: "--with-studio (visual UI on port 8080)"

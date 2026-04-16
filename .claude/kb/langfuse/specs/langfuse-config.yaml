@@ -1,0 +1,177 @@
+schema_version: "1.0"
+domain: langfuse
+file_type: configuration-spec
+last_validated: "2026-02-17"
+source: "https://langfuse.com/docs/observability/sdk/python/setup"
+
+# ─────────────────────────────────────────────────────────────
+# Langfuse Configuration Specification
+# ─────────────────────────────────────────────────────────────
+
+sdk:
+  package: "langfuse"
+  install: "pip install langfuse"
+  min_version: "3.0.0"
+  python_min: "3.9"
+
+environment_variables:
+  required:
+    LANGFUSE_SECRET_KEY:
+      type: string
+      pattern: "sk-lf-*"
+      description: "Server-side API key for authentication"
+      sensitive: true
+      source: "Langfuse Project Settings > API Keys"
+
+    LANGFUSE_PUBLIC_KEY:
+      type: string
+      pattern: "pk-lf-*"
+      description: "Client-side API key for authentication"
+      sensitive: true
+      source: "Langfuse Project Settings > API Keys"
+
+    LANGFUSE_BASE_URL:
+      type: string
+      description: "Langfuse API endpoint"
+      default: "https://cloud.langfuse.com"
+      options:
+        - value: "https://cloud.langfuse.com"
+          region: "EU"
+        - value: "https://us.cloud.langfuse.com"
+          region: "US"
+        - value: "http://localhost:3000"
+          region: "Self-hosted (local)"
+
+  optional:
+    LANGFUSE_TRACING_ENVIRONMENT:
+      type: string
+      description: "Environment label for trace filtering"
+      examples: ["production", "staging", "development"]
+      default: null
+
+    LANGFUSE_OBSERVE_DECORATOR_IO_CAPTURE_ENABLED:
+      type: boolean
+      description: "Enable/disable automatic I/O capture in @observe decorator"
+      default: true
+      notes: "Set to false for large inputs/outputs to reduce overhead"
+
+client_initialization:
+  singleton:
+    code: |
+      from langfuse import get_client
+      langfuse = get_client()
+    notes: "Recommended. Client is a singleton accessible anywhere."
+
+  constructor:
+    code: |
+      from langfuse import Langfuse
+      langfuse = Langfuse(
+          public_key="pk-lf-...",
+          secret_key="sk-lf-...",
+          base_url="https://cloud.langfuse.com"
+      )
+    notes: "Use when env vars are not available."
+
+  auth_check:
+    code: "langfuse.auth_check()"
+    returns: boolean
+    notes: "Returns True if credentials are valid."
+
+observation_types:
+  span:
+    as_type: "span"
+    purpose: "Generic duration-based observation for non-LLM work"
+    fields: ["name", "input", "output", "metadata", "start_time", "end_time"]
+
+  generation:
+    as_type: "generation"
+    purpose: "LLM call with token usage and cost tracking"
+    fields: ["name", "input", "output", "model", "model_parameters",
+             "usage_details", "cost_details", "metadata"]
+
+  event:
+    as_type: "event"
+    purpose: "Discrete point-in-time event"
+    fields: ["name", "input", "output", "metadata"]
+
+  tool:
+    as_type: "tool"
+    purpose: "Tool or function call"
+    fields: ["name", "input", "output", "metadata"]
+
+  embedding:
+    as_type: "embedding"
+    purpose: "Embedding model call"
+    fields: ["name", "model", "usage_details", "cost_details", "metadata"]
+
+usage_details_keys:
+  standard:
+    - key: "input"
+      description: "Input/prompt tokens"
+    - key: "output"
+      description: "Output/completion tokens"
+    - key: "total"
+      description: "Total tokens (auto-summed if omitted)"
+  extended:
+    - key: "cached_tokens"
+      description: "Tokens served from cache"
+    - key: "cache_read_input_tokens"
+      description: "Anthropic-style cached input reads"
+    - key: "reasoning_tokens"
+      description: "Chain-of-thought reasoning tokens"
+    - key: "audio_tokens"
+      description: "Audio modality tokens"
+    - key: "image_tokens"
+      description: "Image modality tokens"
+
+cost_details_keys:
+  - key: "input"
+    description: "Input cost in USD"
+  - key: "output"
+    description: "Output cost in USD"
+  - key: "total"
+    description: "Total cost in USD (auto-summed if omitted)"
+  - key: "cache_read_input_tokens"
+    description: "Cost for cached token reads in USD"
+
+score_data_types:
+  - type: "NUMERIC"
+    values: "Any float"
+    example: 0.95
+  - type: "CATEGORICAL"
+    values: "String labels"
+    example: "correct"
+  - type: "BOOLEAN"
+    values: "0 or 1"
+    example: 1
+
+prompt_management:
+  types:
+    - type: "text"
+      format: "Single string"
+      template_syntax: "{{variable}}"
+    - type: "chat"
+      format: "Array of message objects"
+      template_syntax: "{{variable}} in content field"
+  labels:
+    - "production"
+    - "staging"
+    - "development"
+  caching: "Client-side, zero additional latency after first fetch"
+
+cloud_run_integration:
+  flush_requirements:
+    - trigger: "HTTP response"
+      action: "langfuse.flush() after response"
+    - trigger: "SIGTERM"
+      action: "signal.signal(signal.SIGTERM, flush_handler)"
+    - trigger: "Process exit"
+      action: "atexit.register(langfuse.flush)"
+  env_vars_deployment: |
+    gcloud run deploy SERVICE_NAME \
+      --set-env-vars "LANGFUSE_SECRET_KEY=sk-lf-...,\
+    LANGFUSE_PUBLIC_KEY=pk-lf-...,\
+    LANGFUSE_BASE_URL=https://cloud.langfuse.com"
+  metadata_tags:
+    - "K_REVISION: Cloud Run revision name"
+    - "K_SERVICE: Cloud Run service name"

@@ -1,0 +1,155 @@
+schema_version: "1.0"
+domain: llamaindex
+file_type: api-reference
+last_validated: "2026-04-12"
+source: "https://docs.llamaindex.ai/en/stable/"
+
+records:
+  Settings:
+    description: "Global singleton controlling defaults for all LlamaIndex operations"
+    fields:
+      embed_model:
+        type: BaseEmbedding
+        required: false
+        default: "OpenAI text-embedding-ada-002"
+        notes: "Use FastEmbedEmbedding('BAAI/bge-base-en-v1.5') for local — 768 dims"
+      llm:
+        type: LLM
+        required: false
+        default: "OpenAI gpt-3.5-turbo"
+        notes: "Use Anthropic('claude-sonnet-4-20250514') for ShopAgent"
+      chunk_size:
+        type: integer
+        required: false
+        default: 1024
+        notes: "Tokens per chunk when splitting documents"
+      chunk_overlap:
+        type: integer
+        required: false
+        default: 20
+        notes: "Overlap tokens between adjacent chunks"
+      num_output:
+        type: integer
+        required: false
+        default: 256
+        notes: "Max tokens for LLM response synthesis"
+      context_window:
+        type: integer
+        required: false
+        default: 3900
+        notes: "Context window size for LLM"
+      callback_manager:
+        type: CallbackManager
+        required: false
+        default: null
+        notes: "Optional callbacks for observability (LangFuse, etc.)"
+
+  VectorStoreIndex:
+    description: "Embeds documents and stores vectors in an external vector database"
+    class_methods:
+      from_documents:
+        params:
+          documents:
+            type: list[Document]
+            required: true
+          storage_context:
+            type: StorageContext
+            required: false
+            notes: "MUST pass for external stores (Qdrant, Pinecone) — omitting uses in-memory"
+          show_progress:
+            type: boolean
+            required: false
+            default: false
+          embed_model:
+            type: BaseEmbedding
+            required: false
+            notes: "Override Settings.embed_model for this index only"
+      from_vector_store:
+        params:
+          vector_store:
+            type: VectorStore
+            required: true
+            notes: "Load existing collection without re-embedding"
+
+  QueryEngine:
+    description: "Executes natural language queries with retrieval and response synthesis"
+    params:
+      similarity_top_k:
+        type: integer
+        required: false
+        default: 2
+        notes: "Number of chunks to retrieve"
+      response_mode:
+        type: string
+        required: false
+        default: "default"
+        validation:
+          - "default"
+          - "compact"
+          - "tree_summarize"
+          - "no_text"
+          - "accumulate"
+      streaming:
+        type: boolean
+        required: false
+        default: false
+      verbose:
+        type: boolean
+        required: false
+        default: false
+      node_postprocessors:
+        type: list
+        required: false
+        default: "[]"
+        notes: "Filters applied after retrieval (e.g., SimilarityPostprocessor)"
+
+  JSONReader:
+    description: "Load JSON/JSONL files into Document objects"
+    params:
+      is_jsonl:
+        type: boolean
+        required: false
+        default: false
+        notes: "Set True for JSONL — splits each line into a separate Document"
+      clean_json:
+        type: boolean
+        required: false
+        default: true
+        notes: "Sanitize JSON before parsing"
+      levels_back:
+        type: integer
+        required: false
+        default: null
+        notes: "Levels to go back in nested JSON for text extraction"
+      collapse_length:
+        type: integer
+        required: false
+        default: null
+        notes: "Collapse long strings beyond this length"
+      ensure_ascii:
+        type: boolean
+        required: false
+        default: false
+        notes: "Force ASCII — set False for Portuguese/UTF-8 text"
+
+  QdrantVectorStore:
+    description: "LlamaIndex adapter for Qdrant vector database"
+    params:
+      client:
+        type: QdrantClient
+        required: true
+        notes: "qdrant_client.QdrantClient(url='http://localhost:6333')"
+      collection_name:
+        type: string
+        required: true
+        notes: "Target Qdrant collection — 'shopagent_reviews' for ShopAgent"
+      aclient:
+        type: AsyncQdrantClient
+        required: false
+        notes: "For async operations"
+
+packages:
+  core: "llama-index"
+  qdrant: "llama-index-vector-stores-qdrant"
+  fastembed: "llama-index-embeddings-fastembed"
+  json_reader: "llama-index-readers-json"
