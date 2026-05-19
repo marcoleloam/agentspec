@@ -69,6 +69,51 @@ workflow:
       model: "sonnet"
 
 # =============================================================================
+# AGENT RESOLUTION (Local-First Precedence)
+# =============================================================================
+# When AgentSpec is installed as a Claude Code plugin, users may have agents
+# in their project's .claude/agents/ directory that share a name with a plugin
+# agent. This contract documents the resolution order so phase commands can
+# rely on stable behavior across hosts.
+
+agent_resolution:
+  order:
+    - "local"   # .claude/agents/<category>/<name>.md in the user's project
+    - "plugin"  # ${CLAUDE_PLUGIN_ROOT}/agents/<category>/<name>.md (AgentSpec)
+
+  behavior: |
+    Local agents override plugin agents by name. When an agent name appears
+    in both the user's project and the AgentSpec plugin, the local version
+    is invoked. Enforcement is provided by Claude Code's native plugin
+    loader; AgentSpec does not implement a parallel resolver.
+
+  scaffolding:
+    description: |
+      The SessionStart hook (init-workspace.sh) creates the override
+      directories on first run and writes a README documenting the pattern.
+      The README is written once and preserved across runs to respect user
+      customizations.
+    paths:
+      - ".claude/agents/workflow/"   # SDD phase agent overrides
+      - ".claude/agents/custom/"     # New project-specific agents
+    readme: ".claude/agents/README.md"
+
+  rules:
+    - "Override agent's `name:` frontmatter field MUST match the plugin agent's name"
+    - "WORKFLOW_CONTRACTS phase contracts (input/output/quality_gate) still apply to overrides"
+    - "Custom agents (no plugin counterpart) are additive and do not require precedence"
+    - "KB domains are NOT subject to this resolution; they are loaded only from CLAUDE_PLUGIN_ROOT"
+
+  out_of_scope:
+    - "Routing metadata in routing.json — router is build-time, not runtime"
+    - "Namespaced agent invocation (e.g., local:build-agent) in command files"
+    - "Per-agent precedence flags in frontmatter"
+
+  documentation:
+    user_facing: "docs/concepts/agent-overrides.md"
+    quick_reference: ".claude/agents/README.md (auto-generated in user project)"
+
+# =============================================================================
 # PHASE 0: BRAINSTORM (Optional)
 # =============================================================================
 
