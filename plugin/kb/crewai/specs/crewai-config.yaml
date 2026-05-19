@@ -1,0 +1,283 @@
+schema_version: "1.0"
+domain: crewai
+file_type: configuration-spec
+last_validated: "2026-02-17"
+source: "https://docs.crewai.com/en/introduction"
+
+# CrewAI Configuration Specification
+# Machine-readable reference for all configurable parameters
+
+records:
+  agent:
+    description: "Autonomous LLM-powered unit with role, goal, and tools"
+    fields:
+      role:
+        type: string
+        required: true
+        validation:
+          - "Non-empty string describing agent function"
+        notes: "Used in prompt engineering for agent persona"
+      goal:
+        type: string
+        required: true
+        validation:
+          - "Non-empty string describing what agent aims to achieve"
+        notes: "Drives agent decision-making behavior"
+      backstory:
+        type: string
+        required: true
+        validation:
+          - "Non-empty string providing agent context"
+        notes: "Persona consistency for prompt engineering"
+      tools:
+        type: list
+        required: false
+        default: "[]"
+        validation:
+          - "List of BaseTool instances or @tool decorated functions"
+        notes: "External capabilities available to the agent"
+      llm:
+        type: string
+        required: false
+        default: "default model"
+        validation:
+          - "Valid model identifier: provider/model-name"
+        notes: "Examples: openai/gpt-4o, anthropic/claude-3-sonnet"
+      memory:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Enable agent-level memory"
+      verbose:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Enable detailed logging"
+      max_iter:
+        type: integer
+        required: false
+        default: "20"
+        validation:
+          - "Positive integer, recommended 5-15 for production"
+        notes: "Maximum reasoning iterations before stopping"
+      max_rpm:
+        type: integer
+        required: false
+        default: "null"
+        validation:
+          - "Positive integer or null for unlimited"
+        notes: "Rate limit for API calls per minute"
+      allow_delegation:
+        type: boolean
+        required: false
+        default: "true"
+        notes: "Whether agent can delegate tasks to other agents"
+      step_callback:
+        type: callable
+        required: false
+        default: "null"
+        notes: "Function called after each reasoning step"
+      function_calling_llm:
+        type: string
+        required: false
+        default: "null"
+        notes: "Separate LLM for tool function calls"
+
+  task:
+    description: "Actionable unit of work assigned to an agent"
+    fields:
+      description:
+        type: string
+        required: true
+        validation:
+          - "Non-empty string with clear instructions"
+          - "Supports {variable} interpolation from kickoff inputs"
+        notes: "What the agent should do"
+      expected_output:
+        type: string
+        required: true
+        validation:
+          - "Non-empty string describing output format"
+        notes: "Critical for agent output quality"
+      agent:
+        type: Agent
+        required: false
+        default: "null"
+        notes: "Assigned agent (required unless using hierarchical process)"
+      tools:
+        type: list
+        required: false
+        default: "[]"
+        notes: "Task-specific tools (override agent tools)"
+      context:
+        type: list
+        required: false
+        default: "[]"
+        validation:
+          - "List of Task objects whose output feeds into this task"
+        notes: "Establishes task dependencies"
+      output_pydantic:
+        type: BaseModel
+        required: false
+        default: "null"
+        notes: "Pydantic model for structured output"
+      output_json:
+        type: type
+        required: false
+        default: "null"
+        notes: "JSON schema for structured output"
+      output_file:
+        type: string
+        required: false
+        default: "null"
+        notes: "File path to write output"
+      async_execution:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Run task asynchronously"
+      human_input:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Require human approval before completing"
+      callback:
+        type: callable
+        required: false
+        default: "null"
+        notes: "Post-execution hook function"
+
+  crew:
+    description: "Team of agents collaborating on tasks via a process"
+    fields:
+      agents:
+        type: list
+        required: true
+        validation:
+          - "Non-empty list of Agent instances"
+        notes: "All agents participating in the crew"
+      tasks:
+        type: list
+        required: true
+        validation:
+          - "Non-empty list of Task instances"
+        notes: "Tasks to execute in order (sequential) or delegate (hierarchical)"
+      process:
+        type: enum
+        required: false
+        default: "sequential"
+        validation:
+          - "Process.sequential or Process.hierarchical"
+        notes: "Execution strategy"
+      memory:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Enable STM, LTM, and Entity memory"
+      cache:
+        type: boolean
+        required: false
+        default: "true"
+        notes: "Cache tool execution results"
+      verbose:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Enable detailed logging"
+      max_rpm:
+        type: integer
+        required: false
+        default: "null"
+        notes: "Global rate limit for all agents"
+      manager_llm:
+        type: string
+        required: false
+        default: "null"
+        validation:
+          - "Required when process=hierarchical and manager_agent is null"
+        notes: "LLM for the auto-created manager agent"
+      manager_agent:
+        type: Agent
+        required: false
+        default: "null"
+        notes: "Custom manager agent for hierarchical process"
+      planning:
+        type: boolean
+        required: false
+        default: "false"
+        notes: "Enable automated task planning"
+      planning_llm:
+        type: string
+        required: false
+        default: "null"
+        notes: "LLM for planning phase"
+      embedder:
+        type: dict
+        required: false
+        default: "null"
+        validation:
+          - "Dict with 'provider' and 'config' keys"
+        notes: "Custom embedder for memory (STM and Entity)"
+      output_log_file:
+        type: string
+        required: false
+        default: "null"
+        notes: "File path for execution logs (.txt or .json)"
+      step_callback:
+        type: callable
+        required: false
+        default: "null"
+        notes: "Hook after each agent step"
+      task_callback:
+        type: callable
+        required: false
+        default: "null"
+        notes: "Hook after each task completion"
+
+  flow:
+    description: "Event-driven workflow orchestrating multiple crews"
+    fields:
+      state:
+        type: BaseModel
+        required: false
+        default: "unstructured dict"
+        notes: "Pydantic model for typed state or dynamic dict"
+    decorators:
+      start:
+        description: "Entry point for flow execution"
+        usage: "@start()"
+      listen:
+        description: "Trigger on method completion"
+        usage: "@listen(method_name)"
+      router:
+        description: "Conditional branching based on return value"
+        usage: "@router(method_name)"
+      persist:
+        description: "Auto-save state to SQLite"
+        usage: "@persist"
+      human_feedback:
+        description: "Pause for human input"
+        usage: "@human_feedback"
+
+  memory:
+    description: "Memory configuration for crew-level context retention"
+    types:
+      short_term:
+        storage: "ChromaDB"
+        embeddings: true
+        scope: "Current session"
+        notes: "RAG-based contextual memory"
+      long_term:
+        storage: "SQLite3"
+        embeddings: false
+        scope: "Cross-session"
+        notes: "Task result persistence"
+      entity:
+        storage: "ChromaDB"
+        embeddings: true
+        scope: "Named entities"
+        notes: "People, systems, concepts"
+    environment:
+      CREWAI_STORAGE_DIR:
+        description: "Custom storage directory for memory files"
+        default: "Platform-specific via appdirs"

@@ -18,7 +18,7 @@
 #   - No-ops unless the CWD looks like an AgentSpec-aware project
 #     (has .git/, CLAUDE.md, or .claude/)
 #   - Creates .claude/sdd/{features,reports,archive}/ if missing
-#   - Creates .claude/agents/{workflow,custom}/ with a README explaining
+#   - Creates ${CLAUDE_PLUGIN_ROOT}/agents/{workflow,custom}/ with a README explaining
 #     the local-first override pattern (only on first run)
 #   - Writes .claude/sdd/.detected-stack.md with inferred tech-stack hints
 # =============================================================================
@@ -46,7 +46,7 @@ init_workspace() {
 # ---------------------------------------------------------------------------
 # Phase 1.5: Local Agent Override Scaffolding
 # ---------------------------------------------------------------------------
-# Creates .claude/agents/{workflow,custom}/ so users have a discoverable
+# Creates ${CLAUDE_PLUGIN_ROOT}/agents/{workflow,custom}/ so users have a discoverable
 # place to drop local agents that override AgentSpec's plugin agents.
 # Claude Code's native precedence is: user-level/project-level agents win
 # over plugin agents when names collide. This function makes that pattern
@@ -59,9 +59,9 @@ init_agent_overrides() {
         return 0
     fi
 
-    mkdir -p .claude/agents/workflow .claude/agents/custom 2>/dev/null || true
+    mkdir -p ${CLAUDE_PLUGIN_ROOT}/agents/workflow ${CLAUDE_PLUGIN_ROOT}/agents/custom 2>/dev/null || true
 
-    local readme=".claude/agents/README.md"
+    local readme="${CLAUDE_PLUGIN_ROOT}/agents/README.md"
     if [[ -f "$readme" ]]; then
         return 0
     fi
@@ -83,15 +83,15 @@ conventions without forking the plugin.
 ## Override an AgentSpec agent
 
 1. Find the plugin agent at `${CLAUDE_PLUGIN_ROOT}/agents/<category>/<name>.md`
-2. Copy it to `.claude/agents/<category>/<name>.md` — keep the `name:` field identical
+2. Copy it to `${CLAUDE_PLUGIN_ROOT}/agents/<category>/<name>.md` — keep the `name:` field identical
 3. Edit freely; your version is now what runs
 
 Example: override `build-agent` so `/build` runs your team's review checklist:
 
 ```bash
 cp $CLAUDE_PLUGIN_ROOT/agents/workflow/build-agent.md \
-   .claude/agents/workflow/build-agent.md
-# edit .claude/agents/workflow/build-agent.md
+   ${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md
+# edit ${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md
 ```
 
 ## Add a custom agent
@@ -102,7 +102,7 @@ Drop a new `.md` file in `custom/` with valid frontmatter (`name`, `description`
 ## Resolution Order
 
 ```text
-.claude/agents/<name>.md   (your local override — wins)
+${CLAUDE_PLUGIN_ROOT}/agents/<name>.md   (your local override — wins)
         ↓ if absent
 ${CLAUDE_PLUGIN_ROOT}/agents/<name>.md   (AgentSpec plugin)
 ```
