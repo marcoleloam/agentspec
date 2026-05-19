@@ -17,7 +17,7 @@
 ```text
 agentspec/
 ├── .claude/                 # Claude Code integration
-│   ├── agents/              # 63 specialized agents
+│   ├── agents/              # 64 specialized agents
 │   │   ├── architect/       # 8 system-level design agents
 │   │   ├── cloud/           # 10 AWS, GCP, cloud services, CI/CD
 │   │   ├── platform/        # 6 Microsoft Fabric specialists
@@ -25,14 +25,14 @@ agentspec/
 │   │   ├── test/            # 3 testing, data quality, contracts
 │   │   ├── data-engineering/ # 15 DE implementation specialists
 │   │   ├── frontend/        # 5 React, CSS, UX, a11y, architecture
-│   │   ├── dev/             # 4 developer tools & productivity
+│   │   ├── dev/             # 5 developer tools & productivity
 │   │   └── workflow/        # 9 SDD phase agents (incl. 3 multiagent variants)
 │   │
-│   ├── commands/            # 29 slash commands
+│   ├── commands/            # 31 slash commands
 │   │   ├── workflow/        # SDD commands (8)
 │   │   ├── data-engineering/ # DE commands (8)
 │   │   ├── core/            # Utility commands (4)
-│   │   ├── knowledge/       # KB commands (1)
+│   │   ├── knowledge/       # KB commands (3)
 │   │   └── review/          # Review commands (1)
 │   │
 │   ├── sdd/                 # SDD framework
@@ -286,7 +286,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | `.claude/agents/frontend/` | React, CSS/Tailwind, UX, a11y, architecture |
 | `.claude/agents/python/` | Python dev, code quality, prompt engineering |
 | `.claude/agents/test/` | Testing, data quality, data contracts |
-| `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst |
+| `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst, KB evolution |
 | `build-plugin.sh` | Packages .claude/ into plugin/ with path rewriting |
 | `plugin/.claude-plugin/plugin.json` | Plugin manifest (name, version, metadata) |
 | `plugin-extras/skills/` | Plugin-only skills (sdd-workflow, data-engineering-guide) |

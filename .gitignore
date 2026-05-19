@@ -30,3 +30,7 @@ node_modules/
 
 # Logs
 *.log
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
