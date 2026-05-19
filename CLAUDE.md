@@ -95,9 +95,12 @@ agentspec/
 │   ├── hooks/               # hooks.json
 │   └── scripts/             # init-workspace.sh
 │
+├── .claude-plugin/          # Root marketplace manifest (Claude Code entrypoint)
 ├── build-plugin.sh          # Packaging script (.claude/ → plugin/)
-├── install.sh               # Legacy symlink installer (Unix)
-├── install-win.ps1          # Legacy symlink installer (Windows)
+├── Makefile                 # Developer entry points (make build/test/check)
+├── scripts/                 # judge.py, generate-agent-router.py
+├── tests/                   # pytest suite (judge + router)
+├── tasks/backlog.md         # Roadmap items
 ├── CHANGELOG.md             # Version history
 ├── CONTRIBUTING.md          # Contribution guide
 ├── SECURITY.md              # Security policy
@@ -154,32 +157,25 @@ Technical terms (MUST/SHOULD/COULD, Clarity Score, YAGNI, MoSCoW), file paths, c
 
 ## Installation (Use AgentSpec in Any Project)
 
-### Option A: Plugin (Recommended)
-
 ```bash
-# Build the plugin
-git clone https://github.com/marcoleloam/agentspec.git ~/agentspec
-cd ~/agentspec && bash build-plugin.sh
-
-# Install via plugin system
 claude plugin marketplace add marcoleloam/agentspec
 claude plugin install agentspec
-
-# Or test locally
-claude --plugin-dir ~/agentspec/plugin
+claude plugin enable agentspec
 ```
 
-### Option B: Legacy Symlinks
+That's it. All agents, commands, KB domains, and skills are globally available. Updates propagate via `claude plugin update agentspec`.
+
+### Customize per project (optional)
+
+Use **local-first agent overrides** (v3.2.0) to customize an agent without forking:
 
 ```bash
-# Unix/macOS
-bash ~/agentspec/install.sh
-
-# Windows PowerShell
-~/agentspec/install-win.ps1
+cp $CLAUDE_PLUGIN_ROOT/agents/workflow/build-agent.md \
+   .claude/agents/workflow/build-agent.md
+$EDITOR .claude/agents/workflow/build-agent.md  # keep "name:" identical
 ```
 
-Then copy `CLAUDE.md.template` to each new project and customize it.
+Claude Code's native loader gives local overrides precedence over the plugin. See `docs/concepts/agent-overrides.md`.
 
 ---
 
@@ -192,7 +188,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | Sync with upstream v2.1.0 | Done | Adopted native .claude/ model, dropped plugin wrapper |
 | pt-BR in output docs only | Done | 5 SDD templates + workflow agents updated |
 | /continuar command | Done | Gap analysis + resume incomplete builds |
-| Create CLAUDE.md.template | Done | Template for user projects |
+| Removed legacy installers | Done 2026-05-19 | install.sh, init-project.sh, CLAUDE.md.template removed; plugin system is sole install path |
 | Plugin distribution (upstream v3.0.0) | Done | build-plugin.sh, manifests, 2 skills, SessionStart hook |
 | KB Evolution (ingest-kb + lint-kb) | Shipped 2026-04-23 | kb-evolution-agent + 2 commands for KB freshness via Context7 |
 | Sync upstream v3.2.0 features | Done 2026-05-19 | Judge Layer, local-first overrides, /status, agent-router, stack detection, CI |

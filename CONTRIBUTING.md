@@ -11,10 +11,14 @@ cd agentspec
 git checkout -b feature/your-feature
 
 # The framework lives in .claude/
-ls .claude/agents/      # 58 specialized agents
-ls .claude/commands/    # 21 slash commands
+ls .claude/agents/      # 73 specialized agents
+ls .claude/commands/    # 41 slash commands
+ls .claude/skills/      # 5 skills (incl. agent-router)
 ls .claude/sdd/         # SDD framework
-ls .claude/kb/          # Knowledge Base
+ls .claude/kb/          # 39 Knowledge Base domains
+
+# Rebuild distributable plugin/ from .claude/ source
+bash build-plugin.sh    # or: make build
 ```
 
 ## Ways to Contribute
