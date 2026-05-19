@@ -25,7 +25,9 @@
       "EnterPlanMode",
       "ExitPlanMode",
       "EnterWorktree",
-      "ExitWorktree"
+      "ExitWorktree",
+      "mcp__mempalace__*",
+      "mcp__plugin_mempalace_mempalace__*"
     ],
     "deny": [],
     "defaultMode": "bypassPermissions"
@@ -44,5 +46,6 @@
       }
     }
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "medium"
 }

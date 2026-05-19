@@ -1,5 +1,5 @@
-version: '2.1'
-last_updated: '2026-03-26'
+version: '2.2'
+last_updated: '2026-04-22'
 limits:
   quick_reference: 100
   concept: 150

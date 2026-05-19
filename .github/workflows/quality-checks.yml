@@ -1,0 +1,62 @@
+name: Quality Checks
+
+# Fast, per-PR checks that don't need the full plugin build:
+#   - Python test suite (tests/)
+#   - Agent-router drift check
+#   - Shell script lint (shellcheck)
+# Triggered on any change to scripts/, tests/, or shell files.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '**/*.sh'
+      - '.claude/agents/**'
+      - '.github/workflows/quality-checks.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '**/*.sh'
+      - '.claude/agents/**'
+      - '.github/workflows/quality-checks.yml'
+
+jobs:
+  python:
+    name: Python tests + drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pytest
+        run: python3 -m pip install pytest
+
+      - name: Run test suite
+        run: python3 -m pytest tests/ -v
+
+      - name: Check agent-router drift
+        run: python3 scripts/generate-agent-router.py --check
+
+  shellcheck:
+    name: Shell script lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck (warnings + errors)
+        run: |
+          shellcheck -S warning \
+            build-plugin.sh \
+            .claude/skills/visual-explainer/scripts/share.sh \
+            plugin-extras/scripts/init-workspace.sh

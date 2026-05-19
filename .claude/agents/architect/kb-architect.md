@@ -28,6 +28,9 @@ escalation_rules:
   - trigger: "Task outside KB domain expertise"
     target: "user"
     reason: "Requires specialist outside KB architecture scope"
+  - trigger: "Need to update existing KB content with latest docs"
+    target: "kb-evolution-agent"
+    reason: "kb-architect creates KBs; kb-evolution-agent updates them via Context7"
 ---
 
 # KB Architect

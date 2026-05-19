@@ -6,9 +6,9 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 72 agents (data engineering + frontend), 34 commands, 39 KB domains, and 4 skills.
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 73 agents (data engineering + frontend), 38 commands, 39 KB domains, and 5 skills.
 
-**Current Status:** v3.2.0 — Plugin distribution system adopted from upstream v3.0.0. Linear is the project tracker (source of truth).
+**Current Status:** v3.2.0 — Synced with upstream luanmorenommaciel/agentspec @ a6a4b48 (2026-05-04). Includes Judge Layer (OpenRouter second opinion), local-first agent overrides, /status command, stack auto-detection, agent-router skill, and CI quality gates.
 
 ---
 
@@ -17,7 +17,7 @@
 ```text
 agentspec/
 ├── .claude/                 # Claude Code integration
-│   ├── agents/              # 63 specialized agents
+│   ├── agents/              # 64 specialized agents
 │   │   ├── architect/       # 8 system-level design agents
 │   │   ├── cloud/           # 10 AWS, GCP, cloud services, CI/CD
 │   │   ├── platform/        # 6 Microsoft Fabric specialists
@@ -25,14 +25,14 @@ agentspec/
 │   │   ├── test/            # 3 testing, data quality, contracts
 │   │   ├── data-engineering/ # 15 DE implementation specialists
 │   │   ├── frontend/        # 5 React, CSS, UX, a11y, architecture
-│   │   ├── dev/             # 4 developer tools & productivity
+│   │   ├── dev/             # 5 developer tools & productivity
 │   │   └── workflow/        # 9 SDD phase agents (incl. 3 multiagent variants)
 │   │
-│   ├── commands/            # 29 slash commands
+│   ├── commands/            # 31 slash commands
 │   │   ├── workflow/        # SDD commands (8)
 │   │   ├── data-engineering/ # DE commands (8)
 │   │   ├── core/            # Utility commands (4)
-│   │   ├── knowledge/       # KB commands (1)
+│   │   ├── knowledge/       # KB commands (3)
 │   │   └── review/          # Review commands (1)
 │   │
 │   ├── sdd/                 # SDD framework
@@ -194,7 +194,9 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | /continuar command | Done | Gap analysis + resume incomplete builds |
 | Create CLAUDE.md.template | Done | Template for user projects |
 | Plugin distribution (upstream v3.0.0) | Done | build-plugin.sh, manifests, 2 skills, SessionStart hook |
-| Implement Judge layer | Planned | Spec validation via external LLM |
+| KB Evolution (ingest-kb + lint-kb) | Shipped 2026-04-23 | kb-evolution-agent + 2 commands for KB freshness via Context7 |
+| Sync upstream v3.2.0 features | Done 2026-05-19 | Judge Layer, local-first overrides, /status, agent-router, stack detection, CI |
+| Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
 ---
@@ -252,12 +254,16 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | `/data-contract` | Contract authoring (ODCS) |
 | `/migrate` | Legacy ETL migration |
 
-### Core & Utilities (6)
+### Core & Utilities (10)
 
 | Command | Purpose |
 |---------|---------|
 | `/create-kb` | Create KB domain |
+| `/ingest-kb` | Update KB domain via Context7 (KB Evolution) |
+| `/lint-kb` | Audit KB domain quality (KB Evolution) |
 | `/review` | Code review |
+| `/judge` | Cross-model second opinion via OpenRouter (Judge Layer) |
+| `/status` | Comprehensive project status report (active SDD work, git, health) |
 | `/meeting` | Meeting transcript analysis |
 | `/memory` | Save session insights |
 | `/sync-context` | Update CLAUDE.md |
@@ -280,7 +286,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 | `.claude/agents/frontend/` | React, CSS/Tailwind, UX, a11y, architecture |
 | `.claude/agents/python/` | Python dev, code quality, prompt engineering |
 | `.claude/agents/test/` | Testing, data quality, data contracts |
-| `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst |
+| `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst, KB evolution |
 | `build-plugin.sh` | Packages .claude/ into plugin/ with path rewriting |
 | `plugin/.claude-plugin/plugin.json` | Plugin manifest (name, version, metadata) |
 | `plugin-extras/skills/` | Plugin-only skills (sdd-workflow, data-engineering-guide) |
@@ -291,6 +297,7 @@ Then copy `CLAUDE.md.template` to each new project and customize it.
 ## Version
 
 - **Version:** 3.2.0
-- **Status:** Release — Plugin distribution + frontend ecosystem, 72 agents, 39 KB domains, 4 skills
-- **Upstream Base:** luanmorenommaciel/agentspec v3.0.0
-- **Last Updated:** 2026-03-30
+- **Status:** Release — Synced with upstream v3.2.0 (Judge Layer, local-first overrides, /status, agent-router, CI). 73 agents, 39 KB domains, 5 skills, 38 commands.
+- **Upstream Base:** luanmorenommaciel/agentspec @ a6a4b48 (2026-05-04)
+- **Last Sync:** 2026-05-19
+- **Last Updated:** 2026-05-19
