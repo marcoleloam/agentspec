@@ -63,6 +63,17 @@ Read(.claude/sdd/features/DEFINE_{FEATURE}.md)
 Read(CLAUDE.md)
 ```
 
+Mark this feature as active so post-build improvements stay anchored (see `/work`):
+
+```bash
+mkdir -p .claude/sdd
+cat > .claude/sdd/.active <<EOF
+feature: {FEATURE}
+phase: build
+updated: $(date +%Y-%m-%d)
+EOF
+```
+
 ### Step 2: Extract Tasks from File Manifest
 
 Convert the file manifest to a task list:

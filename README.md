@@ -10,9 +10,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
-[![Version](https://img.shields.io/badge/version-3.2.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.3.0-green.svg)](CHANGELOG.md)
 [![Agents](https://img.shields.io/badge/agents-73-orange.svg)](.claude/agents/)
-[![Commands](https://img.shields.io/badge/commands-41-blue.svg)](.claude/commands/)
+[![Commands](https://img.shields.io/badge/commands-42-blue.svg)](.claude/commands/)
 [![KB Domains](https://img.shields.io/badge/KB%20domains-39-blue.svg)](.claude/kb/)
 [![Skills](https://img.shields.io/badge/skills-5-purple.svg)](.claude/skills/)
 
@@ -28,7 +28,7 @@ AI-assisted development without structure produces inconsistent results: halluci
 
 ## The Solution
 
-AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code — a 5-phase workflow backed by 39 knowledge base domains, 73 specialized agents, 41 slash commands, and 5 skills. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
+AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code — a 5-phase workflow backed by 39 knowledge base domains, 73 specialized agents, 42 slash commands, and 5 skills. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
 
 ```text
 /brainstorm  →  /define  →  /design  →  /build  →  /ship
@@ -55,7 +55,7 @@ claude plugin install agentspec
 claude plugin enable agentspec
 ```
 
-That's it. All 73 agents, 41 commands, 39 KB domains, and 5 skills become available globally. Updates propagate via:
+That's it. All 73 agents, 42 commands, 39 KB domains, and 5 skills become available globally. Updates propagate via:
 
 ```bash
 claude plugin update agentspec

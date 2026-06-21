@@ -6,9 +6,9 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 73 agents (data engineering + frontend), 38 commands, 39 KB domains, and 5 skills.
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 73 agents (data engineering + frontend), 42 commands, 39 KB domains, and 5 skills.
 
-**Current Status:** v3.2.0 — Synced with upstream luanmorenommaciel/agentspec @ a6a4b48 (2026-05-04). Includes Judge Layer (OpenRouter second opinion), local-first agent overrides, /status command, stack auto-detection, agent-router skill, and CI quality gates.
+**Current Status:** v3.3.0 — Adds blackboard coordination (Build phase), the `/work` active-feature anchor, and portable file-based memory (project + global tiers, auto-recalled at SessionStart as a compact index). Builds on v3.2.0 (Judge Layer, local-first overrides, /status, agent-router, stack detection, CI). MemPalace MCP dependency dropped in favor of the file-based memory.
 
 ---
 
@@ -192,6 +192,9 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | Plugin distribution (upstream v3.0.0) | Done | build-plugin.sh, manifests, 2 skills, SessionStart hook |
 | KB Evolution (ingest-kb + lint-kb) | Shipped 2026-04-23 | kb-evolution-agent + 2 commands for KB freshness via Context7 |
 | Sync upstream v3.2.0 features | Done 2026-05-19 | Judge Layer, local-first overrides, /status, agent-router, stack detection, CI |
+| Blackboard coordination (Build) | Done 2026-06-21 | BLACKBOARD_{FEATURE}.md shared state; specialists coordinate via file, not orchestrator re-explaining |
+| /work active-feature anchor | Done 2026-06-21 | .active pointer; routes post-build tweaks to /continuar or /iterate without re-specifying |
+| File-based memory (2 tiers) | Done 2026-06-21 | Project + global MEMORY.md, recalled at SessionStart as index; dropped MemPalace MCP |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -292,8 +295,8 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Version
 
-- **Version:** 3.2.0
-- **Status:** Release — Synced with upstream v3.2.0 (Judge Layer, local-first overrides, /status, agent-router, CI). 73 agents, 39 KB domains, 5 skills, 38 commands.
+- **Version:** 3.3.0
+- **Status:** Release — Blackboard coordination, /work active-feature anchor, file-based memory (project + global tiers). 73 agents, 39 KB domains, 5 skills, 42 commands.
 - **Upstream Base:** luanmorenommaciel/agentspec @ a6a4b48 (2026-05-04)
 - **Last Sync:** 2026-05-19
-- **Last Updated:** 2026-05-19
+- **Last Updated:** 2026-06-21

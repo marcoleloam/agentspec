@@ -10,10 +10,13 @@ description: Resume an incomplete or unsatisfactory build by analyzing the gap b
 ## Usage
 
 ```bash
-/continuar                                          # Auto-detect the most recent BUILD_REPORT
+/continuar                                          # Active feature (.active) → else most recent BUILD_REPORT
 /continuar FEATURE_NAME                             # Specific feature
 /continuar .claude/sdd/reports/BUILD_REPORT_AUTH.md # Direct path to build report
 ```
+
+> When called with no argument, prefer the active feature in `.claude/sdd/.active`
+> (set by `/work` or `/build`); fall back to the most recently modified BUILD_REPORT.
 
 ---
 

@@ -35,17 +35,9 @@
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "n8n-mcp-skills@n8n-mcp-skills": true,
-    "mempalace@mempalace": true
+    "n8n-mcp-skills@n8n-mcp-skills": true
   },
-  "extraKnownMarketplaces": {
-    "mempalace": {
-      "source": {
-        "source": "github",
-        "repo": "milla-jovovich/mempalace"
-      }
-    }
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "effortLevel": "medium"
+  "extraKnownMarketplaces": {},
+  "effortLevel": "medium",
+  "skipDangerousModePermissionPrompt": true
 }

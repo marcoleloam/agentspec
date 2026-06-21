@@ -2,8 +2,8 @@
   "plugins": [
     {
       "name": "agentspec",
-      "version": "3.2.0",
-      "description": "Spec-Driven Development framework for Data Engineering + Frontend — 73 agents, 39 KB domains, 5-phase SDD workflow, 41 commands, 5 skills (Judge Layer, agent-router)",
+      "version": "3.3.0",
+      "description": "Spec-Driven Development framework for Data Engineering + Frontend — 73 agents, 39 KB domains, 5-phase SDD workflow, 42 commands, 5 skills (blackboard coordination, /work anchor, file-based memory)",
       "source": "./",
       "keywords": [
         "data-engineering",

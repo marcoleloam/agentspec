@@ -1,126 +1,118 @@
 ---
 name: memory
-description: Save valuable insights from the current session to storage
+description: Save valuable insights to project or global memory — recalled automatically at session start
 ---
 
 # Memory Command
 
-Save session insights to `.claude/storage/` for future reference (directory is auto-created on first use).
+> Persist high-signal insights so AgentSpec remembers them across sessions, PCs, and
+> projects. Memory is **recalled automatically** at the start of every session by the
+> SessionStart hook — you don't have to load it manually.
 
 ## Usage
 
 ```bash
-/memory                           # Save current session insights
-/memory "specific note to save"   # Save with specific context
+/memory                            # Save session insights to PROJECT memory
+/memory "specific note to save"    # Save a specific note to PROJECT memory
+/memory --global                   # Save durable insights to GLOBAL (cross-project) memory
+/memory --global "note"            # Save a specific note to GLOBAL memory
 ```
+
+---
+
+## Two Tiers of Memory
+
+| Tier | File | Scope | Syncs across PCs via | Use for |
+|------|------|-------|----------------------|---------|
+| **Project** | `.claude/sdd/MEMORY.md` | This repo | the project's own git | Decisions, gotchas, conventions specific to THIS project |
+| **Global** | `${AGENTSPEC_MEMORY_DIR:-~/.agentspec}/MEMORY.md` | All projects | a synced folder (see below) | Preferences, reusable patterns, lessons that apply ANYWHERE |
+
+**Rule of thumb:** if it only matters here → project. If you'd want it on every project on
+every machine → `--global`.
+
+### Sync global memory across machines
+
+Point `AGENTSPEC_MEMORY_DIR` at a folder that already syncs between your PCs, then commit/sync it:
+
+```bash
+# Option A — git (recommended: versioned, conflict-aware)
+export AGENTSPEC_MEMORY_DIR="$HOME/agentspec-memory"   # a git repo you clone on each PC
+
+# Option B — cloud drive
+export AGENTSPEC_MEMORY_DIR="$HOME/Dropbox/agentspec-memory"
+```
+
+Add the export to your shell profile (`~/.zshrc`) on each machine. Project memory needs no
+setup — it travels with the project repo.
 
 ---
 
 ## What It Does
 
-1. **Analyzes** current conversation for valuable insights
+1. **Analyzes** the conversation for valuable insights
 2. **Compresses** to high-signal format (decisions, patterns, gotchas)
-3. **Saves** to `.claude/storage/memory-{YYYY-MM-DD}.md`
+3. **Appends** a `## {date} — {summary}` block to the chosen file (project by default, global with `--global`)
+4. Next session, the SessionStart hook **injects the block's heading as a compact index entry** — the model reads the full block on demand when the topic is relevant
 
 ---
 
 ## When to Use
 
-Use `/memory` when you've discovered something worth remembering:
-
 - ✅ Non-obvious decisions with rationale
-- ✅ Patterns that worked well
+- ✅ Patterns that worked well (reusable → consider `--global`)
 - ✅ Gotchas discovered
 - ✅ Architecture decisions
-- ✅ Terminology clarifications
+- ✅ Terminology / convention clarifications
 
 **Don't save:**
 
 - ❌ Step-by-step implementation details (obvious from code)
 - ❌ Temporary debugging info
-- ❌ Every session (only valuable ones)
+- ❌ Anything low-signal — memory is injected every session, so keep it small
 
 ---
 
 ## Output Format
 
-Creates: `.claude/storage/memory-{YYYY-MM-DD}.md`
+Appends a dated block to the target `MEMORY.md` (project or global):
 
 ```markdown
-# Memory: {date}
+## {YYYY-MM-DD} — {one-line summary}
 
-> {One-line summary of session}
-
-## Decisions Made
-
+### Decisions
 | Decision | Rationale | Impact |
 | -------- | --------- | ------ |
-| {what} | {why} | {files affected} |
+| {what} | {why} | {files / scope affected} |
 
-## Patterns Discovered
-
+### Patterns
 - {pattern}: {where applied}
 
-## Gotchas
-
+### Gotchas
 - {gotcha}: {how to avoid}
-
-## Open Items
-
-- [ ] {item for next session}
-
----
-*Saved: {timestamp}*
 ```
+
+> Append, never overwrite. Each `/memory` adds a new dated `## ` block. **Always use a
+> `## {date} — {summary}` heading** — at session start the hook injects only these headings
+> (a compact index), not the full content. The model reads the file for detail on demand.
+> So a clear, specific heading is what makes a memory findable. Keep newest blocks on top.
 
 ---
 
 ## Process
 
-When invoked:
-
 ```text
-1. Scan conversation for:
-   - Decisions (look for "decided", "chose", "will use")
-   - Patterns (look for reusable solutions)
-   - Gotchas (look for "gotcha", "watch out", "careful")
-   - Open items (look for "TODO", "later", "next time")
+1. Determine scope:
+   - "--global" flag present → ${AGENTSPEC_MEMORY_DIR:-~/.agentspec}/MEMORY.md
+   - otherwise               → .claude/sdd/MEMORY.md
 
-2. Compress ruthlessly:
-   - Max 5 decisions
-   - Max 3 patterns
-   - Max 3 gotchas
-   - Max 3 open items
+2. Scan conversation for: decisions, patterns, gotchas, conventions
 
-3. Write to storage:
-   - Create .claude/storage/ if not exists
-   - Append to existing file if same date
-   - Use consistent format
-```
+3. Compress ruthlessly (max 5 decisions, 3 patterns, 3 gotchas)
 
----
+4. Append a dated block to the target file (create file + dirs if missing).
+   For global, mkdir -p the AGENTSPEC_MEMORY_DIR first.
 
-## Example
-
-```text
-User: /memory "Completed authentication refactoring"
-
-→ Scanning conversation...
-→ Found: 2 decisions, 1 pattern, 1 gotcha
-
-Saved to: .claude/storage/memory-2026-01-23.md
-
-## Preview:
-> Completed authentication refactoring with JWT + refresh tokens
-
-| Decision | Rationale |
-| -------- | --------- |
-| Use JWT + refresh | Stateless, scales better |
-| 15min access token | Balance security/UX |
-
-Pattern: Token rotation on refresh
-
-Gotcha: Must invalidate refresh tokens on password change
+5. Confirm what was written and to which tier.
 ```
 
 ---
@@ -129,7 +121,16 @@ Gotcha: Must invalidate refresh tokens on password change
 
 | Do | Don't |
 | -- | ----- |
-| Save only valuable insights | Save every session |
-| Compress ruthlessly | Write long summaries |
-| Reference file paths | Duplicate code comments |
-| Store decisions + rationale | Store implementation details |
+| Keep memory small and high-signal | Dump whole sessions |
+| Use `--global` for cross-project lessons | Put project-specific paths in global |
+| Put newest blocks on top | Let files grow unbounded |
+| Sync global dir via git/cloud | Rely on a single PC |
+
+---
+
+## References
+
+- Recall mechanism: `plugin-extras/scripts/init-workspace.sh` (`surface_memory`)
+- Project memory: `.claude/sdd/MEMORY.md`
+- Global memory: `${AGENTSPEC_MEMORY_DIR:-~/.agentspec}/MEMORY.md`
+- Related: `/ship` appends shipped-feature lessons to project memory automatically

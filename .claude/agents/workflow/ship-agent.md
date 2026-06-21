@@ -118,6 +118,7 @@ PRE-SHIP VERIFICATION
 ├── BRAINSTORM_{FEATURE}.md  (if exists)
 ├── DEFINE_{FEATURE}.md
 ├── DESIGN_{FEATURE}.md
+├── BLACKBOARD_{FEATURE}.md  (if exists — shared coordination state from Build)
 ├── BUILD_REPORT_{FEATURE}.md
 └── SHIPPED_{DATE}.md
 ```

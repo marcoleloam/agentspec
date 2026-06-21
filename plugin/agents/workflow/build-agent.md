@@ -50,15 +50,21 @@ escalation_rules:
 │     └─ Extract: File manifest, code patterns, agent assignments     │
 │     └─ Load KB domains specified in design                          │
 │                                                                      │
-│  2. KB PATTERN VALIDATION (before writing code)                     │
+│  2. BLACKBOARD SEEDING (shared coordination state)                  │
+│     └─ Create: .claude/sdd/features/BLACKBOARD_{FEATURE}.md         │
+│     └─ From template: BLACKBOARD_TEMPLATE.md                        │
+│     └─ Seed: shared interfaces + file status from DESIGN manifest   │
+│                                                                      │
+│  3. KB PATTERN VALIDATION (before writing code)                     │
 │     └─ Read: ${CLAUDE_PLUGIN_ROOT}/kb/{domain}/patterns/*.md → Verify patterns    │
 │     └─ Compare: DESIGN patterns vs KB patterns → Ensure alignment   │
 │                                                                      │
-│  3. AGENT DELEGATION (for specialized files)                        │
+│  4. AGENT DELEGATION (for specialized files)                        │
 │     ├─ @agent-name in manifest → Delegate via Task tool             │
+│     │   └─ Inject blackboard pointer (read-first, append-after)     │
 │     └─ (general) in manifest   → Execute directly from patterns     │
 │                                                                      │
-│  4. CONFIDENCE ASSIGNMENT                                            │
+│  5. CONFIDENCE ASSIGNMENT                                            │
 │     ├─ KB pattern + agent specialist    → 0.95 → Execute            │
 │     ├─ KB pattern + general execution   → 0.85 → Execute with care  │
 │     ├─ No KB pattern + agent specialist → 0.80 → Agent handles      │
@@ -66,6 +72,35 @@ escalation_rules:
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Blackboard Protocol (Shared Coordination)
+
+**The blackboard replaces orchestrator context-passing.** Instead of re-explaining prior
+decisions in every delegation prompt, the build-agent maintains a single shared file that
+all specialists read before acting and append to after. This keeps the orchestrator's
+context lean, lets specialist B see what specialist A decided, and makes the file the
+living memory of the feature.
+
+```text
+BUILD START
+  └─ Copy BLACKBOARD_TEMPLATE.md → .claude/sdd/features/BLACKBOARD_{FEATURE}.md
+  └─ Fill "Interfaces Compartilhadas" from DESIGN (table names, schemas, signatures, config keys)
+  └─ Fill "Status dos Arquivos" from DESIGN file manifest (all ⏳ Pendente)
+
+PER DELEGATION
+  └─ Order files by dependency: a file's producer runs before its consumer
+  └─ Inject blackboard pointer into the Task prompt (see Delegation Protocol below)
+  └─ Specialist reads blackboard → respects existing interfaces → writes file
+  └─ Specialist appends new interfaces / decisions / blockers to the blackboard
+  └─ Build-agent does NOT re-summarize the work for the next agent — the file carries it
+
+ON BLOCKER
+  └─ Specialist writes a Q-### entry to "Perguntas Abertas e Bloqueadores"
+  └─ Build-agent resolves (or escalates to design-agent) and marks it 🟢 Resolvido
+```
+
+**Rule:** Never inline prior decisions into a delegation prompt when they already live on
+the blackboard. Pass the pointer, not the payload.
 
 ### Delegation Decision Flow
 
@@ -129,6 +164,16 @@ Task(
     Create file: {file_path}
     Purpose: {purpose from manifest}
 
+    SHARED BLACKBOARD: .claude/sdd/features/BLACKBOARD_{FEATURE}.md
+    1. READ it FIRST. Respect every entry in "Interfaces Compartilhadas" and
+       "Log de Decisões" — do not redefine table names, schemas, signatures, or
+       config keys another agent already registered.
+    2. After writing your file, APPEND to the blackboard:
+       - any new interface other agents will consume (Interfaces Compartilhadas)
+       - any decision that affects other files (Log de Decisões)
+       - any blocker you cannot resolve (Perguntas Abertas e Bloqueadores)
+       - mark your file ✅ Completo in "Status dos Arquivos"
+
     Code Pattern (from DESIGN):
     ```
     {code pattern}
@@ -138,12 +183,17 @@ Task(
 
     Requirements:
     - Follow the pattern exactly
+    - Honor blackboard interfaces over your own assumptions
     - Use type hints (Python)
     - No inline comments
     - Return complete file content
   """
 )
 ```
+
+> Do NOT paste prior agents' decisions into this prompt. They are on the blackboard —
+> the specialist reads them there. Pass the pointer, not the payload. This is what keeps
+> the orchestrator's context from filling up.
 
 ### Capability 3: Verification
 
@@ -211,8 +261,11 @@ python -c "from pyspark.sql import SparkSession; exec(open('{file}').read())"
 
 ```text
 PRE-FLIGHT CHECK
+├─ [ ] Blackboard seeded from DESIGN at build start
 ├─ [ ] All files from manifest created
 ├─ [ ] Each file verified (lint, types, tests)
+├─ [ ] All blackboard interfaces honored (no conflicting redefinitions)
+├─ [ ] No open blockers left on the blackboard
 ├─ [ ] Agent attribution recorded in BUILD_REPORT
 ├─ [ ] No hardcoded secrets or credentials
 ├─ [ ] Error cases handled

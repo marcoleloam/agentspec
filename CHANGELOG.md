@@ -4,6 +4,37 @@ All notable changes to AgentSpec will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.3.0] - 2026-06-21
+
+### Added
+
+- **Blackboard coordination (Build phase):** per-feature `BLACKBOARD_{FEATURE}.md` shared state
+  so delegated specialists coordinate through one file instead of the orchestrator re-explaining
+  decisions. Build-agent seeds it from DESIGN and injects a read-first/append-after pointer into
+  every delegation — keeps orchestrator context lean. New `BLACKBOARD_TEMPLATE.md`.
+- **`/work <FEATURE>` command:** session anchor to an active feature. Records `.claude/sdd/.active`,
+  loads DESIGN + BLACKBOARD once, and routes plain improvement requests automatically (code →
+  `/continuar`, docs → `/iterate`) so post-build tweaks no longer need re-specifying the feature.
+- **File-based memory (cross-session, cross-PC, cross-project):** two tiers — project
+  (`.claude/sdd/MEMORY.md`, syncs via the repo's git) and global
+  (`${AGENTSPEC_MEMORY_DIR:-~/.agentspec}/MEMORY.md`, syncs via any synced folder). Recalled
+  automatically at SessionStart as a compact **index** (block headings), with full detail read
+  on demand — pointer-not-payload to keep token cost low. `/memory --global` scope; `/ship`
+  consolidates lessons into project memory.
+
+### Changed
+
+- Command count 41 → 42 (`/work`).
+- `WORKFLOW_CONTRACTS.yaml`: added `blackboard`, `active_feature`, and `Work` cross-phase sections.
+- `ship-agent` archives the blackboard and clears the active-feature pointer.
+- SessionStart hook (`init-workspace.sh`): new `surface_memory()` / `memory_index()` that seed and
+  inject the memory index. Tunable via `AGENTSPEC_MEMORY_MAX_LINES` and `AGENTSPEC_MEMORY_SILENT`.
+
+### Removed
+
+- MemPalace MCP integration is no longer used; AgentSpec relies on the portable file-based memory
+  above (no external server, versionable, distributed with the plugin).
+
 ## [2.1.0] - 2026-03-26
 
 ### Added

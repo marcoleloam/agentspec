@@ -68,6 +68,16 @@ workflow:
       phase_3_note: "To change code during Build, update DESIGN then run /build"
       model: "sonnet"
 
+    - name: "Work"
+      command: "/work"
+      purpose: "Anchor the session to an active feature so improvement requests don't need re-specifying"
+      works_with: ["Build", "post-Build iteration"]
+      pointer: ".claude/sdd/.active"
+      routes_to:
+        code_change: "/continuar behavior on the active feature"
+        document_change: "/iterate behavior on DEFINE/DESIGN"
+      model: "sonnet"
+
 # =============================================================================
 # AGENT RESOLUTION (Local-First Precedence)
 # =============================================================================
@@ -472,12 +482,39 @@ build:
     code: "As specified in DESIGN file manifest"
     report: ".claude/sdd/reports/BUILD_REPORT_{FEATURE}.md"
     template: "${CLAUDE_PLUGIN_ROOT}/sdd/templates/BUILD_REPORT_TEMPLATE.md"
+    blackboard: ".claude/sdd/features/BLACKBOARD_{FEATURE}.md"
+    blackboard_template: "${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md"
 
   execution:
     task_generation: "on-the-fly from file manifest"
     order: "by dependencies"
     verification: "after each file"
     retry_limit: 3
+
+  blackboard:
+    description: |
+      Shared coordination state for the Build phase (blackboard pattern). Replaces
+      orchestrator context-passing: instead of re-explaining prior decisions in every
+      delegation prompt, the build-agent maintains one shared file that all specialists
+      read before acting and append to after. Keeps orchestrator context lean, lets
+      specialists see each other's decisions, and serves as the feature's living memory.
+    file: ".claude/sdd/features/BLACKBOARD_{FEATURE}.md"
+    template: "${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md"
+    lifecycle:
+      seed: "build-agent creates it at build start from DESIGN (interfaces + file status)"
+      read: "every delegated specialist reads it FIRST, before writing any file"
+      append: "every specialist appends new interfaces, decisions, and blockers"
+      archive: "ship-agent moves it into archive/{FEATURE}/ with other artifacts"
+    sections:
+      - "Interfaces Compartilhadas — contracts every agent must respect (no redefinition)"
+      - "Log de Decisões — append-only ADR-lite, never edit existing entries"
+      - "Perguntas Abertas e Bloqueadores — raise instead of assuming"
+      - "Status dos Arquivos — mirrors DESIGN manifest, marked per file"
+    rules:
+      - "Order delegations so a file's producer runs before its consumer"
+      - "Pass the blackboard pointer in delegation prompts, never inline prior decisions"
+      - "Specialists honor blackboard interfaces over their own assumptions"
+      - "No open blockers may remain when the build completes"
 
   verification:
     per_file:
@@ -564,6 +601,7 @@ ship:
     - "BRAINSTORM_{FEATURE}.md"  # Optional - if Phase 0 was used
     - "DEFINE_{FEATURE}.md"
     - "DESIGN_{FEATURE}.md"
+    - "BLACKBOARD_{FEATURE}.md"  # Shared coordination state from Build
     - "BUILD_REPORT_{FEATURE}.md"
     - "SHIPPED_{DATE}.md"
 
@@ -690,6 +728,44 @@ iterate:
       - changes
 
 # =============================================================================
+# ACTIVE FEATURE POINTER (Session Anchor)
+# =============================================================================
+# Closes the post-build gap where every improvement request forced the user to
+# restate which feature and re-explain its context. The /work command anchors the
+# session to one feature via a small pointer file; plain change requests are then
+# routed against it automatically.
+
+active_feature:
+  pointer_file: ".claude/sdd/.active"
+  command: "/work"
+  format: |
+    feature: {FEATURE}
+    phase: {brainstorm|define|design|build}
+    updated: {YYYY-MM-DD}
+
+  lifecycle:
+    set_by:
+      - "/build (at build start)"
+      - "/work <FEATURE> (explicit anchor)"
+    read_by:
+      - "/work (no arg) → resume active feature"
+      - "/continuar (no arg) → fall back to active feature before most-recent BUILD_REPORT"
+    cleared_by:
+      - "/work --done"
+      - "/ship (when shipping the active feature)"
+
+  routing:
+    description: |
+      While a feature is active, plain user requests are classified and routed without
+      asking the user to restate the feature. Each routed change is logged to the
+      feature's BLACKBOARD under 'Melhorias / Iterações'.
+    rules:
+      - "Code fix/completion/improvement → /continuar behavior on the active feature"
+      - "Requirement/design change → /iterate behavior on DEFINE/DESIGN"
+      - "Question → answer from loaded DESIGN + BLACKBOARD context"
+      - "Never re-dump full artifacts; load once on /work, then reference"
+
+# =============================================================================
 # FOLDER STRUCTURE
 # =============================================================================
 
@@ -703,6 +779,7 @@ folder_structure:
         - "BRAINSTORM_*.md"
         - "DEFINE_*.md"
         - "DESIGN_*.md"
+        - "BLACKBOARD_*.md"
 
     reports:
       path: "reports/"
@@ -724,6 +801,7 @@ folder_structure:
         - "BRAINSTORM_TEMPLATE.md"
         - "DEFINE_TEMPLATE.md"
         - "DESIGN_TEMPLATE.md"
+        - "BLACKBOARD_TEMPLATE.md"
         - "BUILD_REPORT_TEMPLATE.md"
         - "SHIPPED_TEMPLATE.md"
 

@@ -350,9 +350,94 @@ generate_context_hint() {
 }
 
 # ---------------------------------------------------------------------------
+# Phase 4: Surface Memory Index (cross-session, cross-project, cross-PC)
+# ---------------------------------------------------------------------------
+# Injects a COMPACT INDEX of memory into the session context at SessionStart so
+# AgentSpec "remembers" across machines and projects — without paying to inject
+# the full memory every session. The model reads the full file on demand (pointer,
+# not payload — same principle as the blackboard). Two tiers:
+#   - Global : ${AGENTSPEC_MEMORY_DIR:-$HOME/.agentspec}/MEMORY.md  (all projects)
+#   - Project: .claude/sdd/MEMORY.md                                 (this repo, via git)
+#
+# The index = each block's "## " heading (its dated summary), or, if the file has
+# no headings, its top-level bullets. The model reads the file for full detail.
+#
+# Cross-PC sync: point AGENTSPEC_MEMORY_DIR at a synced folder (git repo,
+# Dropbox, iCloud). Project memory syncs with the project's own git.
+#
+# Tuning env vars:
+#   AGENTSPEC_MEMORY_SILENT=1      → disable index injection (read on demand only)
+#   AGENTSPEC_MEMORY_MAX_LINES=N   → cap index entries per tier (default 30)
+
+# Extract a compact index from a MEMORY.md file: prefer "## " headings; if none,
+# fall back to top-level bullets. Echoes nothing when the file has no real content.
+memory_index() {
+    local f="$1"
+    local cap="$2"
+    local idx
+    idx="$(grep -E '^## ' "$f" 2>/dev/null || true)"
+    if [[ -z "${idx//[$'\n\t ']/}" ]]; then
+        idx="$(grep -E '^(- |\* )' "$f" 2>/dev/null || true)"
+    fi
+    [[ -z "${idx//[$'\n\t ']/}" ]] && return 0
+    printf '%s\n' "$idx" | head -n "$cap"
+}
+
+surface_memory() {
+    local global_dir="${AGENTSPEC_MEMORY_DIR:-$HOME/.agentspec}"
+    local global_file="${global_dir}/MEMORY.md"
+    local project_file=".claude/sdd/MEMORY.md"
+    local cap="${AGENTSPEC_MEMORY_MAX_LINES:-30}"
+
+    # Seed the global memory store on first run (idempotent)
+    if [[ ! -f "$global_file" ]]; then
+        mkdir -p "$global_dir" 2>/dev/null || true
+        if [[ -d "$global_dir" ]]; then
+            cat > "$global_file" <<'EOF'
+# AgentSpec Global Memory
+
+> Cross-project, cross-PC memory. Curated high-signal insights that apply to ANY
+> project: preferences, conventions, reusable gotchas, architecture lessons.
+> Updated via `/memory --global`. Keep it small and high-signal.
+>
+> Sync across machines by pointing AGENTSPEC_MEMORY_DIR at a synced folder
+> (git repo, Dropbox, iCloud Drive).
+>
+> Use "## {date} — {summary}" blocks so the SessionStart index stays compact.
+
+<!-- Add durable insights below as ## blocks (preferred) or bullets. -->
+EOF
+        fi
+    fi
+
+    [[ "${AGENTSPEC_MEMORY_SILENT:-0}" == "1" ]] && return 0
+
+    local project_idx="" global_idx=""
+    [[ -f "$project_file" ]] && project_idx="$(memory_index "$project_file" "$cap")"
+    [[ -f "$global_file" ]] && global_idx="$(memory_index "$global_file" "$cap")"
+
+    [[ -z "$project_idx" && -z "$global_idx" ]] && return 0
+
+    echo "=== AgentSpec Memory index — read the file for full detail when relevant ==="
+    echo ""
+    if [[ -n "$project_idx" ]]; then
+        echo "## Project memory — read .claude/sdd/MEMORY.md for detail on any entry below"
+        printf '%s\n' "$project_idx"
+        echo ""
+    fi
+    if [[ -n "$global_idx" ]]; then
+        echo "## Global memory — read ${global_file} for detail on any entry below"
+        printf '%s\n' "$global_idx"
+        echo ""
+    fi
+    echo "=== end memory index (update with /memory or /memory --global) ==="
+}
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 init_workspace
 init_agent_overrides
 generate_context_hint
+surface_memory

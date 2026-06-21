@@ -70,6 +70,7 @@ mkdir -p .claude/sdd/archive/{FEATURE_NAME}/
 ```bash
 cp .claude/sdd/features/DEFINE_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
 cp .claude/sdd/features/DESIGN_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
+cp .claude/sdd/features/BLACKBOARD_{FEATURE}.md .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 cp .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
 ```
 
@@ -104,7 +105,13 @@ Edit: archive/{FEATURE}/DESIGN_{FEATURE}.md
 ```bash
 rm .claude/sdd/features/DEFINE_{FEATURE}.md
 rm .claude/sdd/features/DESIGN_{FEATURE}.md
+rm -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md
 rm .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md
+
+# Clear the active-feature pointer if it points to this feature (set by /work and /build)
+if [ -f .claude/sdd/.active ] && grep -q "^feature: {FEATURE}$" .claude/sdd/.active; then
+  rm .claude/sdd/.active
+fi
 ```
 
 ### Step 7: Save SHIPPED Document
@@ -112,6 +119,33 @@ rm .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md
 ```markdown
 Write(.claude/sdd/archive/{FEATURE}/SHIPPED_{DATE}.md)
 ```
+
+### Step 8: Consolidate Lessons into Project Memory
+
+Append the durable lessons from this feature to `.claude/sdd/MEMORY.md` so they survive
+after the feature is archived and are recalled automatically at the start of future
+sessions (via the SessionStart hook). Create the file if it does not exist; **prepend** the
+new block so the newest is on top (the hook injects only the first lines).
+
+```markdown
+Edit/Write(.claude/sdd/MEMORY.md) — add at the top, below the title:
+
+## {DATE} — Shipped {FEATURE}
+
+### Decisions
+| Decision | Rationale |
+| -------- | --------- |
+| {key decision from DESIGN/lessons} | {why} |
+
+### Gotchas
+- {gotcha discovered during build}: {how to avoid}
+
+### Reusable
+- {pattern worth reusing} — if broadly applicable, also run `/memory --global`
+```
+
+Keep it to the highest-signal 3-5 items. If a lesson applies to ANY project (not just this
+one), also surface it with `/memory --global`.
 
 ---
 
@@ -137,6 +171,8 @@ Before shipping, verify:
 [ ] No critical issues in build report
 [ ] All tests passing
 [ ] Code deployed (if applicable)
+[ ] Lessons consolidated into .claude/sdd/MEMORY.md
+[ ] Active-feature pointer (.active) cleared
 ```
 
 ---
