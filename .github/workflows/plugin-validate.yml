@@ -73,6 +73,8 @@ jobs:
             | grep -v 'CLAUDE\.md' \
             | grep -v '\.claude/plans' \
             | grep -v '\.claude/memory' \
+            | grep -v '\.claude/[[:space:]]' \
+            | grep -v '\.claude/$' \
             | grep -v '^[[:space:]]*#' \
             || true)
 

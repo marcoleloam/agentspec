@@ -66,7 +66,7 @@ Read(CLAUDE.md)
 Mark this feature as active so post-build improvements stay anchored (see `/work`):
 
 ```bash
-mkdir -p .claude/sdd
+mkdir -p .claude/sdd/
 cat > .claude/sdd/.active <<EOF
 feature: {FEATURE}
 phase: build

@@ -1,4 +1,10 @@
 {
+  "name": "agentspec",
+  "owner": {
+    "name": "Marco Aurelio Almeida Monteiro",
+    "email": "marcoleloam@gmail.com",
+    "url": "https://github.com/marcoleloam"
+  },
   "plugins": [
     {
       "name": "agentspec",

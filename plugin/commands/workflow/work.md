@@ -86,7 +86,7 @@ Present a compact orientation (do NOT dump full files):
 ### Step 3: Write the Pointer
 
 ```bash
-mkdir -p .claude/sdd
+mkdir -p .claude/sdd/
 cat > .claude/sdd/.active <<EOF
 feature: {FEATURE}
 phase: {detected phase}
