@@ -15,7 +15,7 @@ description: Enter and stay anchored to an active feature so improvement request
 ```bash
 /work <FEATURE>      # Enter a feature — loads its context and marks it active
 /work                # Resume the currently active feature (reads .active)
-/work --status       # Show the active feature and its open items
+/work --status       # Render an HTML "Mission Control" dashboard of the active feature and open it
 /work --done         # Clear the active feature (also done automatically by /ship)
 ```
 
@@ -111,6 +111,23 @@ feature keeps a running history (this is the feature's working memory):
 ```markdown
 | M-001 | {data} | {pedido do usuário} | código/design | @{agente} | ✅ |
 ```
+
+### Status Dashboard (`--status`)
+
+`/work --status` renders a self-contained **HTML "Mission Control"** of the active feature
+from the files already on disk (`.active`, `BLACKBOARD`, `BUILD_REPORT`) — a progress strip
+(completos / em andamento / pendentes / bloqueados / melhorias) plus the rendered blackboard
+and build report. No server, no tokens spent rendering — a deterministic script does it.
+
+```bash
+# Resolves the feature from .active (or pass one explicitly), writes the HTML, prints its path
+DASH=$(python3 "${CLAUDE_PLUGIN_ROOT:-.}/scripts/status-dashboard.py" 2>/dev/null)
+[ -n "$DASH" ] && open "$DASH" 2>/dev/null || echo "Dashboard: $DASH"
+```
+
+Output: `.claude/sdd/.status/dashboard.html`. It is a static snapshot — re-run `/work --status`
+to refresh. This is AgentSpec's answer to "see what's happening" without a daemon or web app:
+the blackboard and build report ARE the live state; this just renders them.
 
 ### Step 5: Stay Anchored
 

@@ -37,3 +37,6 @@ entities.json
 
 # AgentSpec active-feature pointer (ephemeral session state)
 .claude/sdd/.active
+
+# AgentSpec status dashboard (generated)
+.claude/sdd/.status/
