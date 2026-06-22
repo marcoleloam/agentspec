@@ -1,7 +1,24 @@
 {
   "version": 1,
-  "agent_count": 58,
+  "agent_count": 73,
   "agents": [
+    {
+      "name": "a11y-specialist",
+      "category": "frontend",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/a11y-specialist.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Accessibility specialist for WCAG compliance, aria attributes, keyboard navigation, and screen reader support.",
+      "kb_domains": [
+        "accessibility"
+      ],
+      "escalates_to": [
+        "react-developer",
+        "css-specialist",
+        "ux-designer",
+        "frontend-architect"
+      ]
+    },
     {
       "name": "ai-data-engineer",
       "category": "data-engineering",
@@ -92,6 +109,46 @@
       ]
     },
     {
+      "name": "aide-slide-builder",
+      "category": "domain",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-builder.md",
+      "tier": "T1",
+      "model": "opus",
+      "description": "Builds complete HTML slide decks for the Formacao AI Data Engineer using the AIDE design system.",
+      "kb_domains": [],
+      "escalates_to": []
+    },
+    {
+      "name": "aide-slide-fixer",
+      "category": "domain",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-fixer.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Surgical correction agent for AIDE slide decks. Reads review reports from aide-slide-reviewer",
+      "kb_domains": [],
+      "escalates_to": []
+    },
+    {
+      "name": "aide-slide-planner",
+      "category": "domain",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-planner.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Content architecture agent for AIDE slide decks. Decomposes lesson content into a structured",
+      "kb_domains": [],
+      "escalates_to": []
+    },
+    {
+      "name": "aide-slide-reviewer",
+      "category": "domain",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-reviewer.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Independent quality reviewer for AIDE slide decks. READ-ONLY \u2014 validates HTML presentations",
+      "kb_domains": [],
+      "escalates_to": []
+    },
+    {
       "name": "airflow-specialist",
       "category": "data-engineering",
       "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/airflow-specialist.md",
@@ -167,6 +224,19 @@
       "kb_domains": [],
       "escalates_to": [
         "define-agent"
+      ]
+    },
+    {
+      "name": "brainstorm-multiagent",
+      "category": "workflow",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/brainstorm-multiagent.md",
+      "tier": "T2",
+      "model": "opus",
+      "description": "Multi-agent brainstorm orchestrator for complex cross-domain ideas (Phase 0 experimental).",
+      "kb_domains": [],
+      "escalates_to": [
+        "define-agent",
+        "brainstorm-agent"
       ]
     },
     {
@@ -247,7 +317,25 @@
       "kb_domains": [],
       "escalates_to": [
         "python-developer",
-        "the-planner"
+        "solution-architect"
+      ]
+    },
+    {
+      "name": "css-specialist",
+      "category": "frontend",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/css-specialist.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Tailwind CSS and design system specialist for responsive design, animations, dark mode, and visual consistency.",
+      "kb_domains": [
+        "tailwind-css",
+        "design-systems"
+      ],
+      "escalates_to": [
+        "react-developer",
+        "ux-designer",
+        "a11y-specialist",
+        "frontend-architect"
       ]
     },
     {
@@ -335,6 +423,19 @@
       ]
     },
     {
+      "name": "define-multiagent",
+      "category": "workflow",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-multiagent.md",
+      "tier": "T2",
+      "model": "opus",
+      "description": "Multi-agent requirements analyst for complex cross-domain systems (Phase 1 enhanced).",
+      "kb_domains": [],
+      "escalates_to": [
+        "design-multiagent",
+        "define-agent"
+      ]
+    },
+    {
       "name": "design-agent",
       "category": "workflow",
       "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-agent.md",
@@ -344,6 +445,19 @@
       "kb_domains": [],
       "escalates_to": [
         "build-agent"
+      ]
+    },
+    {
+      "name": "design-multiagent",
+      "category": "workflow",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-multiagent.md",
+      "tier": "T2",
+      "model": "opus",
+      "description": "Multi-agent architecture designer for complex cross-domain systems (Phase 2 enhanced).",
+      "kb_domains": [],
+      "escalates_to": [
+        "build-agent",
+        "design-agent"
       ]
     },
     {
@@ -437,6 +551,25 @@
       ]
     },
     {
+      "name": "frontend-architect",
+      "category": "frontend",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/frontend-architect.md",
+      "tier": "T2",
+      "model": "opus",
+      "description": "Frontend system architect for Next.js application design, performance optimization, and deployment strategy.",
+      "kb_domains": [
+        "nextjs",
+        "frontend-patterns"
+      ],
+      "escalates_to": [
+        "react-developer",
+        "css-specialist",
+        "ux-designer",
+        "a11y-specialist",
+        "schema-designer"
+      ]
+    },
+    {
       "name": "gcp-data-architect",
       "category": "cloud",
       "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/gcp-data-architect.md",
@@ -488,7 +621,23 @@
       "description": "Knowledge base architect for creating validated, structured KB domains.",
       "kb_domains": [],
       "escalates_to": [
-        "user"
+        "user",
+        "kb-evolution-agent"
+      ]
+    },
+    {
+      "name": "kb-evolution-agent",
+      "category": "dev",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dev/kb-evolution-agent.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "KB evolution specialist for ingesting updates from Context7 MCP and",
+      "kb_domains": [
+        "prompt-engineering",
+        "genai"
+      ],
+      "escalates_to": [
+        "kb-architect"
       ]
     },
     {
@@ -637,8 +786,27 @@
       "description": "Master communication analyst that transforms meetings into structured, actionable documentation.",
       "kb_domains": [],
       "escalates_to": [
-        "the-planner",
+        "solution-architect",
         "pipeline-architect"
+      ]
+    },
+    {
+      "name": "n8n-specialist",
+      "category": "data-engineering",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/n8n-specialist.md",
+      "tier": "T3",
+      "model": "sonnet",
+      "description": "n8n workflow automation specialist for workflow design, node configuration, API integrations,",
+      "kb_domains": [
+        "n8n",
+        "streaming",
+        "sql-patterns"
+      ],
+      "escalates_to": [
+        "schema-designer",
+        "spark-engineer",
+        "dbt-specialist",
+        "ci-cd-specialist"
       ]
     },
     {
@@ -703,6 +871,25 @@
       ]
     },
     {
+      "name": "react-developer",
+      "category": "frontend",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/react-developer.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "React and Next.js component specialist for hooks, Server Components, state management, and rendering patterns.",
+      "kb_domains": [
+        "react",
+        "nextjs"
+      ],
+      "escalates_to": [
+        "css-specialist",
+        "frontend-architect",
+        "a11y-specialist",
+        "ux-designer",
+        "test-generator"
+      ]
+    },
+    {
       "name": "schema-designer",
       "category": "architect",
       "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/schema-designer.md",
@@ -745,6 +932,16 @@
       "escalates_to": [
         "build-agent"
       ]
+    },
+    {
+      "name": "shopagent-builder",
+      "category": "domain",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/shopagent-builder.md",
+      "tier": "T1",
+      "model": "opus",
+      "description": "ShopAgent domain specialist for e-commerce multi-agent systems. Builds ShopAgent components by day:",
+      "kb_domains": [],
+      "escalates_to": []
     },
     {
       "name": "spark-engineer",
@@ -872,7 +1069,6 @@
       "model": "opus",
       "description": "Elite Supabase specialist for pgvector, RLS, Edge Functions, Auth, Realtime, and database design.",
       "kb_domains": [
-        "supabase",
         "ai-data-engineering",
         "data-modeling"
       ],
@@ -910,6 +1106,24 @@
       "kb_domains": [],
       "escalates_to": [
         "user"
+      ]
+    },
+    {
+      "name": "ux-designer",
+      "category": "frontend",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/ux-designer.md",
+      "tier": "T2",
+      "model": "opus",
+      "description": "User experience specialist for user flows, information architecture, wireframes, and usability patterns.",
+      "kb_domains": [
+        "design-systems",
+        "frontend-patterns"
+      ],
+      "escalates_to": [
+        "react-developer",
+        "css-specialist",
+        "a11y-specialist",
+        "frontend-architect"
       ]
     }
   ],

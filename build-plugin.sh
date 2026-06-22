@@ -20,8 +20,15 @@ SOURCE_DIR="${SCRIPT_DIR}/.claude"
 PLUGIN_DIR="${SCRIPT_DIR}/plugin"
 EXTRAS_DIR="${SCRIPT_DIR}/plugin-extras"
 
+# Portable in-place sed — GNU (Linux/CI) and BSD (macOS) differ on the -i flag.
+if sed --version >/dev/null 2>&1; then
+    sed_i() { sed -i "$@"; }       # GNU
+else
+    sed_i() { sed -i '' "$@"; }    # BSD / macOS
+fi
+
 echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}  AgentSpec Plugin Builder v3.2.0${NC}"
+echo -e "${BLUE}  AgentSpec Plugin Builder v3.3.0${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
@@ -102,7 +109,7 @@ while IFS= read -r -d '' file; do
     count=$(grep -c '\.claude/' "$file" 2>/dev/null | tail -1 || echo "0")
     if [ "${count:-0}" -gt 0 ] 2>/dev/null; then
         # Rewrite .claude/ paths to plugin root variable
-        sed -i '' \
+        sed_i \
             -e 's|\.claude/kb/|${CLAUDE_PLUGIN_ROOT}/kb/|g' \
             -e 's|\.claude/agents/|${CLAUDE_PLUGIN_ROOT}/agents/|g' \
             -e 's|\.claude/commands/|${CLAUDE_PLUGIN_ROOT}/commands/|g' \
@@ -123,7 +130,7 @@ echo -e "${YELLOW}[5/6] Cleaning absolute paths...${NC}"
 
 # Strip any hardcoded absolute paths preceding plugin root references
 while IFS= read -r -d '' file; do
-    sed -i '' -E 's|/[^ ]*/(agents/|kb/|commands/|skills/|sdd/)|\${CLAUDE_PLUGIN_ROOT}/\1|g' "$file" 2>/dev/null || true
+    sed_i -E 's|/[^ ]*/(agents/|kb/|commands/|skills/|sdd/)|\${CLAUDE_PLUGIN_ROOT}/\1|g' "$file" 2>/dev/null || true
 done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' \) -print0)
 
 # Restore executable permissions on scripts
