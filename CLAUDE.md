@@ -6,7 +6,7 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 73 agents (data engineering + frontend), 42 commands, 39 KB domains, and 5 skills.
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 73 agents (data engineering + frontend), 42 commands, 39 KB domains, and 10 distributed skills (14 in-repo; 4 are contributor-only).
 
 **Current Status:** v3.3.0 — Adds blackboard coordination (Build phase), the `/work` active-feature anchor, and portable file-based memory (project + global tiers, auto-recalled at SessionStart as a compact index). Builds on v3.2.0 (Judge Layer, local-first overrides, /status, agent-router, stack detection, CI). MemPalace MCP dependency dropped in favor of the file-based memory.
 
@@ -84,7 +84,7 @@ agentspec/
 │   ├── .claude-plugin/      # Manifest + marketplace config
 │   ├── agents/              # Path-rewritten agents
 │   ├── commands/            # Path-rewritten commands
-│   ├── skills/              # 4 skills (2 original + 2 plugin-only)
+│   ├── skills/              # 10 skills (8 from .claude/ + 2 plugin-only)
 │   ├── hooks/               # SessionStart workspace init
 │   ├── scripts/             # init-workspace.sh
 │   ├── kb/                  # Path-rewritten KB domains
@@ -295,8 +295,8 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Version
 
-- **Version:** 3.3.0
-- **Status:** Release — Blackboard coordination, /work active-feature anchor, file-based memory (project + global tiers). 73 agents, 39 KB domains, 5 skills, 42 commands.
-- **Upstream Base:** luanmorenommaciel/agentspec @ a6a4b48 (2026-05-04)
-- **Last Sync:** 2026-05-19
-- **Last Updated:** 2026-06-21
+- **Version:** 3.4.0
+- **Status:** Release — Upstream wave 1: spec-linter and spec-judge engines, the component model, and 9 authoring/GitHub skills. 73 agents, 39 KB domains, 10 distributed skills, 42 commands.
+- **Upstream Base:** luanmorenommaciel/agentspec @ d577ec5 (2026-07-15)
+- **Last Sync:** 2026-07-27 (wave 1 — additive only; thin-executor refactor deferred)
+- **Last Updated:** 2026-07-28
