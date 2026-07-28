@@ -4,6 +4,40 @@ All notable changes to AgentSpec will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.4.0] - 2026-07-28
+
+### Added
+
+- **`tools/spec-linter`** — deterministic contract-validation engine (Pydantic v2, L1–L4 checks),
+  returning a `PASS | WARN | FAIL` verdict. Reference prototype from upstream ADR-002.
+- **`tools/spec-judge`** — behavioural counterpart: a tiered adversarial panel that asks whether an
+  artifact honours its contract, sharing the Linter's `Verdict`. Needs `OPENROUTER_API_KEY`.
+- **Component model** (`.claude/kb/shared/component-model.md`) — canonical definitions of what
+  agents, skills, commands and KBs are each for, and where new logic belongs.
+- **9 skills:** `component-model`, `create-agent`, `create-skill`, `kb-build`, `github-cr-adr`,
+  `github-cr-issue`, `github-post-issue`, `meeting-analysis`, `standup-report`. Distributed skills
+  go from 5 to 10; four are contributor-only and excluded from the plugin.
+- `make spec-lint` / `make spec-judge`, plus a fork-local `make spec-venvs` that bootstraps the
+  virtualenvs with stdlib `venv` (upstream documents `uv`).
+- CI jobs for both engines, and a plugin-mirror drift check.
+
+### Changed
+
+- `build-plugin.sh` excludes a repo-local skill tier from the distributed plugin.
+- The plugin-mirror drift check uses `git status --porcelain` rather than upstream's
+  `git diff --exit-code`, which ignores untracked files and would miss a newly added component
+  whose mirror was never committed.
+
+### Notes
+
+- Additive sync only. The upstream thin-executor refactor is deliberately **not** included: it
+  rewrites the SDD phase agents, where the blackboard, `/work`, the memory tiers and the pt-BR
+  output policy live. That migration deserves its own DEFINE/DESIGN pass.
+- Two known gaps in the Linter, both upstream limitations rather than defects here: its
+  `agent_spec` contract expects standalone YAML (our agents are Markdown with frontmatter), and its
+  `sdd_phase` contract matches headings by literal slug, which never matches pt-BR SDD documents.
+  The Judge parses our agents fine.
+
 ## [3.3.0] - 2026-06-21
 
 ### Added

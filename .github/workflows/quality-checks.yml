@@ -14,6 +14,8 @@ on:
       - 'tests/**'
       - '**/*.sh'
       - '.claude/agents/**'
+      - 'tools/spec-linter/**'
+      - 'tools/spec-judge/**'
       - '.github/workflows/quality-checks.yml'
   pull_request:
     branches: [main]
@@ -22,6 +24,8 @@ on:
       - 'tests/**'
       - '**/*.sh'
       - '.claude/agents/**'
+      - 'tools/spec-linter/**'
+      - 'tools/spec-judge/**'
       - '.github/workflows/quality-checks.yml'
 
 jobs:
@@ -45,6 +49,20 @@ jobs:
       - name: Check agent-router drift
         run: python3 scripts/generate-agent-router.py --check
 
+      # Rebuild the plugin mirror and fail if it differs from what is committed.
+      # Note: upstream uses `git diff --exit-code`, which ignores *untracked*
+      # files — so a newly added source component whose mirror was never
+      # committed would slip through. `git status --porcelain` catches both.
+      - name: Check plugin mirror drift
+        run: |
+          ./build-plugin.sh
+          if [ -n "$(git status --porcelain plugin/ .claude-plugin/)" ]; then
+            echo "::error::plugin mirror is out of date — run ./build-plugin.sh and commit the result"
+            git status --porcelain plugin/ .claude-plugin/
+            git diff -- plugin/ .claude-plugin/
+            exit 1
+          fi
+
   shellcheck:
     name: Shell script lint
     runs-on: ubuntu-latest
@@ -60,3 +78,40 @@ jobs:
             build-plugin.sh \
             .claude/skills/visual-explainer/scripts/share.sh \
             plugin-extras/scripts/init-workspace.sh
+
+  spec-linter:
+    name: Spec-linter component tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install component (editable, with dev extras)
+        run: python3 -m pip install -e 'tools/spec-linter[dev]'
+
+      - name: Run component tests
+        run: python3 -m pytest tools/spec-linter/tests -v
+
+  spec-judge:
+    name: Spec-judge component tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install components (editable, with dev extras)
+        run: python3 -m pip install -e tools/spec-linter -e 'tools/spec-judge[dev]'
+
+      - name: Run component tests
+        run: python3 -m pytest tools/spec-judge/tests -v
+
+      - name: Verify cross-package import through the wrapper
+        run: tools/spec-judge/spec-judge --selfcheck

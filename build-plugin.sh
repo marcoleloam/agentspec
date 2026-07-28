@@ -100,6 +100,18 @@ if [ -d "${EXTRAS_DIR}" ]; then
     done
 fi
 
+# ── Step 2c: Exclude repo-local skills ──────────────────────────────────────
+# Contributor-facing skills that support working *in this repository*. They live
+# in .claude/skills/ so they load for contributors, and are excluded from the
+# distributed plugin here. Keep this list in sync with upstream.
+REPO_LOCAL_SKILLS=(meeting-analysis standup-report create-skill create-agent)
+for skill in "${REPO_LOCAL_SKILLS[@]}"; do
+    if [ -d "${PLUGIN_DIR:?}/skills/${skill}" ]; then
+        rm -rf "${PLUGIN_DIR:?}/skills/${skill}"
+        echo "  Excluded repo-local skill: ${skill}/"
+    fi
+done
+
 # ── Step 3: Path rewriting ──────────────────────────────────────────────────
 echo -e "${YELLOW}[4/6] Rewriting paths (.claude/ → \${CLAUDE_PLUGIN_ROOT}/)...${NC}"
 

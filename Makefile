@@ -16,7 +16,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate plugin install-deps
+.PHONY: help build test check lint clean generate plugin install-deps spec-lint spec-judge spec-venvs
 
 # ----------------------------------------------------------------------------
 # Help
@@ -47,6 +47,33 @@ generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
 	@python3 scripts/generate-agent-router.py
 
 plugin: build ## Alias for `make build`
+
+spec-lint: ## Run the spec-linter component test suite (tools/spec-linter)
+	@if [ -x tools/spec-linter/.venv/bin/python ]; then \
+		( cd tools/spec-linter && .venv/bin/python -m pytest -v ); \
+	else \
+		( cd tools/spec-linter && python3 -m pytest -v ); \
+	fi
+
+spec-judge: ## Run the spec-judge component test suite (tools/spec-judge, offline)
+	@if [ -x tools/spec-judge/.venv/bin/python ]; then \
+		( cd tools/spec-judge && .venv/bin/python -m pytest -v ); \
+	else \
+		( cd tools/spec-judge && python3 -m pytest -v ); \
+	fi
+
+# Fork-local: upstream documents `uv venv`; this bootstraps the same venvs with
+# stdlib venv + pip so contributors without uv can run the engines.
+spec-venvs: ## Create/refresh the tools/ virtualenvs (spec-linter + spec-judge)
+	@echo "Bootstrapping tools/spec-linter/.venv ..."
+	@python3 -m venv tools/spec-linter/.venv
+	@tools/spec-linter/.venv/bin/python -m pip install -q --upgrade pip
+	@tools/spec-linter/.venv/bin/python -m pip install -q -e 'tools/spec-linter[dev]'
+	@echo "Bootstrapping tools/spec-judge/.venv ..."
+	@python3 -m venv tools/spec-judge/.venv
+	@tools/spec-judge/.venv/bin/python -m pip install -q --upgrade pip
+	@tools/spec-judge/.venv/bin/python -m pip install -q -e 'tools/spec-linter' -e 'tools/spec-judge[dev]'
+	@echo "Done. Verify with: make spec-lint && make spec-judge"
 
 # ----------------------------------------------------------------------------
 # Hygiene
