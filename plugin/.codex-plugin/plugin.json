@@ -1,0 +1,37 @@
+{
+  "name": "agentspec",
+  "version": "3.4.1",
+  "description": "Spec-Driven Development framework for Data Engineering and Frontend",
+  "author": {
+    "name": "Marco Aurelio Almeida Monteiro",
+    "email": "marcoleloam@gmail.com",
+    "url": "https://github.com/marcoleloam"
+  },
+  "homepage": "https://github.com/marcoleloam/agentspec",
+  "repository": "https://github.com/marcoleloam/agentspec",
+  "license": "MIT",
+  "keywords": [
+    "data-engineering",
+    "frontend",
+    "sdd",
+    "spec-driven-development"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AgentSpec",
+    "shortDescription": "Spec-driven development with specialist agents",
+    "longDescription": "Plan, define, design, build, and ship features with AgentSpec workflows, specialist agents, and engineering knowledge bases.",
+    "developerName": "Marco Aurelio Almeida Monteiro",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/marcoleloam/agentspec",
+    "defaultPrompt": [
+      "Brainstorm a feature with AgentSpec.",
+      "Define requirements for my active feature.",
+      "Build this feature from its AgentSpec design."
+    ]
+  }
+}

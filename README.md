@@ -10,7 +10,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
-[![Version](https://img.shields.io/badge/version-3.4.0-green.svg)](CHANGELOG.md)
+[![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-Compatible-black.svg)](docs/reference/codex-cli.md)
+[![Version](https://img.shields.io/badge/version-3.4.1-green.svg)](CHANGELOG.md)
 [![Agents](https://img.shields.io/badge/agents-73-orange.svg)](.claude/agents/)
 [![Commands](https://img.shields.io/badge/commands-42-blue.svg)](.claude/commands/)
 [![KB Domains](https://img.shields.io/badge/KB%20domains-39-blue.svg)](.claude/kb/)
@@ -28,7 +29,7 @@ AI-assisted development without structure produces inconsistent results: halluci
 
 ## The Solution
 
-AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code — a 5-phase workflow backed by 39 knowledge base domains, 73 specialized agents, 42 slash commands, and 5 skills. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
+AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code and OpenAI Codex — a 5-phase workflow backed by 39 knowledge base domains, 73 specialized agents, 42 commands, and native skills. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
 
 ```text
 /brainstorm  →  /define  →  /design  →  /build  →  /ship
@@ -47,7 +48,7 @@ Optional cross-model validation: **Judge Layer** via OpenRouter (`--judge`) catc
 
 ## Quick Start
 
-### Install via Plugin (only path)
+### Claude Code
 
 ```bash
 claude plugin marketplace add marcoleloam/agentspec
@@ -55,11 +56,32 @@ claude plugin install agentspec
 claude plugin enable agentspec
 ```
 
-That's it. All 73 agents, 42 commands, 39 KB domains, and 5 skills become available globally. Updates propagate via:
+All 73 agents, 42 slash commands, 39 KB domains, and distributed skills become available globally. Updates propagate via:
 
 ```bash
 claude plugin update agentspec
 ```
+
+### OpenAI Codex
+
+```bash
+codex plugin marketplace add https://github.com/marcoleloam/agentspec.git
+codex plugin add agentspec@agentspec
+```
+
+Codex invokes commands as namespaced skills. The main workflow is:
+
+```text
+$agentspec:source-command-workflow-brainstorm
+$agentspec:source-command-workflow-define
+$agentspec:source-command-workflow-design
+$agentspec:source-command-workflow-build
+$agentspec:source-command-workflow-ship
+```
+
+All 39 command skills are bundled natively, including commands above Codex's 4 KiB
+automatic-migration limit. See the [Codex CLI guide](docs/reference/codex-cli.md) for
+agent installation and command mapping.
 
 ### Customize per project (optional)
 
@@ -200,12 +222,16 @@ agentspec/
 │       ├── reports/        # BUILD_REPORT_
 │       └── archive/        # Shipped features
 │
-├── plugin/                 # Distributable plugin (built from .claude/)
-│   └── .claude-plugin/     # plugin.json + marketplace.json
+├── .codex/
+│   ├── agents/             # 73 generated Codex subagent TOMLs
+│   └── skills/             # 39 generated native command skills
+├── plugin/                 # Distributable Claude + Codex plugin
+│   ├── .claude-plugin/     # Claude manifest
+│   └── .codex-plugin/      # Codex manifest
 ├── plugin-extras/          # Plugin-only content (skills, hooks, init scripts)
 │
-├── scripts/                # judge.py, generate-agent-router.py
-├── tests/                  # pytest suite (27 tests)
+├── scripts/                # generators and judge.py
+├── tests/                  # pytest suite (31 tests)
 ├── docs/                   # Concepts, tutorials, reference
 ├── tasks/backlog.md        # Roadmap
 ├── Makefile                # Developer entry points
@@ -249,6 +275,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 **[Documentation](docs/) | [Contributing](CONTRIBUTING.md) | [Changelog](CHANGELOG.md)**
 
-Built with [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+Built for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [OpenAI Codex](docs/reference/codex-cli.md)
 
 </div>

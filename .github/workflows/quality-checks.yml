@@ -49,6 +49,9 @@ jobs:
       - name: Check agent-router drift
         run: python3 scripts/generate-agent-router.py --check
 
+      - name: Check Codex agents and command skills drift
+        run: python3 scripts/generate-codex-plugin.py --check
+
       # Rebuild the plugin mirror and fail if it differs from what is committed.
       # Note: upstream uses `git diff --exit-code`, which ignores *untracked*
       # files — so a newly added source component whose mirror was never

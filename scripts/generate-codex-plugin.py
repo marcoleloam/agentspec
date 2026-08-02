@@ -6,13 +6,15 @@ Codex CLI reached subagent GA in March 2026: custom agents are TOML files under
 translates each Claude Code agent (`.claude/agents/**/*.md`) into the equivalent
 Codex agent TOML, so both targets stay derived from one source.
 
-Output goes to the real Codex locations (`.codex/agents/`, `AGENTS.md`) rather than
+Output goes to the real Codex locations (`.codex/agents/`, `.codex/skills/`,
+`AGENTS.md`) rather than
 a staging folder: AgentSpec dogfoods its own Codex agents, and consumers copy from
 the repo. See docs/reference/codex-cli.md.
 
-Note the division of labour, verified on Codex 0.146.0: Codex installs the Claude
-plugin format directly (marketplace -> commands, skills, KB, hooks), but resolves
-subagents only from TOML under `.codex/agents/`. This script covers that gap.
+Codex 0.146.0 migrates Claude plugin commands to skills during installation, but
+silently skips generated skills larger than 4 KiB. This script therefore emits a
+native skill for every command. Native skills take precedence over migrated command
+skills with the same name, so command availability no longer depends on file size.
 
 Field mapping (Claude frontmatter -> Codex TOML):
   name                 -> name
@@ -29,6 +31,7 @@ Deliberately NOT emitted:
 
 Outputs:
   .codex/agents/*.toml   - fully generated, do not hand-edit
+  .codex/skills/*/SKILL.md - native Codex wrappers for Claude commands
   AGENTS.md              - only the region between the AgentSpec markers is
                            regenerated; text outside it is preserved
 
@@ -46,8 +49,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
+COMMANDS_DIR = REPO_ROOT / ".claude" / "commands"
 OUT_DIR = REPO_ROOT / ".codex"
 OUT_AGENTS = OUT_DIR / "agents"
+OUT_SKILLS = OUT_DIR / "skills"
 AGENTS_MD_PATH = REPO_ROOT / "AGENTS.md"
 
 # Only the text between these markers is regenerated in AGENTS.md; anything a
@@ -162,6 +167,32 @@ def build_agent_toml(fm: dict, body: str, category: str) -> str:
     return "\n".join(lines)
 
 
+def command_skill_name(command: Path) -> str:
+    """Match the name used by Codex's built-in Claude-command migration."""
+    relative = command.relative_to(COMMANDS_DIR).with_suffix("")
+    return "source-command-" + "-".join(relative.parts)
+
+
+def build_command_skill(fm: dict, body: str, command: Path) -> str:
+    """Render a Claude command as a native Codex skill without the 4 KiB cap."""
+    skill_name = command_skill_name(command)
+    command_id = "-".join(command.relative_to(COMMANDS_DIR).with_suffix("").parts)
+    description = one_line_description(fm.get("description", ""))
+    if not description:
+        description = f"Run the AgentSpec {command.stem} command"
+    return (
+        "---\n"
+        f'name: "{toml_escape_basic(skill_name)}"\n'
+        f'description: "{toml_escape_basic(description)}"\n'
+        "---\n\n"
+        f"# {skill_name}\n\n"
+        f"Use this skill when the user asks to run the migrated source command "
+        f"`{command_id}`.\n\n"
+        "## Command Template\n\n"
+        f"{body}\n"
+    )
+
+
 GENERATED_BLOCK = """This project uses AgentSpec's Spec-Driven Development workflow: 5 phases, one markdown
 document per phase, all under `.claude/sdd/`.
 
@@ -229,6 +260,9 @@ def main() -> int:
     if not AGENTS_DIR.is_dir():
         print(f"ERROR: {AGENTS_DIR} not found", file=sys.stderr)
         return 1
+    if not COMMANDS_DIR.is_dir():
+        print(f"ERROR: {COMMANDS_DIR} not found", file=sys.stderr)
+        return 1
 
     generated: dict[Path, str] = {}
     by_category: dict[str, list[str]] = {}
@@ -245,12 +279,25 @@ def main() -> int:
         generated[OUT_AGENTS / f"{fm['name']}.toml"] = build_agent_toml(fm, body, category)
         by_category.setdefault(category, []).append(fm["name"])
 
+    command_count = 0
+    for md in sorted(COMMANDS_DIR.glob("*/*.md")):
+        if md.name in SKIP_FILES:
+            continue
+        text = md.read_text(encoding="utf-8")
+        fm = parse_frontmatter(text)
+        body = strip_frontmatter(text)
+        generated[OUT_SKILLS / command_skill_name(md) / "SKILL.md"] = (
+            build_command_skill(fm, body, md)
+        )
+        command_count += 1
+
+    agent_count = sum(map(len, by_category.values()))
     rows = ["| Category | Agents |", "|---|---|"]
     for cat in sorted(by_category):
         rows.append(f"| `{cat}` | {len(by_category[cat])} |")
     block = (
         GENERATED_BLOCK
-        .replace("{AGENT_COUNT}", str(len(generated)))
+        .replace("{AGENT_COUNT}", str(agent_count))
         .replace("{CATEGORY_TABLE}", "\n".join(rows))
     )
     generated[AGENTS_MD_PATH] = render_agents_md(block)
@@ -265,17 +312,26 @@ def main() -> int:
             for p in drift:
                 print(f"  drift: {p.relative_to(REPO_ROOT)}", file=sys.stderr)
             return 1
-        print(f"OK - .codex/ + AGENTS.md up to date ({len(generated) - 1} agents)")
+        print(
+            f"OK - .codex/ + AGENTS.md up to date "
+            f"({agent_count} agents, "
+            f"{command_count} command skills)"
+        )
         return 0
 
     if OUT_AGENTS.exists():
         shutil.rmtree(OUT_AGENTS)
+    if OUT_SKILLS.exists():
+        shutil.rmtree(OUT_SKILLS)
     OUT_AGENTS.mkdir(parents=True, exist_ok=True)
     for path, content in generated.items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
-    print(f"Generated .codex/ + AGENTS.md - {len(generated) - 1} agents in {len(by_category)} categories")
+    print(
+        f"Generated .codex/ + AGENTS.md - {agent_count} agents in "
+        f"{len(by_category)} categories, {command_count} command skills"
+    )
     return 0
 
 

@@ -47,7 +47,7 @@ check: ## Drift check — tests + generators in --check mode (fails on drift)
 generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
 	@python3 scripts/generate-agent-router.py
 
-codex: ## Regenerate the Codex CLI config (.codex/agents/ + AGENTS.md)
+codex: ## Regenerate Codex agents, command skills, and AGENTS.md
 	@python3 scripts/generate-codex-plugin.py
 
 plugin: build ## Alias for `make build`

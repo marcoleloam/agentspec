@@ -295,7 +295,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Version
 
-- **Version:** 3.4.0
+- **Version:** 3.4.1
 - **Status:** Release — Upstream wave 1: spec-linter and spec-judge engines, the component model, and 9 authoring/GitHub skills. 73 agents, 39 KB domains, 10 distributed skills, 42 commands.
 - **Upstream Base:** luanmorenommaciel/agentspec @ d577ec5 (2026-07-15)
 - **Last Sync:** 2026-07-27 (wave 1 — additive only; thin-executor refactor deferred)

@@ -1,6 +1,6 @@
 {
   "name": "agentspec",
-  "description": "AgentSpec — Spec-Driven Development framework for Claude Code. 73 specialized agents, 42 commands, 39 KB domains, 5 skills, 5-phase SDD workflow with pt-BR output.",
+  "description": "AgentSpec — Spec-Driven Development framework for Claude Code and OpenAI Codex. 73 specialized agents, 42 commands, 39 KB domains, and a 5-phase SDD workflow.",
   "owner": {
     "name": "Marco Aurelio Almeida Monteiro",
     "email": "marcoleloam@gmail.com",
@@ -10,7 +10,7 @@
     {
       "name": "agentspec",
       "source": "./plugin/",
-      "version": "3.4.0",
+      "version": "3.4.1",
       "description": "Spec-Driven Development framework for Data Engineering + Frontend — 73 agents, 39 KB domains, 5-phase SDD workflow, 42 commands, 5 skills (blackboard coordination, /work anchor, file-based memory).",
       "author": {
         "name": "Marco Aurelio Almeida Monteiro",

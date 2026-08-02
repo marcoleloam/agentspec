@@ -3,7 +3,7 @@
 # AgentSpec Plugin Builder
 # Packages .claude/ (source) into plugin/ (distributable Claude Code plugin)
 # Adapted from upstream luanmorenommaciel/agentspec v3.0.0
-# Extended for: 63 agents, 28 KB domains, frontend ecosystem, pt-BR support
+# Extended for: Codex-native skills, frontend ecosystem, and pt-BR support
 # ============================================================================
 
 set -euo pipefail
@@ -28,7 +28,7 @@ else
 fi
 
 echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}  AgentSpec Plugin Builder v3.3.0${NC}"
+echo -e "${BLUE}  AgentSpec Plugin Builder v3.4.1${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
@@ -44,14 +44,25 @@ if [ ! -f "${PLUGIN_DIR}/.claude-plugin/plugin.json" ]; then
     exit 1
 fi
 
+if [ ! -f "${PLUGIN_DIR}/.codex-plugin/plugin.json" ]; then
+    echo -e "${RED}ERROR: plugin/.codex-plugin/plugin.json not found${NC}"
+    echo "Create the Codex plugin manifest first."
+    exit 1
+fi
+
+# Generate native command skills before packaging. This avoids Codex's 4 KiB
+# limit when it migrates Claude commands into skills during installation.
+python3 "${SCRIPT_DIR}/scripts/generate-codex-plugin.py"
+
 echo -e "${GREEN}[1/6] Preflight checks passed${NC}"
 
-# ── Step 1: Clean previous build (preserve .claude-plugin/ and README.md) ──
+# ── Step 1: Clean previous build (preserve plugin manifests + README.md) ──
 echo -e "${YELLOW}[2/6] Cleaning previous build...${NC}"
 
 # Remove previous build artifacts, keep plugin metadata
 find "${PLUGIN_DIR}" -mindepth 1 -maxdepth 1 \
     ! -name '.claude-plugin' \
+    ! -name '.codex-plugin' \
     ! -name 'README.md' \
     -exec rm -rf {} + 2>/dev/null || true
 
@@ -65,6 +76,14 @@ for dir in agents commands skills kb; do
         echo "  Copied ${dir}/"
     fi
 done
+
+# Codex-native command skills. Their names deliberately match Codex's automatic
+# command migration; native skills win on collision and also cover commands that
+# the migration skips for exceeding 4 KiB.
+if [ -d "${SCRIPT_DIR}/.codex/skills" ]; then
+    cp -r "${SCRIPT_DIR}/.codex/skills/." "${PLUGIN_DIR}/skills/"
+    echo "  Copied Codex-native command skills/"
+fi
 
 # SDD (templates + architecture only, not workspace files)
 if [ -d "${SOURCE_DIR}/sdd" ]; then
@@ -193,6 +212,7 @@ echo -e "  Plugin:   ${PLUGIN_DIR}/"
 echo ""
 echo -e "${YELLOW}To test locally:${NC}"
 echo "  claude --plugin-dir ${PLUGIN_DIR}"
+echo "  codex plugin add agentspec@agentspec"
 echo ""
 echo -e "${YELLOW}To install:${NC}"
 echo "  claude plugin marketplace add marcoleloam/agentspec"

@@ -4,6 +4,25 @@ All notable changes to AgentSpec will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.4.1] - 2026-08-02
+
+### Fixed
+
+- Added a native Codex plugin manifest and 39 generated `source-command-*` skills, so
+  workflow commands such as `brainstorm`, `define`, `design`, `build`, `ship`, and
+  `work` no longer disappear when Codex's Claude-command migration exceeds 4 KiB.
+- Native command skill names match Codex's migration names. Codex therefore prefers
+  the bundled skill for both short and long commands without duplicate invocation paths.
+- Commands with incomplete or absent Claude frontmatter are normalized from their file
+  paths and receive a safe fallback description.
+
+### Changed
+
+- `scripts/generate-codex-plugin.py` now generates both subagent TOMLs and command skills.
+- `build-plugin.sh` packages the generated skills while preserving both Claude and Codex
+  manifests.
+- CI checks generated Codex artifacts for drift.
+
 ## [3.4.0] - 2026-07-28
 
 ### Added
