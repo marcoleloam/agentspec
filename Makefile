@@ -16,7 +16,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate plugin install-deps spec-lint spec-judge spec-venvs
+.PHONY: help build test check lint clean generate codex plugin install-deps spec-lint spec-judge spec-venvs
 
 # ----------------------------------------------------------------------------
 # Help
@@ -42,9 +42,13 @@ test: ## Run pytest suite
 check: ## Drift check — tests + generators in --check mode (fails on drift)
 	@python3 -m pytest tests/ -q
 	@python3 scripts/generate-agent-router.py --check
+	@python3 scripts/generate-codex-plugin.py --check
 
 generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
 	@python3 scripts/generate-agent-router.py
+
+codex: ## Regenerate the Codex CLI config (.codex/agents/ + AGENTS.md)
+	@python3 scripts/generate-codex-plugin.py
 
 plugin: build ## Alias for `make build`
 
