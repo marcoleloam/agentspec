@@ -45,3 +45,13 @@ parallel") and Codex will spawn them. They are grouped by category:
 
 <!-- agentspec:end -->
 
+## Grok Build
+
+This repository also ships a Grok-native plugin. `make grok` regenerates
+`plugin-grok/` (marketplace install) and `.grok/{agents,commands}` (project-local
+dogfood). See [docs/reference/grok-harness.md](docs/reference/grok-harness.md).
+
+When spawning specialists in Grok, use `spawn_subagent` with the agent name
+(for example `dbt-specialist`). If the catalog shows a plugin-qualified name
+(`agentspec:dbt-specialist`), use that.
+

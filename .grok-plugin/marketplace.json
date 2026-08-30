@@ -1,0 +1,42 @@
+{
+  "name": "agentspec",
+  "description": "AgentSpec — Spec-Driven Development framework for Grok Build, Claude Code, and OpenAI Codex. 73 specialized agents, 42 commands, 39 KB domains, and a 5-phase SDD workflow.",
+  "owner": {
+    "name": "Marco Aurelio Almeida Monteiro",
+    "email": "marcoleloam@gmail.com",
+    "url": "https://github.com/marcoleloam"
+  },
+  "plugins": [
+    {
+      "name": "agentspec",
+      "source": {
+        "type": "local",
+        "path": "./plugin-grok"
+      },
+      "version": "3.4.1",
+      "description": "Spec-Driven Development for Grok Build — 73 agents, 39 KB domains, 5-phase SDD workflow, flattened slash commands.",
+      "author": {
+        "name": "Marco Aurelio Almeida Monteiro",
+        "url": "https://github.com/marcoleloam"
+      },
+      "category": "development",
+      "keywords": [
+        "data-engineering",
+        "frontend",
+        "sdd",
+        "spec-driven-development",
+        "grok",
+        "dbt",
+        "spark",
+        "airflow",
+        "pipeline",
+        "schema-design",
+        "data-quality",
+        "lakehouse"
+      ],
+      "homepage": "https://github.com/marcoleloam/agentspec",
+      "repository": "https://github.com/marcoleloam/agentspec",
+      "license": "MIT"
+    }
+  ]
+}

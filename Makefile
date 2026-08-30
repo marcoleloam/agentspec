@@ -16,7 +16,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate codex plugin install-deps spec-lint spec-judge spec-venvs
+.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps spec-lint spec-judge spec-venvs
 
 # ----------------------------------------------------------------------------
 # Help
@@ -36,19 +36,34 @@ help: ## Show this help
 build: ## Full plugin build (tests + regenerate agent-router + package)
 	@./build-plugin.sh
 
-test: ## Run pytest suite
-	@python3 -m pytest tests/ -v
-
 check: ## Drift check — tests + generators in --check mode (fails on drift)
 	@python3 -m pytest tests/ -q
 	@python3 scripts/generate-agent-router.py --check
 	@python3 scripts/generate-codex-plugin.py --check
+	@python3 scripts/generate-dsh-bundle.py --check
+	@python3 scripts/generate-grok-plugin.py --check
 
 generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
 	@python3 scripts/generate-agent-router.py
 
-codex: ## Regenerate Codex agents, command skills, and AGENTS.md
+codex: ## Regenerate Codex CLI agents and command skills from .claude/
 	@python3 scripts/generate-codex-plugin.py
+
+grok: ## Regenerate the Grok Build plugin (plugin-grok/ + .grok/{agents,commands})
+	@python3 scripts/generate-grok-plugin.py
+
+grok-verify: ## Validate plugin-grok/ with the Grok CLI (skips if grok is missing)
+	@if command -v grok >/dev/null 2>&1; then \
+		grok plugin validate plugin-grok; \
+	else \
+		echo "grok CLI not installed — skipping grok plugin validate"; \
+	fi
+
+dsh: ## Regenerate the DeepSeek Harness (dsh) bundle assets from .claude/
+	@python3 scripts/generate-dsh-bundle.py
+
+dsh-verify: ## Smoke-test the dsh bundle plugins against the installed dsh services
+	@cd plugin-dsh && node verify.mjs
 
 plugin: build ## Alias for `make build`
 

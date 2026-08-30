@@ -1,0 +1,14 @@
+# AgentSpec dsh bundle — applied as ONE insert over the base layer.
+# Two plugins:
+#   agentspec-skills    -> ctx.skills.registerProvider(): AgentSpec's SKILL.md
+#                          skills (sdd-workflow, source-command-*, authoring)
+#                          become model-invocable through the `skill` tool.
+#   agentspec-commands  -> ctx.commands.register(): the SDD workflow and core
+#                          commands become native human slash commands whose
+#                          handlers inject the command template into the agent.
+- insert:
+    - id: agentspec-skills
+      name: '@agentspec/agentspec-dsh/lib/skills'
+
+    - id: agentspec-commands
+      name: '@agentspec/agentspec-dsh/lib/commands'

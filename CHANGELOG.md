@@ -4,6 +4,21 @@ All notable changes to AgentSpec will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- **Grok Build distribution** — `plugin-grok/` is a Grok-native plugin generated from
+  `.claude/`: flattened slash commands (`/brainstorm`, `/define`, `/design`, `/build`,
+  `/ship`, …), 73 flattened specialist agents with Claude→Grok tool remapping, vendored
+  KB + SDD templates, and a SessionStart workspace hook.
+- Project-scoped dogfood trees under `.grok/{agents,commands}` so opening this repo
+  with Grok loads AgentSpec without installing the plugin.
+- `.grok-plugin/marketplace.json` points Grok's marketplace at `plugin-grok/` (Claude
+  Code keeps using `.claude-plugin/` → `plugin/`).
+- `scripts/generate-grok-plugin.py`, `make grok`, `make grok-verify`, and a `--check`
+  drift gate wired into `make check` and CI.
+
 ## [3.4.1] - 2026-08-02
 
 ### Fixed

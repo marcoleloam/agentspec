@@ -1,6 +1,11 @@
-# Reference
+## Distributions
 
-Complete catalog of commands, agents, KB domains, templates, and configuration.
+AgentSpec ships for multiple harnesses:
+
+- **Claude Code** — this repo's `.claude/` (slash commands, agents, KB).
+- **OpenAI Codex** — [codex-cli.md](codex-cli.md) (generated `.codex/` + skills).
+- **Grok Build** — [grok-harness.md](grok-harness.md) (generated `plugin-grok/` + `.grok/`).
+- **DeepSeek Harness** — [deepseek-harness.md](deepseek-harness.md) (generated `plugin-dsh/` bundle).
 
 ## Slash Commands (21 total)
 

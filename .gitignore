@@ -20,8 +20,8 @@ build/
 .venv/
 venv/
 
-# Node
-node_modules/
+# dsh test bridge (symlink to the local profile store; machine-specific)
+plugin-dsh/node_modules
 
 # Environment
 .env

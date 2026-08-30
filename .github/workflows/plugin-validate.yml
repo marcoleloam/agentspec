@@ -8,6 +8,8 @@ on:
       - 'plugin-extras/**'
       - 'build-plugin.sh'
       - 'plugin/.claude-plugin/**'
+      - 'plugin-grok/plugin.json'
+      - '.grok-plugin/**'
   pull_request:
     branches: [main]
     paths:
@@ -15,6 +17,8 @@ on:
       - 'plugin-extras/**'
       - 'build-plugin.sh'
       - 'plugin/.claude-plugin/**'
+      - 'plugin-grok/plugin.json'
+      - '.grok-plugin/**'
 
 jobs:
   validate:
@@ -52,6 +56,21 @@ jobs:
           for p in data['plugins']:
               assert 'name' in p, 'Plugin entry missing name'
           print(f'Valid: {data[\"name\"]} with {len(data[\"plugins\"])} plugin(s)')
+          "
+
+      - name: Validate Grok plugin + marketplace
+        run: |
+          python3 -c "
+          import json
+          with open('plugin-grok/plugin.json') as f:
+              data = json.load(f)
+          for k in ('name', 'version', 'description'):
+              assert k in data, f'missing {k}'
+          print(f'Valid Grok plugin: {data[\"name\"]} v{data[\"version\"]}')
+          with open('.grok-plugin/marketplace.json') as f:
+              market = json.load(f)
+          assert market['plugins'][0]['source']['path'] == './plugin-grok'
+          print(f'Valid Grok marketplace: {market[\"name\"]}')
           "
 
       - name: Build plugin

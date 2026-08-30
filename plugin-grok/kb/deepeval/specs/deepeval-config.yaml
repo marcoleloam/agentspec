@@ -1,0 +1,121 @@
+schema_version: "1.0"
+domain: deepeval
+file_type: api-reference
+last_validated: "2026-04-12"
+source: "https://docs.confident-ai.com/docs/getting-started"
+
+records:
+  LLMTestCase:
+    description: "Primary evaluation unit wrapping agent input, output, and context"
+    import: "from deepeval.test_case import LLMTestCase"
+    fields:
+      input:
+        type: string
+        required: true
+        notes: "The user query sent to the agent"
+      actual_output:
+        type: string
+        required: true
+        notes: "The agent's response"
+      expected_output:
+        type: string
+        required: false
+        default: null
+        notes: "Ground truth answer"
+      retrieval_context:
+        type: list[string]
+        required: false
+        default: null
+        notes: "REQUIRED for FaithfulnessMetric — text chunks retrieved by RAG"
+      tools_called:
+        type: list[ToolCall]
+        required: false
+        default: null
+        notes: "REQUIRED for ToolCorrectnessMetric — tools actually invoked"
+      expected_tools:
+        type: list[ToolCall]
+        required: false
+        default: null
+        notes: "REQUIRED for ToolCorrectnessMetric — tools that should have been called"
+
+  ToolCall:
+    description: "Represents a single tool invocation by the agent"
+    import: "from deepeval.test_case import ToolCall"
+    fields:
+      name:
+        type: string
+        required: true
+        notes: "Tool identifier: 'supabase_execute_sql' or 'qdrant_semantic_search'"
+      description:
+        type: string
+        required: false
+      input:
+        type: dict
+        required: false
+        notes: "Arguments passed to the tool"
+      output:
+        type: string
+        required: false
+
+metrics:
+  ToolCorrectnessMetric:
+    description: "Deterministic check — did agent call the expected tool(s)?"
+    import: "from deepeval.metrics import ToolCorrectnessMetric"
+    threshold_default: 1.0
+    requires_llm_judge: false
+    required_fields: ["tools_called", "expected_tools"]
+
+  AnswerRelevancyMetric:
+    description: "LLM-as-judge scoring relevance of actual_output to input"
+    import: "from deepeval.metrics import AnswerRelevancyMetric"
+    threshold_default: 0.5
+    threshold_recommended: 0.7
+    requires_llm_judge: true
+    required_fields: ["input", "actual_output"]
+    params:
+      model:
+        type: string
+        default: "gpt-4o"
+        recommended: "claude-sonnet-4-20250514"
+      include_reason:
+        type: boolean
+        default: false
+
+  FaithfulnessMetric:
+    description: "LLM-as-judge scoring grounding in retrieval_context"
+    import: "from deepeval.metrics import FaithfulnessMetric"
+    threshold_default: 0.5
+    threshold_recommended: 0.7
+    requires_llm_judge: true
+    required_fields: ["actual_output", "retrieval_context"]
+    params:
+      model:
+        type: string
+        default: "gpt-4o"
+        recommended: "claude-sonnet-4-20250514"
+
+  GEval:
+    description: "Custom LLM-as-judge with user-defined criteria"
+    import: "from deepeval.metrics import GEval"
+    params:
+      name:
+        type: string
+        required: true
+      criteria:
+        type: string
+        required: true
+      evaluation_params:
+        type: list[LLMTestCaseParams]
+        required: true
+        notes: "Fields passed to judge: INPUT, ACTUAL_OUTPUT, EXPECTED_OUTPUT, RETRIEVAL_CONTEXT"
+      threshold:
+        type: float
+        default: 0.5
+
+cli:
+  run_deepeval: "deepeval test run tests/test_shopagent.py"
+  run_pytest: "pytest tests/test_shopagent.py -v"
+  filter: "pytest tests/test_shopagent.py -k 'routing'"
+
+packages:
+  core: "deepeval"

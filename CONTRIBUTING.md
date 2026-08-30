@@ -19,6 +19,11 @@ ls .claude/kb/          # 39 Knowledge Base domains
 
 # Rebuild distributable plugin/ from .claude/ source
 bash build-plugin.sh    # or: make build
+
+# Regenerators for the other harnesses (also part of `make check`)
+make codex              # .codex/ agents + command skills
+make grok               # plugin-grok/ + .grok/{agents,commands}
+make dsh                # plugin-dsh/assets
 ```
 
 ## Ways to Contribute
