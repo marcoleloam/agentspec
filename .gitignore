@@ -43,3 +43,4 @@ entities.json
 
 # JEV agent selection — full labeled eval set (may contain client specs)
 .claude/sdd/evals/agent_selection_labels.json
+.claude/sdd/evals/agent_selection_holdout.json

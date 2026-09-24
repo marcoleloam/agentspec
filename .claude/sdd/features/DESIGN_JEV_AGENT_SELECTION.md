@@ -40,7 +40,7 @@
 │        │        │                                               │          │
 │        │        ▼                                               │          │
 │        └──► gate()  ◄───────────────────────────────────────────┘          │
-│                 │   variant: conf ≥ 0.7 ? jev : heuristic                  │
+│                 │   variant: p(single) fora de 0.4–0.6 ? jev : heuristic   │
 │                 │   specialists: Noul ≥ 0.5 (top 4) ? jev : heuristic      │
 │                 ▼                                                          │
 │           SelectionResult (JSON em stdout)                                 │
@@ -98,6 +98,8 @@
 ---
 
 ### Decisão 2: uma requisição com fan-out (1 Choice + N Nouls), candidatos pré-filtrados, no máximo 12
+
+> **v1.1:** a pergunta de variante foi substituída por um Noul (Decisão 9) e o pool de candidatos ganhou implementadores fixos (Decisão 11). O restante desta decisão continua valendo.
 
 | Atributo | Valor |
 |----------|-------|
@@ -253,6 +255,128 @@
 
 ---
 
+### Decisão 9 (v1.1): a variante vira um Noul "área técnica única", sem domínios no state
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita — substitui a parte "variante" da Decisão 2 |
+| **Data** | 2026-09-24 |
+
+**Contexto:** no eval real (22 specs, 2 rodadas) o Choice `single | multiagent` respondeu `multiagent` em 22/22 casos, com confiança de 0.84 a 1.0. Nenhum dos 8 casos single foi acertado, e a acurácia ficou igual à da heurística (0.64). Perguntar "quantos domínios" junto de uma lista de domínios no state (3+ na maioria das specs) leva à leitura literal que a TypeSafe documenta como limitação do jev-1.13. Num diagnóstico (contaminado, porque foi feito sobre o mesmo conjunto), um Noul sobre "área única" sem domínios no state foi o que mais separou os dois grupos.
+
+**Escolha:** a pergunta `single_area` é um Noul:
+
+> "Is the implementation work in this spec confined to ONE technical area (for example: only frontend screens with mock data, only infrastructure or configuration changes, only a written document)?"
+
+`criteria.true` diz que uma área faz todo o trabalho real e que as outras tecnologias estão mockadas, inalteradas ou só mencionadas. `criteria.false` diz que duas ou mais áreas precisam de implementação nova real. O state leva só `phase` e `spec_summary`; os `kb_domains` saem do state (continuam no pré-filtro local e na heurística).
+
+**Justificativa:** um Noul dá `p(single)` contínuo e calibrado, sem a disputa entre duas opções de um Choice. Os exemplos são **classes genéricas** de trabalho; os exemplos de casos concretos da formulação C foram descartados porque reproduziam casos do conjunto.
+
+**Alternativas Rejeitadas:**
+1. Manter o Choice e só tirar `kb_domains` do state (formulação A) — rejeitada: 0/8 single no diagnóstico.
+2. Choice com contraexemplos concretos (formulação C, 0.77) — rejeitada: os exemplos vieram dos próprios casos de teste (vazamento).
+3. Duas requisições (variante sem domínios, especialistas com domínios) — rejeitada no MVP: o dobro de chamadas, sem evidência de que os especialistas precisem dos domínios no state.
+
+**Consequências:**
+- As perguntas de especialista também perdem os domínios do state. O efeito no F1 tem de ser medido no conjunto novo.
+- A normalização de `confidence` do Choice (SHOULD do DEFINE) deixa de ser necessária e é removida.
+
+---
+
+### Decisão 10 (v1.1): o portão da variante passa a ser um limiar sobre `p(single)` com faixa de incerteza
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita — substitui o portão `confidence ≥ 0.7` |
+| **Data** | 2026-09-24 |
+
+**Contexto:** com a confiança saturada em ~1.0, o portão de 0.7 nunca disparava e não protegia contra erro.
+
+**Escolha:** seja `p = noul(single_area)`:
+- `|p − 0.5| < JEV_UNCERTAIN_BAND` (padrão 0.1, ou seja, 0.4 < p < 0.6) → fallback para a heurística, `fallback_reason = "uncertain"`;
+- `p ≥ JEV_SINGLE_THRESHOLD` (padrão 0.5) → `single`;
+- caso contrário → `multiagent`.
+
+Registra-se `probabilities = {single: p, multiagent: 1 − p}` e `confidence = |p − 0.5| × 2`.
+
+**Justificativa:** os padrões (0.5 e 0.1) são simétricos e **não** foram ajustados sobre nenhum conjunto. A faixa preserva a regra do DEFINE de cair no fallback quando o JEV hesita (o antigo AT-006).
+
+**Alternativas Rejeitadas:**
+1. Limiar ajustado para maximizar a acurácia no conjunto de 22 — rejeitada: overfitting no próprio conjunto de teste.
+2. Sem faixa de incerteza — rejeitada: perderia o fallback por hesitação exigido pelo DEFINE.
+
+**Consequências:**
+- `JEV_MIN_CONFIDENCE` é removida; entram `JEV_SINGLE_THRESHOLD` e `JEV_UNCERTAIN_BAND`.
+- `fallback_reason = "low_confidence"` deixa de existir para a variante e dá lugar a `"uncertain"`.
+
+---
+
+### Decisão 11 (v1.1): implementadores gerais são sempre candidatos a especialista
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita |
+| **Data** | 2026-09-24 |
+
+**Contexto:** no eval, os implementadores gerais (`react-developer`, `python-developer`) apareciam nos rótulos esperados de 9 dos 14 casos multiagent. O pré-filtro por overlap e a pergunta do Noul os deixavam de fora com frequência (ex.: C07, F1 0.00).
+
+**Escolha:** `ALWAYS_CANDIDATES = ("python-developer", "react-developer")` sempre entram na lista enviada ao JEV (se existirem no `routing.json`), ocupando vagas dentro do teto de 12: overlap top `12 − k` + os que faltarem. **A heurística continua usando só o overlap**, para seguir sendo o baseline da regra antiga.
+
+**Justificativa:** o JEV decide pelo Noul se o implementador pesa ou não; o pré-filtro só deixa de escondê-lo.
+
+**Alternativas Rejeitadas:**
+1. Sempre selecionar os implementadores (sem perguntar ao JEV) — rejeitada: inflaria casos em que não se aplicam (ex.: infra, documento).
+2. Incluir também `test-generator` — adiada: não foi pedida e aparece em só 1 rótulo.
+
+**Consequências:**
+- Até 2 candidatos por overlap saem da lista quando o pré-filtro já está cheio.
+
+---
+
+### Decisão 12 (v1.1): o script normaliza domínios de KB escritos em texto livre
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita |
+| **Data** | 2026-09-24 |
+
+**Contexto:** nas specs reais a linha "Domínios KB" é texto livre (`tailwind`, `a11y`, `sql/postgres`, `` `frontend/nextjs` ``, `genai (rag-architecture, …)`). O passo 1b dependia de o agente converter isso para nomes reais de KB, e o DESIGN não previa essa conversão.
+
+**Escolha:** `normalize_kb_domains(raw, known)` recebe a lista crua e faz o seguinte:
+- remove crases e parênteses;
+- quebra em `/`, `,`, `;` e " e ";
+- aplica um mapa de aliases (`tailwind`/`css`→`tailwind-css`, `a11y`→`accessibility`, `sql`/`postgres`→`sql-patterns`, `fastapi`→`python`, `llm`/`rag`→`genai`, `databricks`→`lakeflow`...);
+- mantém só os nomes conhecidos (a união dos `kb_domains` do `routing.json`).
+
+A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b passa a pedir que o agente **copie a linha como está**.
+
+**Justificativa:** uma regra determinística e testável no lugar de uma instrução ao LLM.
+
+**Consequências:**
+- Termos sem KB correspondente (`golang`, `security`, `azure`) são descartados de forma visível, e não em silêncio.
+
+---
+
+### Decisão 13 (v1.1): a revalidação é feita num conjunto novo, com a formulação congelada antes
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita |
+| **Data** | 2026-09-24 |
+
+**Contexto:** o conjunto de 22 já foi usado para diagnosticar as formulações. Medir de novo nele não prova nada.
+
+**Escolha:**
+- As Decisões 9–12 ficam congeladas neste DESIGN **antes** de qualquer consulta ao conjunto novo.
+- O conjunto novo (holdout) é formado por specs em `~/projetos` que não estão no conjunto de 22 nem são quase-duplicatas dele.
+- O holdout é rotulado às cegas antes da primeira chamada ao JEV e avaliado **uma vez**.
+- Os critérios de sucesso do DEFINE (≥ 0.85 e +0.10 p.p.; F1 +0.10) são aplicados ao holdout. O conjunto de 22 é reportado só como referência.
+
+**Consequências:**
+- Nenhum limiar pode ser ajustado depois de ver o holdout. Um ajuste exigiria um terceiro conjunto.
+
+---
+
 ## Manifesto de Arquivos
 
 | # | Arquivo | Ação | Propósito | Agente | Dependências |
@@ -278,6 +402,16 @@
 **Total de Arquivos:** 17 entradas (≈ 26 arquivos físicos contando os fixtures e os pares). Os artefatos gerados (`plugin/`, `plugin-grok/`, `plugin-dsh/`, `.codex/`) são regenerados por `make build`, não editados à mão.
 
 ---
+
+### Manifesto v1.1 (cascata do iterate)
+
+| # | Arquivo | Ação | Propósito |
+|---|---------|------|-----------|
+| 18 | `scripts/jev_select.py` | Modificar | Decisões 9–12: Noul `single_area`, `gate_variant` por `p(single)`, `ALWAYS_CANDIDATES`, `normalize_kb_domains`, state sem domínios; remove `choice_confidence` |
+| 19 | `tests/test_jev_select.py`, `tests/fixtures/jev/*.json` | Modificar | Fixtures no formato Noul; AT-006 (`uncertain`) e AT-007 (normalização); implementadores sempre candidatos |
+| 20 | `.claude/commands/workflow/{define,design,define-m,design-m}.md` | Modificar | Passo 1b: copiar a linha de domínios como está |
+| 21 | `WORKFLOW_CONTRACTS.yaml`, `docs/concepts/jev-agent-selection.md`, `CHANGELOG.md` | Modificar | Novas variáveis e novo portão |
+| 22 | `.claude/sdd/evals/agent_selection_holdout.json` (não versionado) | Criar | Conjunto novo, rotulado antes da primeira chamada (Decisão 13) |
 
 ## Justificativa de Atribuição de Agentes
 
@@ -381,38 +515,27 @@ SUMMARY_MAX_CHARS = 4000
 MAX_CANDIDATES = 12
 
 
-def build_request(inp: SelectionInput, candidates: list[Candidate]) -> dict[str, object]:
-    """State carries only spec data; every instruction lives in a question."""
+def build_request(inp: SelectionInput, candidates: list[Candidate], model: str) -> dict[str, object]:
+    """v1.1 — state carries only phase + summary; every instruction lives in a question."""
     questions: dict[str, object] = {}
     if inp.variant_locked is None:
-        questions["variant"] = {
-            "type": "choice",
-            "instructions": "How many distinct specialist domains must be consulted to get this spec right?",
+        questions["single_area"] = {
+            "type": "noul",
+            "instructions": (
+                "Is the implementation work in this spec confined to ONE technical area "
+                "(for example: only frontend screens with mock data, only infrastructure or "
+                "configuration changes, only a written document)?"
+            ),
             "criteria": {
-                "single": {"what": "One main domain; a single generalist designer can handle it",
-                           "not_for": "Specs whose risks cross several technical domains"},
-                "multiagent": {"what": "Several interacting domains whose risks a single designer would miss",
-                               "not_for": "Specs that merely mention extra technologies in passing"},
+                "true": "One area does all the real work; other technologies are mocked, unchanged or only mentioned",
+                "false": "Two or more areas (for example frontend AND backend/database AND AI) each need real new implementation",
             },
         }
     for i, cand in enumerate(candidates):
-        questions[f"fit_{i}"] = {
-            "type": "noul",
-            "instructions": (
-                f"Would the specialist '{cand.name}' — {cand.description} — materially change "
-                f"the quality of this {inp.phase} phase for this spec?"
-            ),
-            "criteria": {
-                "true": "The spec needs this specialist's domain expertise to avoid mistakes",
-                "false": "The domain is absent, incidental, or already covered by another specialist",
-            },
-        }
-    return {
-        "model": MODEL,
-        "state": {"phase": inp.phase, "spec_summary": inp.summary[:SUMMARY_MAX_CHARS],
-                  "kb_domains": list(inp.kb_domains)},
-        "questions": questions,
-    }
+        questions[f"fit_{i}"] = {...}   # unchanged from v1.0
+    return {"model": model,
+            "state": {"phase": inp.phase, "spec_summary": inp.summary[:SUMMARY_MAX_CHARS]},
+            "questions": questions}
 ```
 
 ### Padrão 3: transporte isolado com tempo total garantido
@@ -462,18 +585,21 @@ def post_decisions(payload: dict[str, object], api_key: str, timeout_s: float) -
 ### Padrão 4: portão e normalização
 
 ```python
-MIN_CONFIDENCE = float(os.environ.get("JEV_MIN_CONFIDENCE", "0.7"))
+SINGLE_THRESHOLD = float(os.environ.get("JEV_SINGLE_THRESHOLD", "0.5"))   # v1.1
+UNCERTAIN_BAND = float(os.environ.get("JEV_UNCERTAIN_BAND", "0.1"))       # v1.1
 FIT_THRESHOLD = float(os.environ.get("JEV_FIT_THRESHOLD", "0.5"))
 MAX_SPECIALISTS = 4
 
 
-def choice_confidence(answer: dict[str, object]) -> float:
-    """Some gateways omit confidence; the winning probability stands in (jev-gateway rule)."""
-    conf = answer.get("confidence")
-    if isinstance(conf, (int, float)):
-        return float(conf)
-    probs = answer.get("probabilities") or {}
-    return max((float(p) for p in probs.values()), default=0.0)
+def gate_variant(answer: object, fallback_variant: str) -> Decision:
+    p = noul_value(answer)
+    if p is None:
+        return Decision(fallback_variant, "fallback", "invalid_response")
+    probabilities = {"single": p, "multiagent": round(1 - p, 6)}
+    confidence = round(abs(p - SINGLE_THRESHOLD) * 2, 6)
+    if abs(p - SINGLE_THRESHOLD) < UNCERTAIN_BAND:
+        return Decision(fallback_variant, "fallback", "uncertain", confidence, probabilities)
+    return Decision("single" if p >= SINGLE_THRESHOLD else "multiagent", "jev", None, confidence, probabilities)
 
 
 def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Decision:
@@ -564,7 +690,7 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 6. Parse: answers.variant (Choice) + answers.fit_i (Noul) → validação de tipo/intervalo
    │
    ▼
-7. Portão: variante (conf ≥ 0.7) e especialistas (Noul ≥ 0.5, top 4); o que falhar → heurística
+7. Portão: variante por p(single) com faixa 0.4–0.6 → heurística (v1.1); especialistas (Noul ≥ 0.5, top 4); o que falhar → heurística
    │
    ▼
 8. JSON em stdout (exit 0) → comando segue a variante → grava "Seleção de Agentes" no documento
@@ -607,7 +733,7 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 | Corpo não-JSON ou sem `answers` | `fallback_reason=invalid_response` | Não |
 | `variant` ausente ou com `choice` fora de {single, multiagent} | Variante pela heurística, `invalid_response` | Não |
 | `noul` fora de [0, 1] ou não numérico | O candidato é ignorado; se todos forem inválidos → `invalid_response` nos especialistas | Não |
-| Confiança < limiar | Variante pela heurística, `low_confidence`; as probabilidades ficam registradas | Não |
+| `p(single)` na faixa de incerteza (0.4–0.6) | Variante pela heurística, `uncertain`; as probabilidades ficam registradas (v1.1) | Não |
 | Nenhum Noul ≥ limiar (multiagent) | Especialistas pela heurística, `no_fit_above_threshold` | Não |
 | Nenhum candidato ou `routing.json` ausente | Especialistas `none`/`fallback`, `no_candidates` ou `no_routing` | Não |
 | stdin inválido | Resultado de fallback com `invalid_input`; exit 0 | Não |
@@ -624,7 +750,8 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 | `JEV_API_KEY` | string | — | Opcional; se definida, tem precedência sobre `OPENROUTER_API_KEY` (uso com `JEV_URL` direto) |
 | `JEV_URL` | string | `https://openrouter.ai/api/alpha/decisions` | Endpoint |
 | `JEV_MODEL` | string | `typesafe/jev-1.13` | Modelo (versão fixada) |
-| `JEV_MIN_CONFIDENCE` | float | `0.7` | Limiar da variante |
+| `JEV_SINGLE_THRESHOLD` | float | `0.5` | `p(single)` a partir do qual a variante é single (v1.1) |
+| `JEV_UNCERTAIN_BAND` | float | `0.1` | Meia-largura da faixa em torno do limiar que cai no fallback `uncertain` (v1.1) |
 | `JEV_FIT_THRESHOLD` | float | `0.5` | Limiar do Noul de especialista (calibrar com `--eval`) |
 | `JEV_TIMEOUT_MS` | int | `4000` | Tempo total máximo da chamada |
 | `JEV_DISABLE` | bool (`1`) | vazio | Desliga o envio; sempre fallback |
@@ -668,6 +795,7 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 | Versão | Data | Autor | Mudanças |
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | design-agent | Versão inicial a partir de DEFINE_JEV_AGENT_SELECTION.md |
+| 1.1 | 2026-09-24 | iterate-agent | Após o eval real reprovar (variante 0.64 = heurística): Decisões 9–13, ou seja, Noul `single_area` sem domínios no state, portão por `p(single)` com faixa de incerteza, implementadores sempre candidatos, normalização de domínios em texto livre e revalidação em holdout congelado |
 
 ---
 

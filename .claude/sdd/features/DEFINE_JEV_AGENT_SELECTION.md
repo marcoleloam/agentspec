@@ -34,25 +34,24 @@ A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas
 
 | Prioridade | Objetivo |
 |------------|----------|
-| **MUST** | `scripts/jev_select.py` (Python stdlib) recebe o resumo da spec e os candidatos e faz **uma** chamada a `https://openrouter.ai/api/alpha/decisions` (modelo `typesafe/jev-1.13`, `Authorization: Bearer $OPENROUTER_API_KEY`). A chamada leva um `Choice` de variante (`single` \| `multiagent`) e um `Noul` por especialista candidato. A saída é JSON em stdout. |
+| **MUST** | `scripts/jev_select.py` (Python stdlib) recebe o resumo da spec e os candidatos e faz **uma** chamada a `https://openrouter.ai/api/alpha/decisions` (modelo `typesafe/jev-1.13`, `Authorization: Bearer $OPENROUTER_API_KEY`). A chamada leva um `Noul` de variante ("o trabalho fica confinado a uma área técnica?", v1.1) e um `Noul` por especialista candidato. A saída é JSON em stdout. |
 | **MUST** | A mesma saída JSON é produzida pelo **fallback determinístico em Python**, que reproduz a heurística atual (≥ 3 domínios de KB → multiagent; top-4 por overlap de `kb_domains`). Formato idêntico, campo `source: "jev" \| "fallback"` e campo `fallback_reason`. |
-| **MUST** | Portão: a variante é decidida pelo JEV só se `confidence ≥ 0.7`. Um especialista entra se `Noul ≥ limiar` (padrão configurável, inicial 0.5). Entram no máximo 4, ordenados por probabilidade. Em qualquer outro caso vale o fallback. |
+| **MUST** | Portão (v1.1): a variante é decidida pelo JEV quando `p(single)` sai da faixa de incerteza (padrão 0.4–0.6); `p ≥ 0.5` → single. Dentro da faixa, vale o fallback `uncertain`. Um especialista entra se `Noul ≥ limiar` (padrão configurável, inicial 0.5). Entram no máximo 4, ordenados por probabilidade. Em qualquer outro caso vale o fallback. |
 | **MUST** | Fallback nos casos: chave ausente, erro HTTP, timeout (padrão 4 s), resposta inválida, confiança abaixo do limiar, e zero especialistas acima do limiar quando a variante é multiagent. O script **nunca** retorna código de erro que bloqueie a fase. |
-| **MUST** | Candidatos pré-filtrados de forma determinística a partir de `.claude/skills/agent-router/routing.json`: agentes cujos `kb_domains` intersectam os domínios da spec, excluindo a categoria `workflow`. |
+| **MUST** | Candidatos pré-filtrados de forma determinística a partir de `.claude/skills/agent-router/routing.json`: agentes cujos `kb_domains` intersectam os domínios da spec, excluindo a categoria `workflow`, e sempre com `python-developer` e `react-developer` (v1.1). Domínios em texto livre são normalizados pelo script (v1.1). |
 | **MUST** | `/define` e `/design` chamam o script antes de gerar o documento e **seguem na variante decidida**, podendo subir para a `-multiagent`. `/define-m` e `/design-m` respeitam a variante explícita e usam o script só para os especialistas. |
 | **MUST** | DEFINE e DESIGN gerados contêm a seção "Seleção de Agentes" com fonte, variante, probabilidades, especialistas escolhidos (com probabilidade) e motivo do fallback. Os templates DEFINE e DESIGN ganham essa seção. |
 | **MUST** | Um conjunto rotulado de **20 specs reais** (ao menos 5 single e 5 multiagent) e um modo de avaliação (`--eval`) que roda JEV e fallback sobre o conjunto e imprime acurácia de variante e F1 de especialistas para cada um. |
 | **MUST** | `build-plugin.sh` empacota `jev_select.py` em `plugin/scripts/`; os comandos chamam `${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py`. |
 | **MUST** | Testes pytest com HTTP mockado (sem rede) cobrindo o caminho feliz, todos os motivos de fallback e a normalização de `confidence`. |
-| **SHOULD** | Normalizar resposta `Choice` sem `confidence` usando a probabilidade vencedora (mesma regra do jev-gateway). |
-| **SHOULD** | Variáveis de ambiente para ajuste sem editar código: `JEV_URL`, `JEV_MODEL`, `JEV_MIN_CONFIDENCE`, `JEV_FIT_THRESHOLD`, `JEV_TIMEOUT_MS`, `JEV_DISABLE=1`. |
+| **SHOULD** | Variáveis de ambiente para ajuste sem editar código: `JEV_URL`, `JEV_MODEL`, `JEV_SINGLE_THRESHOLD`, `JEV_UNCERTAIN_BAND`, `JEV_FIT_THRESHOLD`, `JEV_TIMEOUT_MS`, `JEV_DISABLE=1`. |
 | **COULD** | Pré-preencher o arquivo de rótulos com a sugestão da heurística, para acelerar a rotulagem manual. |
 
 ---
 
 ## Critérios de Sucesso
 
-- [ ] **Variante:** no conjunto de 20 specs rotuladas, o JEV atinge acurácia **≥ 85%** e pelo menos **10 pontos percentuais acima** da heurística.
+- [ ] **Variante:** num conjunto **holdout** (specs não usadas para ajustar a formulação — v1.1), o JEV atinge acurácia **≥ 85%** e pelo menos **10 pontos percentuais acima** da heurística.
 - [ ] **Especialistas:** no mesmo conjunto (casos multiagent), o F1 médio do JEV é **≥ F1 da heurística + 0.10**.
 - [ ] **Resiliência:** em 100% dos cenários de falha testados (sem chave, HTTP 4xx/5xx, timeout, JSON inválido, baixa confiança), o script sai com código 0 e `source: "fallback"`.
 - [ ] **Latência:** o script adiciona no máximo **5 s** à fase no pior caso (timeout de 4 s mais overhead).
@@ -70,8 +69,8 @@ A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas
 | AT-003 | Chave ausente | `OPENROUTER_API_KEY` não definida | `jev_select.py ...` | Exit 0, `source=fallback`, `fallback_reason=missing_key`; a variante segue a regra "≥ 3 domínios" |
 | AT-004 | Timeout | O endpoint não responde em 4 s | `jev_select.py ...` | Retorna em ≤ 5 s com `fallback_reason=timeout` |
 | AT-005 | Erro HTTP | O endpoint retorna 404 ou 500 | `jev_select.py ...` | Exit 0, `fallback_reason=http_<code>` |
-| AT-006 | Baixa confiança | `variant.confidence=0.55` | `jev_select.py ...` | `source=fallback`, `fallback_reason=low_confidence`; as probabilidades do JEV ficam registradas mesmo assim |
-| AT-007 | Choice sem `confidence` | A resposta traz só `probabilities` (`multiagent: 0.8`) | `jev_select.py ...` | `confidence` normalizada para 0.8; decisão pelo JEV |
+| AT-006 | Incerteza (v1.1) | `p(single)=0.55` | `jev_select.py ...` | `source=fallback`, `fallback_reason=uncertain`; as probabilidades do JEV ficam registradas mesmo assim |
+| AT-007 | Domínios em texto livre (v1.1) | `kb_domains=["`tailwind`", "a11y", "sql/postgres", "golang"]` | `jev_select.py ...` | `kb_domains=[tailwind-css, accessibility, sql-patterns]`, `kb_domains_dropped=[golang]` |
 | AT-008 | Nenhum especialista acima do limiar | `variant=multiagent` confiante; todos os Nouls < limiar | `jev_select.py ...` | Especialistas pelo fallback (top-4 por overlap), `fallback_reason=no_fit_above_threshold` só para especialistas |
 | AT-009 | `-m` explícito | JEV devolve `variant=single` | `/define-m BRAINSTORM_X.md` | A variante multiagent é respeitada; os especialistas vêm do JEV |
 | AT-010 | Máximo de 4 | 6 candidatos com Noul ≥ limiar | `jev_select.py ...` | Retorna exatamente os 4 de maior probabilidade |
@@ -167,6 +166,7 @@ Nenhuma bloqueia o Design. Para resolver durante o Design ou no início do Build
 | Versão | Data | Autor | Mudanças |
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | define-agent | Versão inicial a partir de BRAINSTORM_JEV_AGENT_SELECTION.md |
+| 1.1 | 2026-09-24 | iterate-agent | Cascata do DESIGN v1.1: variante por Noul `single_area` e portão por `p(single)` com faixa de incerteza; implementadores sempre candidatos; normalização de domínios; critério de variante medido em holdout; AT-006/AT-007 revistos; SHOULD de normalização de `confidence` removido |
 
 ---
 
