@@ -62,3 +62,16 @@ def test_command_without_frontmatter_gets_fallback_description(gen):
     command = gen.COMMANDS_DIR / "visual-explainer" / "share.md"
     rendered = gen.build_command_skill({}, command.read_text(encoding="utf-8"), command)
     assert 'description: "Run the AgentSpec share command"' in rendered
+
+
+def test_workflow_agent_effort_comes_from_phase_manifest(gen):
+    fm = {"name": "build-agent", "description": "Orchestrator", "model": "inherit", "tools": ["Read", "Write"]}
+    toml = gen.build_agent_toml(fm, "body", "workflow")
+    assert 'model_reasoning_effort = "high"' in toml
+
+
+def test_non_workflow_agent_effort_still_maps_from_model(gen):
+    fm = {"name": "dbt-specialist", "description": "dbt", "model": "sonnet", "tools": ["Read"]}
+    toml = gen.build_agent_toml(fm, "body", "data-engineering")
+    assert 'model_reasoning_effort = "medium"' in toml
+    assert 'sandbox_mode = "read-only"' in toml

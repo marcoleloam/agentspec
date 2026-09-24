@@ -406,6 +406,6 @@ BRANCH
 ## Related
 
 - Review Command: `${CLAUDE_PLUGIN_ROOT}/commands/review/review.md`
-- Code Reviewer Agent: `${CLAUDE_PLUGIN_ROOT}/agents/python/code-reviewer.md`
+- Code Reviewer Agent: `${CLAUDE_PLUGIN_ROOT}/agents/code-reviewer.md`
 - Workflow: `${CLAUDE_PLUGIN_ROOT}/sdd/_index.md`
-- Agents: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/`
+- Agents: `${CLAUDE_PLUGIN_ROOT}/agents/`

@@ -13,7 +13,7 @@ description: |
   assistant: "Let me invoke the brainstorm-agent to explore both approaches with trade-offs."
 
 tier: T2
-model: sonnet
+model: opus
 tools: [Read, Write, Edit, Grep, Glob, Bash, TodoWrite, AskUserQuestion]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
@@ -196,6 +196,11 @@ When brainstorm complete:
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, questions, answers, approach descriptions, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

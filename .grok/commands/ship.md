@@ -52,6 +52,26 @@ The `/ship` command archives all feature artifacts and captures lessons learned.
 
 ---
 
+## Phase Routing (delegated)
+
+<!-- phase-routing: mode=delegated agent=ship-agent -->
+
+Steps 1–8 run in the **`ship-agent` subagent**, so they use the model routed to the
+ship phase (OMP: `task.agentModelOverrides` → `@smol`; Claude Code: `model: haiku`).
+
+1. Run **Step 0 (Eval Gate) here in the main session first.** Stop if it does not
+   return OK.
+2. Then delegate Steps 1–8 exactly once — Claude Code: spawn_subagent tool,
+   `subagent_type: ship-agent` (plugin name `agentspec:ship-agent`); OMP: `task` tool,
+   agent `ship-agent`.
+3. Pass: the FEATURE name, the DEFINE path, and this instruction: "Fill the
+   **Gerado por** metadata row of SHIPPED with your harness, the routed role, and your
+   model id (or `desconhecido`)."
+4. If the subagent is unavailable, say so, run Steps 1–8 inline as a fallback, and
+   record the session model in **Gerado por**.
+
+---
+
 ## Process
 
 ### Step 0: Eval Gate (blocking)

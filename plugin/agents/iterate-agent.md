@@ -13,7 +13,7 @@ description: |
   assistant: "Let me invoke the iterate-agent to update DESIGN and check cascades."
 
 tier: T2
-model: sonnet
+model: opus
 tools: [Read, Write, Edit, Bash, Grep, Glob, TodoWrite, AskUserQuestion]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
@@ -252,6 +252,11 @@ When cascade is needed, ask user:
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, change descriptions, impact assessments, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`${CLAUDE_PLUGIN_ROOT}/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

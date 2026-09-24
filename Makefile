@@ -16,7 +16,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps venv spec-lint spec-judge spec-venvs
+.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps venv spec-lint spec-judge spec-venvs omp-roles phase-routing-apply
 
 # Project interpreter: the .venv created by `make venv` when present, else python3.
 # Override per call: make test PYTHON=python3.12
@@ -46,6 +46,7 @@ test: ## Run the pytest suite (uses .venv when present — see make venv)
 
 check: ## Drift check — tests + generators in --check mode (fails on drift)
 	@$(PYTHON) -m pytest tests/ -q
+	@$(PYTHON) scripts/phase_routing.py --check
 	@$(PYTHON) scripts/generate-agent-router.py --check
 	@$(PYTHON) scripts/generate-codex-plugin.py --check
 	@$(PYTHON) scripts/generate-dsh-bundle.py --check
@@ -53,6 +54,12 @@ check: ## Drift check — tests + generators in --check mode (fails on drift)
 
 generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
 	@$(PYTHON) scripts/generate-agent-router.py
+
+omp-roles: ## Print task.agentModelOverrides for ~/.omp/agent/config.yml (stdout only)
+	@$(PYTHON) scripts/phase_routing.py --print-omp-overrides
+
+phase-routing-apply: ## Sync workflow agent frontmatter + command markers from PHASE_MODEL_ROLES.toml
+	@$(PYTHON) scripts/phase_routing.py --apply
 
 codex: ## Regenerate Codex CLI agents and command skills from .claude/
 	@$(PYTHON) scripts/generate-codex-plugin.py

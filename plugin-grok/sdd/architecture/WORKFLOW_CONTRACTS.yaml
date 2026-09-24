@@ -11,6 +11,8 @@ description: "5-phase spec-driven development workflow with agent orchestration 
 # WORKFLOW OVERVIEW
 # =============================================================================
 
+# Model routing per phase/agent lives in PHASE_MODEL_ROLES.toml (single source of
+# truth, synced and checked by scripts/phase_routing.py). Do not add `model:` here.
 workflow:
   phases:
     - name: "Brainstorm"
@@ -20,7 +22,6 @@ workflow:
       purpose: "Collaborative exploration to clarify intent and approach"
       input: "Raw idea, request, or problem statement"
       output: "BRAINSTORM_{FEATURE}.md"
-      model: "opus"
       optional: true
 
     - name: "Define"
@@ -30,8 +31,6 @@ workflow:
       purpose: "Capture and validate requirements"
       input: "Raw notes, emails, conversations, BRAINSTORM document, or direct requirements"
       output: "DEFINE_{FEATURE}.md"
-      model: "opus"
-
     - name: "Design"
       number: 2
       command: "/design"
@@ -39,8 +38,6 @@ workflow:
       purpose: "Create architecture and technical specification"
       input: "DEFINE_{FEATURE}.md"
       output: "DESIGN_{FEATURE}.md"
-      model: "opus"
-
     - name: "Build"
       number: 3
       command: "/build"
@@ -48,8 +45,6 @@ workflow:
       purpose: "Execute implementation with verification"
       input: "DESIGN_{FEATURE}.md"
       output: "Code files + BUILD_REPORT_{FEATURE}.md"
-      model: "sonnet"
-
     - name: "Eval"
       number: 3.5
       command: "/eval"
@@ -57,8 +52,6 @@ workflow:
       purpose: "Independent acceptance: re-run the frozen eval contract and write the receipt /ship requires"
       input: "DEFINE_{FEATURE}.md + DESIGN_{FEATURE}.md (## Evals) + current code"
       output: "EVAL_{FEATURE}.json + EVAL_REPORT_{FEATURE}.md"
-      model: "sonnet"
-
     - name: "Ship"
       number: 4
       command: "/ship"
@@ -66,8 +59,6 @@ workflow:
       purpose: "Archive feature with lessons learned"
       input: "All feature artifacts"
       output: "archive/{FEATURE}/SHIPPED_{DATE}.md"
-      model: "haiku"
-
   cross_phase:
     - name: "Iterate"
       command: "/iterate"
@@ -75,8 +66,6 @@ workflow:
       purpose: "Update any phase document when changes needed"
       works_with: ["Brainstorm", "Define", "Design"]
       phase_3_note: "To change code during Build, update DESIGN then run /build"
-      model: "sonnet"
-
     - name: "Work"
       command: "/work"
       purpose: "Anchor the session to an active feature so improvement requests don't need re-specifying"
@@ -85,8 +74,6 @@ workflow:
       routes_to:
         code_change: "/continuar behavior on the active feature"
         document_change: "/iterate behavior on DEFINE/DESIGN"
-      model: "sonnet"
-
 # =============================================================================
 # AGENT RESOLUTION (Local-First Precedence)
 # =============================================================================
@@ -149,7 +136,6 @@ brainstorm:
   agent:
     name: "brainstorm-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/brainstorm-agent.md"
-    model: "opus"
     tools:
       - Read
       - Write
@@ -272,7 +258,6 @@ define:
   agent:
     name: "define-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/define-agent.md"
-    model: "opus"
     tools:
       - Read
       - Write
@@ -388,7 +373,6 @@ design:
   agent:
     name: "design-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/design-agent.md"
-    model: "opus"
     tools:
       - Read
       - Write
@@ -474,7 +458,6 @@ build:
   agent:
     name: "build-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/build-agent.md"
-    model: "sonnet"
     tools:
       - Read
       - Write
@@ -592,7 +575,6 @@ eval:
   agent:
     name: "eval-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/eval-agent.md"
-    model: "sonnet"
     tools:
       - Read
       - Write   # only EVALS_EXTRA_{FEATURE}.toml
@@ -670,7 +652,6 @@ ship:
   agent:
     name: "ship-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/ship-agent.md"
-    model: "haiku"
     tools:
       - Read
       - Write
@@ -732,7 +713,6 @@ iterate:
   agent:
     name: "iterate-agent"
     file: "${GROK_PLUGIN_ROOT}/agents/iterate-agent.md"
-    model: "sonnet"
     tools:
       - Read
       - Write

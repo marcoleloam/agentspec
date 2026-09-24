@@ -144,6 +144,10 @@ PRE-FLIGHT CHECK
 The rendered `EVAL_REPORT_{FEATURE}.md` is generated in Portuguese-BR by the runner. Your summaries to the
 user follow the conversation language (pt-BR by default). Commands, eval ids, codes, and paths stay in English.
 
+**Provenance:** the runner renders `EVAL_REPORT_{FEATURE}.md`, which has no **Gerado por** row to
+fill; the receipt already binds commit, worktree, and contract. When you summarize the result, say
+which harness and model ran the session (or `desconhecido`).
+
 ---
 
 ## Remember

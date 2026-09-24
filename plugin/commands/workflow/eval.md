@@ -5,6 +5,11 @@ description: Independent post-build acceptance gate — re-run the DESIGN's eval
 
 # Eval Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it asks owners for attestations).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Re-execute the frozen eval contract against the current code, route pending decisions to a human,
 > and write the receipt that `/ship` requires (Phase 3.5).
 
@@ -49,7 +54,7 @@ cannot disagree with it.
 
 ## Process
 
-Delegate to the **eval-agent** (`${CLAUDE_PLUGIN_ROOT}/agents/workflow/eval-agent.md`). The agent:
+Delegate to the **eval-agent** (`${CLAUDE_PLUGIN_ROOT}/agents/eval-agent.md`). The agent:
 
 ### Step 1: Load Context
 
@@ -136,7 +141,7 @@ JEV decides a graded eval only after `eval_runner.py calibrate` approved it for 
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/eval-agent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/eval-agent.md`
 - Runner: `scripts/eval_runner.py`, JEV client: `scripts/jev_client.py`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/EVAL_REPORT_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`

@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **LLM phase routing:** `.claude/sdd/architecture/PHASE_MODEL_ROLES.toml` is the single
+  source of truth for which model role serves each SDD phase — an OMP `modelRoles` name,
+  a Claude Code alias, and a Codex effort per workflow agent, plus `session`/`delegated`
+  mode per workflow command. No concrete model ID lives in the repo.
+- `scripts/phase_routing.py` (`--check`, `--apply`, `--print-omp-overrides`), wired into
+  `make check`, plus `make omp-roles` (prints `task.agentModelOverrides` for
+  `~/.omp/agent/config.yml`, stdout only) and `make phase-routing-apply`.
+- `/design` and `/ship` now delegate their phase to `design-agent` / `ship-agent`, so the
+  routed model applies automatically (OMP via `agentModelOverrides`, Claude Code via the
+  agent's `model:`). `/ship` keeps its Step 0 eval gate in the main session. Session
+  phases carry a routing marker recommending the role to start with.
+- **Gerado por** provenance row (harness · role · model) in the BRAINSTORM, DEFINE,
+  DESIGN, BUILD_REPORT, and SHIPPED templates; workflow agents fill it.
+- `docs/concepts/phase-model-routing.md`, `tests/test_phase_routing.py`.
 - **Project Python environment:** `make venv` creates a gitignored `.venv/` (first Python ≥ 3.11
   found) from the new `requirements-dev.txt`; `make test`/`check`/generators use it automatically
   (`PYTHON` override available). `make install-deps` now builds the venv instead of
@@ -48,6 +62,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Breaking (plugin agent names):** `build-plugin.sh` flattens `plugin/agents/` to
+  `agents/*.md` because OMP only discovers flat agent files. Claude Code plugin agent
+  names drop the category (`agentspec:workflow:design-agent` → `agentspec:design-agent`);
+  `README.md`/`_template.md` are no longer shipped as pseudo-agents. The
+  `.claude/agents/<category>/` source layout is unchanged.
+- Workflow agent models follow the manifest: `brainstorm-agent`, `define-agent`, and
+  `iterate-agent` → `opus`; `build-agent` → `inherit`; `ship-agent` → `haiku`.
+- `WORKFLOW_CONTRACTS.yaml` no longer carries per-phase `model:` lines (they disagreed
+  with the agents on 4 of 6 phases); it points to the manifest instead.
+- `generate-codex-plugin.py` takes workflow-agent `model_reasoning_effort` from the
+  manifest.
 - `build-agent` runs `eval_runner.py pre` before the first build task: a bash error in
   a `deterministic` eval blocks the build, and an eval that already passes only warns.
   Its Acceptance Test table in the BUILD_REPORT is now a self-check, not a substitute

@@ -5,7 +5,7 @@
     {
       "name": "a11y-specialist",
       "category": "frontend",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/a11y-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/a11y-specialist.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Accessibility specialist for WCAG compliance, aria attributes, keyboard navigation, and screen reader support.",
@@ -22,7 +22,7 @@
     {
       "name": "ai-data-engineer",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/ai-data-engineer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ai-data-engineer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "AI data engineering specialist for RAG pipelines, vector databases, feature stores, and LLMOps.",
@@ -41,7 +41,7 @@
     {
       "name": "ai-data-engineer-cloud",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/ai-data-engineer-cloud.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ai-data-engineer-cloud.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Expert Data Engineer for cloud architectures and AI pipelines. Uses KB + MCP validation for best practices.",
@@ -61,7 +61,7 @@
     {
       "name": "ai-data-engineer-gcp",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/ai-data-engineer-gcp.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ai-data-engineer-gcp.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Elite GCP Data Engineering architect for serverless architectures, AI/ML pipelines, and document processing.",
@@ -79,7 +79,7 @@
     {
       "name": "ai-prompt-specialist",
       "category": "python",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python/ai-prompt-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ai-prompt-specialist.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Prompt engineering specialist for LLMs \u2014 extraction, structured output, chain-of-thought, few-shot.",
@@ -93,7 +93,7 @@
     {
       "name": "ai-prompt-specialist-gcp",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/ai-prompt-specialist-gcp.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ai-prompt-specialist-gcp.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Elite Prompt Engineering architect for Google Gemini, Vertex AI, and multi-modal document extraction systems. Masters structured extraction, OCR optimization, and production prompt pipelines. Uses KB + MCP validation.",
@@ -111,7 +111,7 @@
     {
       "name": "aide-slide-builder",
       "category": "domain",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-builder.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aide-slide-builder.md",
       "tier": "T1",
       "model": "opus",
       "description": "Builds complete HTML slide decks for the Formacao AI Data Engineer using the AIDE design system.",
@@ -121,7 +121,7 @@
     {
       "name": "aide-slide-fixer",
       "category": "domain",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-fixer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aide-slide-fixer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Surgical correction agent for AIDE slide decks. Reads review reports from aide-slide-reviewer",
@@ -131,7 +131,7 @@
     {
       "name": "aide-slide-planner",
       "category": "domain",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-planner.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aide-slide-planner.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Content architecture agent for AIDE slide decks. Decomposes lesson content into a structured",
@@ -141,7 +141,7 @@
     {
       "name": "aide-slide-reviewer",
       "category": "domain",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-reviewer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aide-slide-reviewer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Independent quality reviewer for AIDE slide decks. READ-ONLY \u2014 validates HTML presentations",
@@ -151,7 +151,7 @@
     {
       "name": "airflow-specialist",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/airflow-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/airflow-specialist.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Apache Airflow 3.0 SME for DAG development, asset-aware scheduling, and event-driven pipelines.",
@@ -169,7 +169,7 @@
     {
       "name": "aws-data-architect",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/aws-data-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aws-data-architect.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "AWS data architecture specialist for Lambda, S3, Glue, Redshift, MWAA, and serverless data pipelines.",
@@ -183,7 +183,7 @@
     {
       "name": "aws-deployer",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/aws-deployer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aws-deployer.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Executes AWS CLI and SAM CLI deployment commands with validation. Uses KB + MCP validation for safe deployments.",
@@ -200,7 +200,7 @@
     {
       "name": "aws-lambda-architect",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/aws-lambda-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/aws-lambda-architect.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Creates SAM templates with embedded least-privilege IAM policies. Uses KB + MCP validation for secure Lambda deployments.",
@@ -217,9 +217,9 @@
     {
       "name": "brainstorm-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/brainstorm-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/brainstorm-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Collaborative exploration specialist for clarifying intent and approach (Phase 0).",
       "kb_domains": [],
       "escalates_to": [
@@ -229,7 +229,7 @@
     {
       "name": "brainstorm-multiagent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/brainstorm-multiagent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/brainstorm-multiagent.md",
       "tier": "T2",
       "model": "opus",
       "description": "Multi-agent brainstorm orchestrator for complex cross-domain ideas (Phase 0 experimental).",
@@ -242,9 +242,9 @@
     {
       "name": "build-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/build-agent.md",
       "tier": "T2",
-      "model": "opus",
+      "model": "inherit",
       "description": "Implementation executor with agent delegation (Phase 3).",
       "kb_domains": [],
       "escalates_to": [
@@ -254,7 +254,7 @@
     {
       "name": "ci-cd-specialist",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/ci-cd-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ci-cd-specialist.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "DevOps expert for Azure DevOps, Terraform, and Databricks Asset Bundles. Builds CI/CD pipelines for Lambda and Lakeflow deployment with multi-environment promotion. Uses KB + MCP validation for production-ready automation.",
@@ -272,7 +272,7 @@
     {
       "name": "code-cleaner",
       "category": "python",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python/code-cleaner.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/code-cleaner.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Python code cleaning specialist for removing noise and applying modern patterns.",
@@ -284,7 +284,7 @@
     {
       "name": "code-documenter",
       "category": "python",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python/code-documenter.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/code-documenter.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Documentation specialist for creating comprehensive, production-ready documentation.",
@@ -296,7 +296,7 @@
     {
       "name": "code-reviewer",
       "category": "python",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python/code-reviewer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/code-reviewer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Expert code review specialist ensuring quality, security, and maintainability.",
@@ -310,7 +310,7 @@
     {
       "name": "codebase-explorer",
       "category": "dev",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dev/codebase-explorer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/codebase-explorer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Elite codebase analyst delivering Executive Summaries + Deep Dives.",
@@ -323,7 +323,7 @@
     {
       "name": "css-specialist",
       "category": "frontend",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/css-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/css-specialist.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Tailwind CSS and design system specialist for responsive design, animations, dark mode, and visual consistency.",
@@ -341,7 +341,7 @@
     {
       "name": "data-contracts-engineer",
       "category": "test",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/test/data-contracts-engineer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-contracts-engineer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Data contract specialist for ODCS, SLA enforcement, schema governance, and producer-consumer agreements.",
@@ -358,7 +358,7 @@
     {
       "name": "data-platform-engineer",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/data-platform-engineer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-platform-engineer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Cloud data platform specialist for Snowflake, Databricks, BigQuery, and infrastructure decisions.",
@@ -376,7 +376,7 @@
     {
       "name": "data-quality-analyst",
       "category": "test",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/test/data-quality-analyst.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-quality-analyst.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Data quality specialist for Great Expectations, Soda, dbt tests, data contracts, and observability.",
@@ -394,7 +394,7 @@
     {
       "name": "dbt-specialist",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/dbt-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dbt-specialist.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "dbt Core and dbt Cloud specialist for model development, testing, macros, and project management.",
@@ -413,9 +413,9 @@
     {
       "name": "define-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/define-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Requirements extraction and validation specialist (Phase 1).",
       "kb_domains": [],
       "escalates_to": [
@@ -425,7 +425,7 @@
     {
       "name": "define-multiagent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-multiagent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/define-multiagent.md",
       "tier": "T2",
       "model": "opus",
       "description": "Multi-agent requirements analyst for complex cross-domain systems (Phase 1 enhanced).",
@@ -438,7 +438,7 @@
     {
       "name": "design-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/design-agent.md",
       "tier": "T2",
       "model": "opus",
       "description": "Architecture and technical specification specialist (Phase 2).",
@@ -450,7 +450,7 @@
     {
       "name": "design-multiagent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-multiagent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/design-multiagent.md",
       "tier": "T2",
       "model": "opus",
       "description": "Multi-agent architecture designer for complex cross-domain systems (Phase 2 enhanced).",
@@ -463,7 +463,7 @@
     {
       "name": "eval-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/eval-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/eval-agent.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Independent post-build acceptance specialist (Phase 3.5).",
@@ -478,7 +478,7 @@
     {
       "name": "fabric-ai-specialist",
       "category": "platform",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/platform/fabric-ai-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/fabric-ai-specialist.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Expert in Microsoft Fabric AI capabilities - Copilot, ML models, AI Skills, and Azure OpenAI integration.",
@@ -493,7 +493,7 @@
     {
       "name": "fabric-architect",
       "category": "platform",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/platform/fabric-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/fabric-architect.md",
       "tier": "T3",
       "model": "opus",
       "description": "Strategic Fabric solution architect for end-to-end architectures using KB + MCP validation.",
@@ -508,7 +508,7 @@
     {
       "name": "fabric-cicd-specialist",
       "category": "platform",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/platform/fabric-cicd-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/fabric-cicd-specialist.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Expert in Microsoft Fabric CI/CD, Git integration, and deployment pipelines.",
@@ -523,7 +523,7 @@
     {
       "name": "fabric-logging-specialist",
       "category": "platform",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/platform/fabric-logging-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/fabric-logging-specialist.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Expert in Microsoft Fabric logging, monitoring, KQL queries, and observability.",
@@ -538,7 +538,7 @@
     {
       "name": "fabric-pipeline-developer",
       "category": "platform",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/platform/fabric-pipeline-developer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/fabric-pipeline-developer.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Expert in Fabric Data Factory pipelines, orchestration, and ETL workflows.",
@@ -553,7 +553,7 @@
     {
       "name": "fabric-security-specialist",
       "category": "platform",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/platform/fabric-security-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/fabric-security-specialist.md",
       "tier": "T3",
       "model": "opus",
       "description": "Expert in Microsoft Fabric security, governance, and compliance.",
@@ -568,7 +568,7 @@
     {
       "name": "frontend-architect",
       "category": "frontend",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/frontend-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend-architect.md",
       "tier": "T2",
       "model": "opus",
       "description": "Frontend system architect for Next.js application design, performance optimization, and deployment strategy.",
@@ -587,7 +587,7 @@
     {
       "name": "gcp-data-architect",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/gcp-data-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/gcp-data-architect.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Google Cloud data architecture specialist for BigQuery, Cloud Run, Pub/Sub, GCS, Dataflow, and Vertex AI.",
@@ -602,7 +602,7 @@
     {
       "name": "genai-architect",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/genai-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/genai-architect.md",
       "tier": "T1",
       "model": "opus",
       "description": "GenAI Systems Architect for multi-agent orchestration, agentic workflows, and production AI systems.",
@@ -616,9 +616,9 @@
     {
       "name": "iterate-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/iterate-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/iterate-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Cross-phase document updater with cascade awareness (All Phases).",
       "kb_domains": [],
       "escalates_to": [
@@ -630,7 +630,7 @@
     {
       "name": "kb-architect",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/kb-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/kb-architect.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Knowledge base architect for creating validated, structured KB domains.",
@@ -643,7 +643,7 @@
     {
       "name": "kb-evolution-agent",
       "category": "dev",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dev/kb-evolution-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/kb-evolution-agent.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "KB evolution specialist for ingesting updates from Context7 MCP and",
@@ -658,7 +658,7 @@
     {
       "name": "lakeflow-architect",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/lakeflow-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/lakeflow-architect.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Databricks Lakeflow expert for building Medallion architecture pipelines. Creates Bronze/Silver/Gold layers with DLT. Uses KB + MCP validation.",
@@ -677,7 +677,7 @@
     {
       "name": "lakeflow-expert",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/lakeflow-expert.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/lakeflow-expert.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Databricks Lakeflow (DLT) SME for pipeline development, CDC, data quality, and production deployment. Uses KB + MCP validation.",
@@ -696,7 +696,7 @@
     {
       "name": "lakeflow-pipeline-builder",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/lakeflow-pipeline-builder.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/lakeflow-pipeline-builder.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Builds Databricks Lakeflow (DLT) pipelines for Medallion Architecture. Uses KB + MCP validation for production-ready pipelines.",
@@ -715,7 +715,7 @@
     {
       "name": "lakeflow-specialist",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/lakeflow-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/lakeflow-specialist.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Databricks Lakeflow (DLT) specialist for declarative pipelines, materialized views, streaming tables, and expectations.",
@@ -730,7 +730,7 @@
     {
       "name": "lakehouse-architect",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/lakehouse-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/lakehouse-architect.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Open table format and catalog specialist for Iceberg, Delta Lake, and lakehouse governance.",
@@ -748,7 +748,7 @@
     {
       "name": "lambda-builder",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/lambda-builder.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/lambda-builder.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "AWS Lambda expert for Python serverless file processing. Builds S3-triggered Lambda functions with proper error handling, structured logging, and Parquet output. Uses KB + MCP validation for production-ready code.",
@@ -766,7 +766,7 @@
     {
       "name": "llm-specialist",
       "category": "python",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python/llm-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/llm-specialist.md",
       "tier": "T3",
       "model": "opus",
       "description": "Prompt engineering specialist and LLM expert. Masters structured prompting, chain-of-thought reasoning, and AI-powered extraction. Uses KB + MCP validation for optimized, production-ready prompts.",
@@ -780,7 +780,7 @@
     {
       "name": "medallion-architect",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/medallion-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/medallion-architect.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Medallion Architecture specialist for Bronze/Silver/Gold layer design and data quality progression.",
@@ -795,7 +795,7 @@
     {
       "name": "meeting-analyst",
       "category": "dev",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dev/meeting-analyst.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/meeting-analyst.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Master communication analyst that transforms meetings into structured, actionable documentation.",
@@ -808,7 +808,7 @@
     {
       "name": "n8n-specialist",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/n8n-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/n8n-specialist.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "n8n workflow automation specialist for workflow design, node configuration, API integrations,",
@@ -827,7 +827,7 @@
     {
       "name": "pipeline-architect",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/pipeline-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/pipeline-architect.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Orchestration specialist for Airflow, Dagster, and pipeline design patterns.",
@@ -845,7 +845,7 @@
     {
       "name": "prompt-crafter",
       "category": "dev",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dev/prompt-crafter.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/prompt-crafter.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "PROMPT.md builder with SDD-lite phases and Agent Matching Engine.",
@@ -857,7 +857,7 @@
     {
       "name": "python-developer",
       "category": "python",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python/python-developer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/python-developer.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Python code architect for data engineering systems \u2014 clean patterns, dataclasses, type hints, generators.",
@@ -871,7 +871,7 @@
     {
       "name": "qdrant-specialist",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/qdrant-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/qdrant-specialist.md",
       "tier": "T3",
       "model": "opus",
       "description": "Elite Qdrant vector database specialist for collection management, point operations, payload filtering, search optimization, and RAG pipeline integration.",
@@ -888,7 +888,7 @@
     {
       "name": "react-developer",
       "category": "frontend",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/react-developer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/react-developer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "React and Next.js component specialist for hooks, Server Components, state management, and rendering patterns.",
@@ -907,7 +907,7 @@
     {
       "name": "schema-designer",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/schema-designer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/schema-designer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Data modeling specialist for dimensional modeling, Data Vault, SCD types, and schema evolution.",
@@ -926,7 +926,7 @@
     {
       "name": "shell-script-specialist",
       "category": "dev",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/dev/shell-script-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/shell-script-specialist.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Elite shell scripting specialist for building production-grade Bash scripts with best practices, error handling, and cross-platform compatibility.",
@@ -939,9 +939,9 @@
     {
       "name": "ship-agent",
       "category": "workflow",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/workflow/ship-agent.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ship-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "haiku",
       "description": "Feature archival and lessons learned specialist (Phase 4).",
       "kb_domains": [],
       "escalates_to": [
@@ -952,7 +952,7 @@
     {
       "name": "shopagent-builder",
       "category": "domain",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/domain/shopagent-builder.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/shopagent-builder.md",
       "tier": "T1",
       "model": "opus",
       "description": "ShopAgent domain specialist for e-commerce multi-agent systems. Builds ShopAgent components by day:",
@@ -962,7 +962,7 @@
     {
       "name": "spark-engineer",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/spark-engineer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/spark-engineer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "PySpark and Spark SQL specialist for distributed data processing at scale.",
@@ -980,7 +980,7 @@
     {
       "name": "spark-performance-analyzer",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/spark-performance-analyzer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/spark-performance-analyzer.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Spark performance optimization specialist for tuning memory, partitioning, joins, and I/O.",
@@ -994,7 +994,7 @@
     {
       "name": "spark-specialist",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/spark-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/spark-specialist.md",
       "tier": "T2",
       "model": "opus",
       "description": "Apache Spark SME for performance optimization, architecture design, and troubleshooting.",
@@ -1012,7 +1012,7 @@
     {
       "name": "spark-streaming-architect",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/spark-streaming-architect.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/spark-streaming-architect.md",
       "tier": "T3",
       "model": "sonnet",
       "description": "Spark Structured Streaming expert for real-time pipelines, Kafka integration, and stream processing. Uses KB + MCP validation.",
@@ -1030,7 +1030,7 @@
     {
       "name": "spark-troubleshooter",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/spark-troubleshooter.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/spark-troubleshooter.md",
       "tier": "T1",
       "model": "sonnet",
       "description": "Spark debugging specialist for diagnosing OOM errors, data skew, shuffle failures, and job hangs.",
@@ -1043,7 +1043,7 @@
     {
       "name": "sql-optimizer",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/sql-optimizer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/sql-optimizer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Cross-dialect SQL optimization specialist for query plans, window functions, and performance tuning.",
@@ -1061,7 +1061,7 @@
     {
       "name": "streaming-engineer",
       "category": "data-engineering",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/streaming-engineer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/streaming-engineer.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Stream processing specialist for Flink, Kafka, Spark Streaming, RisingWave, and CDC pipelines.",
@@ -1080,7 +1080,7 @@
     {
       "name": "supabase-specialist",
       "category": "cloud",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/cloud/supabase-specialist.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/supabase-specialist.md",
       "tier": "T3",
       "model": "opus",
       "description": "Elite Supabase specialist for pgvector, RLS, Edge Functions, Auth, Realtime, and database design.",
@@ -1097,7 +1097,7 @@
     {
       "name": "test-generator",
       "category": "test",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/test/test-generator.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/test-generator.md",
       "tier": "T2",
       "model": "sonnet",
       "description": "Test automation expert for Python. Generates pytest unit tests, integration tests, and fixtures.",
@@ -1115,7 +1115,7 @@
     {
       "name": "the-planner",
       "category": "architect",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/architect/the-planner.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/the-planner.md",
       "tier": "T2",
       "model": "opus",
       "description": "Strategic AI architect that creates comprehensive implementation plans.",
@@ -1127,7 +1127,7 @@
     {
       "name": "ux-designer",
       "category": "frontend",
-      "path": "${CLAUDE_PLUGIN_ROOT}/agents/frontend/ux-designer.md",
+      "path": "${CLAUDE_PLUGIN_ROOT}/agents/ux-designer.md",
       "tier": "T2",
       "model": "opus",
       "description": "User experience specialist for user flows, information architecture, wireframes, and usability patterns.",

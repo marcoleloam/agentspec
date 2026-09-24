@@ -13,7 +13,7 @@ description: |
   assistant: "Let me invoke the build-agent to build from the design."
 
 tier: T2
-model: opus
+model: inherit
 tools: [Read, Write, Edit, Grep, Glob, Bash, TodoWrite, Task]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
@@ -368,6 +368,11 @@ Next: `/eval {FEATURE}` (independent acceptance), then `/ship`.
 
 Technical terms, file paths, commands, code, and tool names remain in English.
 Section headings, descriptions, notes, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`${CLAUDE_PLUGIN_ROOT}/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

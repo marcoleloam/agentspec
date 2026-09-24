@@ -219,7 +219,7 @@
       "category": "workflow",
       "path": ".claude/agents/workflow/brainstorm-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Collaborative exploration specialist for clarifying intent and approach (Phase 0).",
       "kb_domains": [],
       "escalates_to": [
@@ -244,7 +244,7 @@
       "category": "workflow",
       "path": ".claude/agents/workflow/build-agent.md",
       "tier": "T2",
-      "model": "opus",
+      "model": "inherit",
       "description": "Implementation executor with agent delegation (Phase 3).",
       "kb_domains": [],
       "escalates_to": [
@@ -415,7 +415,7 @@
       "category": "workflow",
       "path": ".claude/agents/workflow/define-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Requirements extraction and validation specialist (Phase 1).",
       "kb_domains": [],
       "escalates_to": [
@@ -618,7 +618,7 @@
       "category": "workflow",
       "path": ".claude/agents/workflow/iterate-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Cross-phase document updater with cascade awareness (All Phases).",
       "kb_domains": [],
       "escalates_to": [
@@ -941,7 +941,7 @@
       "category": "workflow",
       "path": ".claude/agents/workflow/ship-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "haiku",
       "description": "Feature archival and lessons learned specialist (Phase 4).",
       "kb_domains": [],
       "escalates_to": [

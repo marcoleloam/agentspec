@@ -12,6 +12,7 @@
 | **DEFINE** | [DEFINE_{FEATURE}.md](./DEFINE_{FEATURE}.md) |
 | **Status** | Rascunho / Pronto para Build |
 | **Evals Digest** | _gerado por `eval_runner.py freeze`_ |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 
