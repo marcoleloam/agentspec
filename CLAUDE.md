@@ -302,8 +302,8 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Version
 
-- **Version:** 3.4.1
-- **Status:** Release — Upstream wave 1: spec-linter and spec-judge engines, the component model, and 9 authoring/GitHub skills. 73 agents, 39 KB domains, 10 distributed skills, 42 commands.
+- **Version:** 3.5.0
+- **Status:** Release — LLM phase routing (`PHASE_MODEL_ROLES.toml`, `/design` and `/ship` delegate to their phase agent, **Gerado por** provenance), post-build `/eval` gate (phase 3.5), Grok Build plugin and DeepSeek Harness bundle. 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
 - **Upstream Base:** luanmorenommaciel/agentspec @ d577ec5 (2026-07-15)
 - **Last Sync:** 2026-07-27 (wave 1 — additive only; thin-executor refactor deferred)
-- **Last Updated:** 2026-07-28
+- **Last Updated:** 2026-09-24
