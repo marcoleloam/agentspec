@@ -1,11 +1,11 @@
 {
   "schema": "agentspec/eval-receipt/v1",
   "feature": "LLM_PHASE_ROUTING",
-  "commit": "9de8ce4722dee440ea2c904b361a5cf84105fa18",
-  "worktree_digest": "sha256:79bb4000edefe0afe685fd047e1cb61b35169404828286232070979291c88921",
+  "commit": "2522695415aedeca080f434f8c7b9bb094dc884d",
+  "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "contract_digest": "sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a",
   "extras_digest": null,
-  "evaluated_at": "2026-09-24T21:28:13Z",
+  "evaluated_at": "2026-09-24T22:11:57Z",
   "runner_version": "1.0.0",
   "jev": {
     "model": "typesafe/jev-1.13",
@@ -22,9 +22,9 @@
       "description": "phase_routing.check() reports file, field and expected value when an agent frontmatter model diverges from the manifest",
       "status": "pass",
       "exit_code": 0,
-      "duration_sec": 0.313,
+      "duration_sec": 0.487,
       "evidence": {
-        "stdout": ".                                                                        [100%]\n1 passed, 24 deselected in 0.03s\n",
+        "stdout": ".                                                                        [100%]\n1 passed, 24 deselected in 0.23s\n",
         "stderr": ""
       }
     },
@@ -39,7 +39,7 @@
       "description": "The real repo passes phase_routing --check and the contract has no Claude-alias model lines left",
       "status": "pass",
       "exit_code": 0,
-      "duration_sec": 0.059,
+      "duration_sec": 0.066,
       "evidence": {
         "stdout": "phase routing: in sync with PHASE_MODEL_ROLES.toml\n",
         "stderr": ""
@@ -55,7 +55,7 @@
       "description": "No concrete model IDs in the manifest or in the workflow agents' frontmatter",
       "status": "pass",
       "exit_code": 0,
-      "duration_sec": 0.039,
+      "duration_sec": 0.045,
       "evidence": {
         "stdout": "",
         "stderr": ""
@@ -71,7 +71,7 @@
       "description": "--print-omp-overrides prints the routed roles and never touches $HOME/.omp",
       "status": "pass",
       "exit_code": 0,
-      "duration_sec": 0.104,
+      "duration_sec": 0.108,
       "evidence": {
         "stdout": "",
         "stderr": ""
@@ -89,7 +89,7 @@
       "description": "/design and /ship carry the delegated routing block; interactive phases carry the session marker",
       "status": "pass",
       "exit_code": 0,
-      "duration_sec": 0.017,
+      "duration_sec": 0.02,
       "evidence": {
         "stdout": "",
         "stderr": ""
@@ -140,9 +140,9 @@
       "description": "Whole pytest suite plus every generator --check stays green",
       "status": "pass",
       "exit_code": 0,
-      "duration_sec": 9.101,
+      "duration_sec": 9.498,
       "evidence": {
-        "stdout": "........................................................................ [ 51%]\n.............................s.......................................    [100%]\n140 passed, 1 skipped in 6.90s\nphase routing: in sync with PHASE_MODEL_ROLES.toml\n[OK] agent-router is up to date (74 agents, hash 76afe2edd9f8)\nOK - .codex/ + AGENTS.md up to date (74 agents, 40 command skills)\nOK - plugin-grok/ + .grok/{agents,commands} up to date\n",
+        "stdout": "........................................................................ [ 51%]\n.............................s.......................................    [100%]\n140 passed, 1 skipped in 7.42s\nphase routing: in sync with PHASE_MODEL_ROLES.toml\n[OK] agent-router is up to date (74 agents, hash 76afe2edd9f8)\nOK - .codex/ + AGENTS.md up to date (74 agents, 40 command skills)\nOK - plugin-grok/ + .grok/{agents,commands} up to date\n",
         "stderr": ""
       }
     },
@@ -154,8 +154,14 @@
       ],
       "check_type": "human",
       "description": "In OMP, /design runs in the design-agent subagent on the @slow model",
-      "status": "pending",
-      "reason": "NEEDS_HUMAN",
+      "status": "pass",
+      "decided_by": "human",
+      "human": {
+        "owner": "usuário (dono do AgentSpec)",
+        "evidence": "task(design-agent) resolvedModel=openai-codex/gpt-6-astra:max (=slow); Gerado por gpt-6-astra; /tmp/lpr/s-design",
+        "attested_at": "2026-09-24T22:11:42Z",
+        "recorded_via": "cli"
+      },
       "duration_sec": 0.0
     },
     {
@@ -166,8 +172,14 @@
       ],
       "check_type": "human",
       "description": "In OMP, /ship runs verify in the session and then ship-agent on the @smol model",
-      "status": "pending",
-      "reason": "NEEDS_HUMAN",
+      "status": "pass",
+      "decided_by": "human",
+      "human": {
+        "owner": "usuário (dono do AgentSpec)",
+        "evidence": "verify antes; task(ship-agent) resolvedModel=xai-oauth/grok-4.6:xhigh (=smol); Gerado por grok-4.6; ressalva: sessão @plan não delegou (fallback inline, registrado)",
+        "attested_at": "2026-09-24T22:11:43Z",
+        "recorded_via": "cli"
+      },
       "duration_sec": 0.0
     },
     {
@@ -178,8 +190,14 @@
       ],
       "check_type": "human",
       "description": "Without the overrides snippet, /design still completes and records the real model",
-      "status": "pending",
-      "reason": "NEEDS_HUMAN",
+      "status": "pass",
+      "decided_by": "human",
+      "human": {
+        "owner": "usuário (dono do AgentSpec)",
+        "evidence": "sem overrides: /design concluiu; resolvedModel=xai-oauth/grok-4.6:high; Gerado por grok-4.6; /tmp/lpr/s-noov",
+        "attested_at": "2026-09-24T22:11:43Z",
+        "recorded_via": "cli"
+      },
       "duration_sec": 0.0
     },
     {
@@ -190,8 +208,14 @@
       ],
       "check_type": "human",
       "description": "Interactive phases stay inline and keep asking questions",
-      "status": "pending",
-      "reason": "NEEDS_HUMAN",
+      "status": "pass",
+      "decided_by": "human",
+      "human": {
+        "owner": "usuário (dono do AgentSpec)",
+        "evidence": "omp --model @plan: 0 task calls, perguntas inline; Gerado por gpt-6-astra (sessão)",
+        "attested_at": "2026-09-24T22:11:43Z",
+        "recorded_via": "cli"
+      },
       "duration_sec": 0.0
     },
     {
@@ -202,8 +226,14 @@
       ],
       "check_type": "human",
       "description": "In Claude Code, /design delegates to the design-agent subagent with model opus",
-      "status": "pending",
-      "reason": "NEEDS_HUMAN",
+      "status": "pass",
+      "decided_by": "human",
+      "human": {
+        "owner": "usuário (dono do AgentSpec)",
+        "evidence": "Task agentspec:design-agent; subagent claude-opus-5-5; Gerado por claude-opus-5-5[1m] (via --plugin-dir; cache do marketplace desatualizado)",
+        "attested_at": "2026-09-24T22:11:43Z",
+        "recorded_via": "cli"
+      },
       "duration_sec": 0.0
     }
   ],
@@ -225,5 +255,5 @@
   "structural_errors": [],
   "warnings": [],
   "waivers": [],
-  "verdict": "FAIL"
+  "verdict": "PASS"
 }

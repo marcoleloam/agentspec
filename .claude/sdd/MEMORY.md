@@ -1,5 +1,25 @@
 # AgentSpec — Project Memory
 
+## 2026-09-24 — Shipped LLM_PHASE_ROUTING
+
+### Decisions
+| Decision | Rationale |
+| -------- | --------- |
+| Manifesto em TOML (`PHASE_MODEL_ROLES.toml`); papéis OMP via `task.agentModelOverrides`, sem IDs concretos no repo | O mesmo plugin vale no Claude Code e no OMP; o modelo concreto fica no `config.yml` do usuário |
+| `/design` e `/ship` delegam por instrução no corpo do comando; fases interativas ficam na sessão | Frontmatter `agent:`/`context: fork` é ignorada no OMP; subagent não pode perguntar ao usuário |
+| `plugin/agents/` achatado no `build-plugin.sh` | O OMP não lê subpastas; sem isso nem roteamento nem especialistas aparecem |
+
+### Gotchas
+- Delegação no OMP é prompt-instructed, não enforced: sessão `@plan` (`gpt-6-astra`) pode rodar `/ship` inline (fallback). 1 de 2 runs delegou
+- Config OMP é `~/.omp/agent/config.yml`; `config.yml.lock` é lock de 0 bytes
+- Marketplace Claude Code não puxa layout novo se a versão do plugin (3.4.1) não subir — `claude plugin update` diz "already latest"
+- Slash commands de plugin incluem a pasta: `/agentspec:workflow:design`, não `/agentspec:design`
+- Commitar depois do `/eval` → `STALE_COMMIT`; manter o recibo uncommitted até o ship, ou rerodar `/eval`
+- Modelo default da sessão (`deepseek`) deu 402 Insufficient Balance; testes precisaram de `--model` explícito
+
+### Reusable
+- `make omp-roles` imprime o trecho de overrides; o usuário cola — o repo nunca lê/escreve `~/.omp`
+
 ## 2026-09-24 — Shipped POST_BUILD_EVALS
 
 ### Decisions

@@ -10,7 +10,7 @@
 | **Data** | 2026-09-23 |
 | **Autor** | design-agent |
 | **DEFINE** | [DEFINE_LLM_PHASE_ROUTING.md](./DEFINE_LLM_PHASE_ROUTING.md) |
-| **Status** | Pronto para Build |
+| **Status** | ✅ Shipped |
 | **Evals Digest** | `sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a` |
 | **Gerado por** | Claude Code — sessão principal, `claude-opus-5-5` (`/design` ainda roda inline; esta feature muda isso) |
 
@@ -985,6 +985,7 @@ instructions = "With the rebuilt plugin in Claude Code, run `/design` on a small
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | design-agent | Versão inicial com o resultado do spike no OMP (6 testes); desvios do DEFINE: TOML (D1), achatamento (D2), `/design-m` session (D4), `model:` removido do contrato (D5), escopo da regex (D6) |
 | 1.1 | 2026-09-24 | iterate (no início do /build) | Base avançada até `main@9de8ce4`: `eval-agent` e `/eval` no manifesto (session), Step 0 do `/ship` na sessão, Regra 6 restrita a aliases Claude, `$(PYTHON)` no Makefile, contrato `## Evals` adicionado e congelado |
+| 1.2 | 2026-09-24 | ship-agent | Shipped and archived |
 
 ---
 

@@ -9,7 +9,7 @@
 | **Feature** | LLM_PHASE_ROUTING |
 | **Data** | 2026-09-23 |
 | **Autor** | define-agent |
-| **Status** | Pronto para Design |
+| **Status** | ✅ Shipped |
 | **Clarity Score** | 14/15 |
 | **Entrada** | `.claude/sdd/features/BRAINSTORM_LLM_PHASE_ROUTING.md` (brainstorm_document) |
 | **Gerado por** | Claude Code — sessão principal, `claude-opus-5-5` (`/define` roda inline) |
@@ -182,6 +182,7 @@ Nenhuma bloqueia o início do Design; 1 e 2 são o primeiro passo dele.
 | Versão | Data | Autor | Mudanças |
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | define-agent | Versão inicial a partir do BRAINSTORM; incorpora a doc do OMP (agents, papéis, precedência) e duas decisões do usuário: fases interativas no modelo da sessão; Claude Code como SHOULD |
+| 1.1 | 2026-09-24 | ship-agent | Shipped and archived |
 
 ---
 
