@@ -7,7 +7,7 @@
 
 The decision comes from **JEV**, TypeSafe's decision model, called through OpenRouter. JEV does not generate text. It answers typed questions with calibrated probabilities. When JEV cannot decide, AgentSpec falls back to the rule it used before: 3+ KB domains means multiagent, and the specialists are the top 4 agents by `kb_domains` overlap. The phase never blocks.
 
-Every generated DEFINE and DESIGN records the outcome in a **Seleção de Agentes** section: variant, source (`jev`, `fallback` or `locked`), confidence, specialists with their probabilities, and the heuristic's answer for comparison.
+Every generated DEFINE and DESIGN records the outcome in a **Seleção de Agentes** section: variant, source (`jev`, `fallback` or `locked`), `p(single)`, specialists with their probabilities, and the heuristic's answer for comparison.
 
 ## How It Works
 
@@ -16,11 +16,11 @@ spec (BRAINSTORM or DEFINE)
    │  phase agent writes a ≤4000-char summary + the spec's KB domains
    ▼
 scripts/jev_select.py
-   │  routing.json → up to 12 candidates sharing a KB domain (workflow agents excluded)
-   │  one request:  variant (Choice single|multiagent) + fit_i (Noul per candidate)
+   │  routing.json → up to 12 candidates sharing a KB domain + python/react developers
+   │  one request:  single_area (Noul, spec summary only) + fit_i (Noul per candidate)
    ▼
 gate
-   ├─ variant confidence ≥ 0.7          → JEV's variant
+   ├─ p(single) ≥ 0.6 → single; ≤ 0.4 → multiagent; in between → heuristic ("uncertain")
    ├─ Noul ≥ 0.5, best 4                → JEV's specialists
    └─ anything else                     → heuristic, with the reason recorded
 ```
@@ -48,7 +48,8 @@ With no key set, everything still works: selection runs on the heuristic and the
 | `JEV_API_KEY` | — | Takes precedence over `OPENROUTER_API_KEY` (e.g. a direct TypeSafe key) |
 | `JEV_URL` | `https://openrouter.ai/api/alpha/decisions` | Endpoint (`https://api.typesafe.ai/v1/systemone` for TypeSafe direct) |
 | `JEV_MODEL` | `typesafe/jev-1.13` | Model (`jev-1.13.0` for TypeSafe direct) |
-| `JEV_MIN_CONFIDENCE` | `0.7` | Variant gate |
+| `JEV_SINGLE_THRESHOLD` | `0.5` | `p(single)` at or above → single |
+| `JEV_UNCERTAIN_BAND` | `0.1` | Distance to the threshold below which the heuristic decides |
 | `JEV_FIT_THRESHOLD` | `0.5` | Specialist gate |
 | `JEV_TIMEOUT_MS` | `4000` | Total wall-clock budget for the call |
 | `JEV_DISABLE` | unset | `1` means never send anything; always use the heuristic |
@@ -90,6 +91,8 @@ The feature targets are:
 The labels format lives in `tests/fixtures/agent_selection/labels_sample.json`. Keep the full labeled set out of git (it is ignored by default) when it contains client specs.
 
 ## Known Limits
+
+- **Measured quality (2026-09-24).** On 22 labeled specs, the original Choice question answered `multiagent` for every spec, so variant accuracy equaled the heuristic's (0.64). The v1.1 Noul question replaced it and was then measured on a fresh holdout. See the build report for the numbers before relying on the variant decision.
 
 - **Candidates need a shared KB domain.** An agent with no domain in common with the spec is never considered.
 - **Local agent overrides are not candidates.** Candidates come from AgentSpec's generated `routing.json`, so agents in your project's `.claude/agents/` are not considered.

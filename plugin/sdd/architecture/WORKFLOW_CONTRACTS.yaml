@@ -139,7 +139,10 @@ agent_selection:
     model: "typesafe/jev-1.13"
     auth: "OPENROUTER_API_KEY (or JEV_API_KEY)"
   gate:
-    variant_min_confidence: 0.7   # JEV_MIN_CONFIDENCE
+    variant_question: "Noul single_area — is the work confined to ONE technical area? (v1.1)"
+    single_threshold: 0.5         # JEV_SINGLE_THRESHOLD: p(single) >= threshold -> single
+    uncertain_band: 0.1           # JEV_UNCERTAIN_BAND: |p - threshold| < band -> fallback 'uncertain'
+    always_candidates: [python-developer, react-developer]
     specialist_fit_threshold: 0.5 # JEV_FIT_THRESHOLD (Noul)
     max_specialists: 4
     max_candidates: 12
@@ -147,13 +150,14 @@ agent_selection:
   fallback:
     rule: "3+ KB domains -> multiagent; specialists = top 4 by kb_domains overlap"
     reasons: [disabled, missing_key, timeout, network, "http_<code>", invalid_response,
-              low_confidence, no_fit_above_threshold, no_candidates, no_routing,
+              uncertain, no_fit_above_threshold, no_candidates, no_routing,
               invalid_input, script_unavailable]
   rules:
     - "Plain /define and /design follow the selected variant (may switch to the -m process)"
     - "Explicit /define-m and /design-m lock multiagent; the selector only picks specialists"
     - "Every generated DEFINE/DESIGN records the result in a 'Seleção de Agentes' section"
-    - "The state sent to JEV carries only spec data; instructions live in the questions"
+    - "The state sent to JEV carries only the phase and the spec summary (no KB domains); instructions live in the questions"
+    - "Free-text KB domains are normalized by the script; unknown names are reported in kb_domains_dropped"
   documentation:
     user_facing: "docs/concepts/jev-agent-selection.md"
 

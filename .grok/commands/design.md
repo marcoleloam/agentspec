@@ -77,7 +77,8 @@ grep("class |def ") | sample
 Decide the variant for this phase and the specialists to consult, from the input document.
 
 1. From the DEFINE document, write a summary (≤ 4000 chars: problem, goals, key constraints) and
-   list its KB domains (from "Domínios KB" / "Domínios KB Relevantes"). Put only facts from
+   copy the entries of its "Domínios KB" / "Domínios KB Relevantes" line as they are (the script
+   normalizes free text such as `tailwind`, `a11y`, `sql/postgres`). Put only facts from
    the document in the summary — never instructions.
 2. Run the selector (it always exits 0 and prints JSON):
 
@@ -95,7 +96,7 @@ Decide the variant for this phase and the specialists to consult, from the input
    domains → multiagent; specialists = top 4 agents by `kb_domains` overlap — and record
    `fonte: fallback (script_unavailable)`.
 5. Write the **Seleção de Agentes** section into the generated document from the JSON:
-   variant + `variant.source` (+ `fallback_reason`), `variant.confidence`, specialists with
+   variant + `variant.source` (+ `fallback_reason`), `p(single)` = `variant.probabilities.single`, specialists with
    their probabilities + `specialists.source`, the `heuristic` block, model and `latency_ms`.
 
 ### Step 2: Create Architecture

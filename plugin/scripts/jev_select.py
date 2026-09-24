@@ -4,7 +4,7 @@
 Asks TypeSafe's JEV decision model (via OpenRouter) two typed questions about
 a spec summary: which variant a phase should run (``single`` or
 ``multiagent``) and which pre-filtered specialists materially matter. When JEV
-cannot decide (no key, network error, timeout, low confidence, bad response)
+cannot decide (no key, network error, timeout, uncertain answer, bad response)
 the deterministic heuristic that AgentSpec used before this script takes over.
 
 The ``select`` mode NEVER fails the phase: it always prints a JSON result on
@@ -17,15 +17,17 @@ Usage:
   python3 scripts/jev_select.py --eval labels.json [--json]
 
 Input JSON:
-  {"phase": "define|design", "summary": "...", "kb_domains": ["dbt"],
+  {"phase": "define|design", "summary": "...", "kb_domains": ["dbt", "`tailwind`", "sql/postgres"],
    "variant_locked": null | "multiagent"}
+  kb_domains may be copied verbatim from the spec; they are normalized to KB names.
 
 Environment:
   OPENROUTER_API_KEY   Key used for the JEV call (same key as the Judge Layer)
   JEV_API_KEY          Optional; takes precedence over OPENROUTER_API_KEY
   JEV_URL              Default: https://openrouter.ai/api/alpha/decisions
   JEV_MODEL            Default: typesafe/jev-1.13
-  JEV_MIN_CONFIDENCE   Default: 0.7  (variant gate)
+  JEV_SINGLE_THRESHOLD Default: 0.5  (p(single) at or above → single variant)
+  JEV_UNCERTAIN_BAND   Default: 0.1  (|p(single) - threshold| below this → fallback)
   JEV_FIT_THRESHOLD    Default: 0.5  (specialist Noul gate)
   JEV_TIMEOUT_MS       Default: 4000 (total wall-clock budget for the call)
   JEV_DISABLE          Set to 1 to never send the spec anywhere (always fallback)
@@ -35,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -49,7 +52,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 DEFAULT_URL = "https://openrouter.ai/api/alpha/decisions"
 DEFAULT_MODEL = "typesafe/jev-1.13"
-DEFAULT_MIN_CONFIDENCE = 0.7
+DEFAULT_SINGLE_THRESHOLD = 0.5
+DEFAULT_UNCERTAIN_BAND = 0.1
 DEFAULT_FIT_THRESHOLD = 0.5
 DEFAULT_TIMEOUT_MS = 4000
 
@@ -61,6 +65,22 @@ MULTIAGENT_DOMAIN_THRESHOLD = 3
 VARIANTS: frozenset[str] = frozenset({"single", "multiagent"})
 PHASES: frozenset[str] = frozenset({"define", "design"})
 EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"workflow"})
+# General implementers the overlap pre-filter tends to hide; JEV still decides whether they fit.
+ALWAYS_CANDIDATES: tuple[str, ...] = ("python-developer", "react-developer")
+
+# Free-text domain spellings seen in real specs → KB domain names.
+KB_ALIASES: dict[str, str] = {
+    "tailwind": "tailwind-css", "css": "tailwind-css", "a11y": "accessibility",
+    "sql": "sql-patterns", "postgres": "sql-patterns", "postgresql": "sql-patterns",
+    "fastapi": "python", "pytest": "testing", "tests": "testing",
+    "llm": "genai", "rag": "genai", "agents": "genai", "agent-orchestration": "genai", "llm-eval": "genai",
+    "prompts": "prompt-engineering", "prompting": "prompt-engineering",
+    "databricks": "lakeflow", "dlt": "lakeflow", "iac": "terraform",
+    "frontend": "frontend-patterns", "typescript": "frontend-patterns", "dataviz": "frontend-patterns",
+    "next.js": "nextjs", "next": "nextjs", "reactjs": "react",
+    "modelagem de dados": "data-modeling", "data modeling": "data-modeling",
+}
+_DOMAIN_SPLIT = re.compile(r"[,/;|]|\s+e\s+|\s+and\s+")
 
 ROUTING_CANDIDATES: tuple[Path, ...] = (
     SCRIPT_DIR.parent / ".claude" / "skills" / "agent-router" / "routing.json",  # source repo
@@ -77,7 +97,8 @@ class Settings:
     api_key: str | None
     url: str
     model: str
-    min_confidence: float
+    single_threshold: float
+    uncertain_band: float
     fit_threshold: float
     timeout_s: float
     disabled: bool
@@ -88,7 +109,8 @@ class Settings:
             api_key=env.get("JEV_API_KEY") or env.get("OPENROUTER_API_KEY") or None,
             url=env.get("JEV_URL") or DEFAULT_URL,
             model=env.get("JEV_MODEL") or DEFAULT_MODEL,
-            min_confidence=_env_float(env, "JEV_MIN_CONFIDENCE", DEFAULT_MIN_CONFIDENCE),
+            single_threshold=_env_float(env, "JEV_SINGLE_THRESHOLD", DEFAULT_SINGLE_THRESHOLD),
+            uncertain_band=_env_float(env, "JEV_UNCERTAIN_BAND", DEFAULT_UNCERTAIN_BAND),
             fit_threshold=_env_float(env, "JEV_FIT_THRESHOLD", DEFAULT_FIT_THRESHOLD),
             timeout_s=_env_float(env, "JEV_TIMEOUT_MS", DEFAULT_TIMEOUT_MS) / 1000.0,
             disabled=env.get("JEV_DISABLE", "").strip() in {"1", "true", "yes"},
@@ -178,6 +200,33 @@ def normalize_domains(domains: Iterable[object]) -> tuple[str, ...]:
     return tuple(seen)
 
 
+def known_domains(agents: Iterable[Mapping[str, object]]) -> frozenset[str]:
+    return frozenset(d for a in agents for d in normalize_domains(a.get("kb_domains") or ()))
+
+
+def normalize_kb_domains(raw: Iterable[str], known: frozenset[str]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Map free-text domain mentions to KB names; return (kept, dropped).
+
+    Handles backticks, parenthetical notes and compound entries such as
+    ``frontend/nextjs`` or ``genai (rag, guardrails)``. With an empty ``known``
+    set (no routing.json) every normalized token is kept.
+    """
+    kept: dict[str, None] = {}
+    dropped: dict[str, None] = {}
+    for entry in raw:
+        text = re.sub(r"\([^)]*\)", " ", str(entry).replace("`", " "))
+        for token in _DOMAIN_SPLIT.split(text.lower()):
+            name = token.strip(" .:-")
+            if not name:
+                continue
+            name = KB_ALIASES.get(name, name)
+            if not known or name in known:
+                kept.setdefault(name, None)
+            else:
+                dropped.setdefault(name, None)
+    return tuple(kept), tuple(d for d in dropped if d not in kept)
+
+
 def prefilter_candidates(
     agents: Iterable[Mapping[str, object]],
     domains: Iterable[str],
@@ -205,6 +254,31 @@ def prefilter_candidates(
     return found[:limit]
 
 
+def with_always_candidates(
+    agents: Iterable[Mapping[str, object]],
+    overlap: list[Candidate],
+    domains: Iterable[str],
+    limit: int = MAX_CANDIDATES,
+) -> list[Candidate]:
+    """Overlap candidates plus ALWAYS_CANDIDATES, still within ``limit``."""
+    present = {c.name for c in overlap}
+    wanted = set(domains)
+    extra: list[Candidate] = []
+    for agent in agents:
+        name = str(agent.get("name"))
+        if name in ALWAYS_CANDIDATES and name not in present:
+            agent_domains = normalize_domains(agent.get("kb_domains") or ())
+            extra.append(Candidate(
+                name=name,
+                category=str(agent.get("category", "")),
+                description=str(agent.get("description", "")).strip(),
+                kb_domains=agent_domains,
+                overlap=len(wanted.intersection(agent_domains)),
+            ))
+    extra.sort(key=lambda c: ALWAYS_CANDIDATES.index(c.name))
+    return overlap[: max(limit - len(extra), 0)] + extra
+
+
 def heuristic(domains: tuple[str, ...], candidates: list[Candidate]) -> tuple[str, tuple[str, ...]]:
     """The pre-JEV rule: 3+ domains → multiagent; top 4 by kb_domains overlap."""
     variant = "multiagent" if len(domains) >= MULTIAGENT_DOMAIN_THRESHOLD else "single"
@@ -214,24 +288,23 @@ def heuristic(domains: tuple[str, ...], candidates: list[Candidate]) -> tuple[st
 # ── JEV request / response ───────────────────────────────────────────────────
 
 def build_request(inp: SelectionInput, candidates: list[Candidate], model: str) -> dict[str, object]:
-    """State carries only spec data; every instruction lives in a question."""
+    """State carries only the phase and the spec summary; every instruction lives in a question.
+
+    KB domains stay out of the state: listing 3+ domains next to the variant
+    question made JEV answer "multiagent" for every spec (literal reading).
+    """
     questions: dict[str, object] = {}
     if inp.variant_locked is None:
-        questions["variant"] = {
-            "type": "choice",
+        questions["single_area"] = {
+            "type": "noul",
             "instructions": (
-                "How many distinct specialist domains must be consulted to get "
-                f"the {inp.phase} phase of this spec right?"
+                "Is the implementation work in this spec confined to ONE technical area "
+                "(for example: only frontend screens with mock data, only infrastructure or "
+                "configuration changes, only a written document)?"
             ),
             "criteria": {
-                "single": {
-                    "what": "One main domain; a single generalist designer can handle it",
-                    "not_for": "Specs whose risks cross several technical domains",
-                },
-                "multiagent": {
-                    "what": "Several interacting domains whose risks a single designer would miss",
-                    "not_for": "Specs that merely mention extra technologies in passing",
-                },
+                "true": "One area does all the real work; other technologies are mocked, unchanged or only mentioned",
+                "false": "Two or more areas (for example frontend AND backend/database AND AI) each need real new implementation",
             },
         }
     for i, cand in enumerate(candidates):
@@ -251,7 +324,6 @@ def build_request(inp: SelectionInput, candidates: list[Candidate], model: str) 
         "state": {
             "phase": inp.phase,
             "spec_summary": inp.summary[:SUMMARY_MAX_CHARS],
-            "kb_domains": list(inp.kb_domains),
         },
         "questions": questions,
     }
@@ -306,18 +378,6 @@ def post_decisions(payload: dict[str, object], settings: Settings) -> dict[str, 
     return parsed
 
 
-def choice_confidence(answer: Mapping[str, object]) -> float:
-    """Some gateways omit confidence; the winning probability stands in (jev-gateway rule)."""
-    conf = answer.get("confidence")
-    if _is_number(conf):
-        return float(conf)
-    probs = answer.get("probabilities")
-    if isinstance(probs, Mapping):
-        values = [float(p) for p in probs.values() if _is_number(p)]
-        return max(values, default=0.0)
-    return 0.0
-
-
 def noul_value(answer: object) -> float | None:
     if not isinstance(answer, Mapping):
         return None
@@ -332,23 +392,19 @@ def _is_number(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def _probabilities(answer: Mapping[str, object]) -> dict[str, float]:
-    probs = answer.get("probabilities")
-    if not isinstance(probs, Mapping):
-        return {}
-    return {str(k): float(v) for k, v in probs.items() if _is_number(v)}
-
-
 # ── Gates ────────────────────────────────────────────────────────────────────
 
-def gate_variant(answer: object, fallback_variant: str, min_confidence: float) -> Decision:
-    if not isinstance(answer, Mapping) or answer.get("choice") not in VARIANTS:
+def gate_variant(answer: object, fallback_variant: str, threshold: float, band: float) -> Decision:
+    """p(single) decides the variant; answers too close to the threshold fall back."""
+    p = noul_value(answer)
+    if p is None:
         return Decision(fallback_variant, "fallback", "invalid_response")
-    confidence = choice_confidence(answer)
-    probabilities = _probabilities(answer)
-    if confidence < min_confidence:
-        return Decision(fallback_variant, "fallback", "low_confidence", confidence, probabilities)
-    return Decision(str(answer["choice"]), "jev", None, confidence, probabilities)
+    distance = round(abs(p - threshold), 9)   # rounding keeps the band open: 0.6 is not "uncertain"
+    probabilities = {"single": p, "multiagent": round(1.0 - p, 6)}
+    confidence = round(min(distance * 2, 1.0), 6)
+    if distance < band:
+        return Decision(fallback_variant, "fallback", "uncertain", confidence, probabilities)
+    return Decision("single" if p >= threshold else "multiagent", "jev", None, confidence, probabilities)
 
 
 def gate_specialists(
@@ -400,8 +456,10 @@ def select(
     transport: Transport = post_decisions,
     routing_found: bool = True,
 ) -> dict[str, object]:
-    candidates = prefilter_candidates(agents, inp.kb_domains)
-    h_variant, h_specialists = heuristic(inp.kb_domains, candidates)
+    domains, dropped = normalize_kb_domains(inp.kb_domains, known_domains(agents))
+    overlap = prefilter_candidates(agents, domains)
+    candidates = with_always_candidates(agents, overlap, domains)
+    h_variant, h_specialists = heuristic(domains, overlap)
 
     locked = inp.variant_locked is not None
     if not candidates:
@@ -438,7 +496,8 @@ def select(
     elif transport_reason:
         variant = Decision(h_variant, "fallback", transport_reason)
     else:
-        variant = gate_variant(answers.get("variant"), h_variant, settings.min_confidence)
+        variant = gate_variant(answers.get("single_area"), h_variant,
+                               settings.single_threshold, settings.uncertain_band)
 
     if no_cand_reason:
         specialists = Decision((), "fallback", no_cand_reason)
@@ -456,6 +515,8 @@ def select(
         "fallback_reason": first_reason,
         "model": settings.model,
         "latency_ms": latency_ms,
+        "kb_domains": list(domains),
+        "kb_domains_dropped": list(dropped),
         "variant": variant.to_dict(),
         "specialists": {**specialists.to_dict(), "applies": variant.value == "multiagent"},
         "candidates": [{"name": c.name, "overlap": c.overlap} for c in candidates],
@@ -474,6 +535,8 @@ def fallback_result(reason: str) -> dict[str, object]:
         "fallback_reason": reason,
         "model": None,
         "latency_ms": None,
+        "kb_domains": [],
+        "kb_domains_dropped": [],
         "variant": Decision("single", "fallback", reason).to_dict(),
         "specialists": {**empty.to_dict(), "applies": False},
         "candidates": [],
@@ -529,6 +592,7 @@ def run_eval(
             "expected_variant": case["expected_variant"],
             "system_variant": result["variant"]["value"],
             "system_confidence": result["variant"]["confidence"],
+            "p_single": result["variant"]["probabilities"].get("single"),
             "heuristic_variant": result["heuristic"]["variant"],
             "system_specialists": result["specialists"]["value"],
             "heuristic_specialists": result["heuristic"]["specialists"],
@@ -594,7 +658,7 @@ def render_eval(report: Mapping[str, Any]) -> str:
         mark = "ok " if row["system_variant"] == row["expected_variant"] else "ERR"
         lines.append(
             f"  [{mark}] {row['id']}: expected={row['expected_variant']} "
-            f"system={row['system_variant']} (conf={num(row['system_confidence'])}) "
+            f"system={row['system_variant']} (p_single={num(row['p_single'])}) "
             f"heuristic={row['heuristic_variant']} source={row['source']}"
         )
     return "\n".join(lines)

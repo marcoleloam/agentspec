@@ -3,23 +3,23 @@
   "answers": {
     "single_area": {
       "type": "noul",
-      "noul": 0.05
+      "noul": 0.55
     },
     "fit_0": {
       "type": "noul",
-      "noul": 0.8
+      "noul": 0.9
     },
     "fit_1": {
       "type": "noul",
-      "noul": 0.6
+      "noul": 0.7
     },
     "fit_2": {
       "type": "noul",
-      "noul": 0.2
+      "noul": 0.1
     }
   },
   "usage": {
-    "input_tokens": 812,
-    "output_tokens": 21
+    "input_tokens": 805,
+    "output_tokens": 20
   }
 }

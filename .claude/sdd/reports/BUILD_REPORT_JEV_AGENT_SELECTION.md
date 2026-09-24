@@ -11,7 +11,7 @@
 | **Autor** | build-agent |
 | **DEFINE** | [DEFINE_JEV_AGENT_SELECTION.md](../features/DEFINE_JEV_AGENT_SELECTION.md) |
 | **DESIGN** | [DESIGN_JEV_AGENT_SELECTION.md](../features/DESIGN_JEV_AGENT_SELECTION.md) |
-| **Status** | Completo (código) — **critérios de sucesso NÃO atingidos** no eval real (ver Avaliação Completa) |
+| **Status** | v1.1 construída (iterate) — **critérios de sucesso ainda NÃO atingidos** no holdout (ver Iterate v1.1) |
 
 ---
 
@@ -205,13 +205,13 @@ Isso confirma que `routing.json` é encontrado em `plugin/skills/agent-router/`.
 
 ## Status Final
 
-### Geral: ✅ COMPLETO (implementação) — ❌ critérios de sucesso não atingidos; não recomendado para /ship
+### Geral: ✅ COMPLETO (implementação v1.1) — ❌ critérios de sucesso não atingidos no holdout; não recomendado para /ship
 
 **Checklist de Conclusão:**
 
 - [x] Todas as tarefas do manifesto concluídas (exceto #17, do maintainer)
 - [x] Todas as verificações passaram (`make check` exit 0, ruff limpo)
-- [x] Todos os testes passam (104/104)
+- [x] Todos os testes passam (113/113 após a v1.1)
 - [ ] Sem bloqueadores — A-001/A-002 ✅; acurácia medida e **reprovada**
 - [ ] Testes de aceitação verificados — 10 ✅, 3 parciais (AT-001/002/009 dependem de rodar `/define`/`/design` de verdade)
 - [ ] Pronto para /ship — **não**: a pergunta de variante precisa ser refeita (`/iterate`) e revalidada
@@ -290,10 +290,59 @@ Chave: credencial `openrouter` do OMP (`~/.omp/agent/agent.db`, a mais recente),
 
 ---
 
+## Iterate v1.1 (2026-09-24)
+
+**O que mudou** (DESIGN v1.1, Decisões 9–13; formulação congelada no commit `797a071` **antes** de qualquer consulta ao holdout):
+
+- a variante passa a ser decidida por um Noul `single_area` ("o trabalho fica confinado a uma área técnica?"), e o state vai sem `kb_domains`;
+- o portão passa a ser um limiar sobre `p(single)`: 0.5, com faixa de incerteza de 0.4 a 0.6 que cai no fallback `uncertain`;
+- `python-developer` e `react-developer` entram sempre como candidatos;
+- os domínios em texto livre são normalizados pelo próprio script;
+- `choice_confidence` foi removida.
+
+**Código:** 113/113 testes (41 pré-existentes + 72 do script e da sincronia); ruff limpo nos arquivos da feature; `make check` com exit 0. Um bug de ponto flutuante na borda da faixa foi corrigido (|0.6 − 0.5| = 0.0999… caía em `uncertain`).
+
+### Holdout — rodada única
+
+**Conjunto:** 15 casos (H01–H15; 12 DEFINE de fase design e 3 BRAINSTORM de fase define). Nenhum deles está no conjunto de 22 nem é quase-duplicata dele. H13 e H14 são duas specs da mesma POC. Rotulados às cegas pelo build-agent; SHA-256 dos rótulos antes da chamada: `9eb8fb6d…208034c` (2026-09-24T17:59:23Z). Os domínios foram passados **como estavam escritos** nas specs.
+
+| Métrica | JEV v1.1 | Heurística | Meta | Status |
+|---------|----------|------------|------|--------|
+| Acurácia de variante | **0.73** | 0.40 | ≥ 0.85 e ≥ heur. + 0.10 | ❌ (+33 p.p. ✅, absoluto ❌) |
+| F1 de especialistas (9 multiagent) | **0.08** | 0.10 | ≥ heur. + 0.10 | ❌ |
+| Fallbacks | 8 `no_fit_above_threshold`, 1 `uncertain` | — | — | — |
+
+Erros de variante: H05 (build real classificado como single, p = 0.64); H07 e H08 (protótipos navegáveis classificados como multiagent, p = 0.06 e 0.36); H12 (framework, p = 0.35). A faixa de incerteza jogou H10 (p = 0.49) para a heurística, que acertou.
+
+### Referência — v1.1 no conjunto de 22 (sem ajuste; só diagnóstico)
+
+| | v1.0 | v1.1 |
+|---|------|------|
+| Acurácia de variante | 0.64 (0/8 single) | 0.68 (2/8 single; 3 `uncertain`) |
+| F1 de especialistas | 0.44 | **0.46** |
+
+### Diagnóstico
+
+1. **A variante melhorou de fato, mas não chega à meta.** No holdout, +33 p.p. sobre a heurística; no conjunto de 22, deixou de responder multiagent para tudo. Protótipos navegáveis que descrevem muitas telas e módulos continuam lidos como multiagent (H07, H08 e 6 dos 8 single do conjunto de 22).
+2. **A queda do F1 no holdout não é efeito da v1.1.** Tirar os domínios do state não piorou os especialistas (0.46 × 0.44 no conjunto de 22). A causa é o **pré-filtro**: 6 dos 9 casos multiagent do holdout não têm a linha "Domínios KB". Nesses casos só os 2 implementadores fixos viram candidatos e a heurística fica vazia, o que confirma o risco da premissa A-004. Specs escritas fora do template (a maioria das mais recentes) derrubam a seleção de especialistas.
+3. **Variação entre rodadas:** a formulação B do diagnóstico acertou 3/8 single isolada; dentro da requisição completa acertou 2/8. Com poucos casos, 1 acerto muda a acurácia em 4–7 p.p.
+
+### Recomendação (nenhum ajuste foi feito depois do holdout)
+
+- **Não fazer `/ship`.** A v1.1 é melhor que a v1.0 e que a heurística na variante, mas nenhum critério do DEFINE foi atingido.
+- **Opções para decisão do maintainer:**
+  1. **Especialistas sem depender de `kb_domains`:** quando a spec não tem domínios (ou tem poucos), mandar ao JEV um pool amplo com ranking em duas etapas, como no cookbook *Skill suggestion* (a alternativa adiada na Decisão 2). Esta é a causa principal da reprovação dos especialistas.
+  2. **Variante como recomendação, não como decisão automática:** registrar `p(single)` na seção "Seleção de Agentes" e deixar o humano escolher `/define-m` ou `/design-m`. É a opção "recomenda, humano decide" que foi descartada no brainstorm, reavaliada agora com dados.
+  3. **Encerrar a frente:** manter a heurística atual e arquivar este trabalho como experimento documentado.
+- Qualquer nova rodada de ajuste precisa de um **terceiro conjunto**; o holdout já foi consumido.
+
+---
+
 ## Próximo Passo
 
 1. ~~Validar A-001/A-002~~ ✅ feito em 2026-09-24 (ver Validação com o JEV Real).
 2. ~~Rotular e rodar `--eval`~~ ✅ feito em 2026-09-24: **reprovado** (ver Avaliação Completa).
-3. Decidir o `/iterate` da pergunta de variante (Recomendação acima).
+3. ~~`/iterate` da pergunta de variante~~ ✅ v1.1 construída e medida no holdout: **reprovada** (ver Iterate v1.1).
+3b. Escolher entre as opções da Recomendação v1.1 (pool amplo, variante só recomendada, ou encerrar).
 4. Rodar `/define` e `/design` numa spec real para fechar AT-001, AT-002 e AT-009 (depois do `/iterate`).
 5. `/ship JEV_AGENT_SELECTION` só quando os critérios forem atingidos num conjunto novo.

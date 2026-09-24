@@ -65,7 +65,7 @@ JEV only picks the specialists:
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON'
-{"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<domain>"], "variant_locked": "multiagent"}
+{"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the spec's Domínios KB line, verbatim>"], "variant_locked": "multiagent"}
 JSON
 ```
 

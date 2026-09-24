@@ -48,6 +48,7 @@ AGENTS = [
     {"name": "react-developer", "category": "frontend", "description": "React", "kb_domains": ["react"]},
 ]
 DOMAINS = ["dbt", "spark", "sql-patterns"]
+NO_IMPLEMENTERS = [a for a in AGENTS if a["name"] not in {"python-developer", "react-developer"}]
 
 
 def fixture(name: str) -> dict:
@@ -85,7 +86,8 @@ class TestSettings:
         assert s.api_key is None
         assert s.url == "https://openrouter.ai/api/alpha/decisions"
         assert s.model == "typesafe/jev-1.13"
-        assert s.min_confidence == 0.7
+        assert s.single_threshold == 0.5
+        assert s.uncertain_band == 0.1
         assert s.fit_threshold == 0.5
         assert s.timeout_s == 4.0
         assert s.disabled is False
@@ -95,8 +97,8 @@ class TestSettings:
         assert s.api_key == "jev"
 
     def test_bad_float_falls_back_to_default(self, js):
-        s = js.Settings.from_env({"JEV_MIN_CONFIDENCE": "high", "JEV_TIMEOUT_MS": "500"})
-        assert s.min_confidence == 0.7
+        s = js.Settings.from_env({"JEV_SINGLE_THRESHOLD": "high", "JEV_TIMEOUT_MS": "500"})
+        assert s.single_threshold == 0.5
         assert s.timeout_s == 0.5
 
     def test_disable_flag(self, js):
@@ -138,12 +140,12 @@ class TestPrefilterAndHeuristic:
 # ── Request shape ────────────────────────────────────────────────────────────
 
 class TestBuildRequest:
-    def test_state_holds_only_data(self, js):
+    def test_state_holds_only_phase_and_summary(self, js):
         cands = js.prefilter_candidates(AGENTS, DOMAINS)
         req = js.build_request(make_input(js), cands, "typesafe/jev-1.13")
-        assert set(req["state"]) == {"phase", "spec_summary", "kb_domains"}
-        assert req["questions"]["variant"]["type"] == "choice"
-        assert set(req["questions"]["variant"]["criteria"]) == {"single", "multiagent"}
+        assert set(req["state"]) == {"phase", "spec_summary"}   # no kb_domains (v1.1)
+        assert req["questions"]["single_area"]["type"] == "noul"
+        assert set(req["questions"]["single_area"]["criteria"]) == {"true", "false"}
         assert [k for k in req["questions"] if k.startswith("fit_")] == ["fit_0", "fit_1", "fit_2"]
         assert req["questions"]["fit_0"]["type"] == "noul"
         assert "dbt-specialist" in req["questions"]["fit_0"]["instructions"]
@@ -151,7 +153,7 @@ class TestBuildRequest:
     def test_locked_variant_omits_variant_question(self, js):
         cands = js.prefilter_candidates(AGENTS, DOMAINS)
         req = js.build_request(make_input(js, locked="multiagent"), cands, "m")
-        assert "variant" not in req["questions"]
+        assert "single_area" not in req["questions"]
 
     def test_summary_truncated(self, js):
         long = make_input(js, summary="x" * 10_000)
@@ -162,14 +164,42 @@ class TestBuildRequest:
 # ── Normalization ────────────────────────────────────────────────────────────
 
 class TestNormalization:
-    def test_choice_confidence_present(self, js):
-        assert js.choice_confidence({"confidence": 0.42, "probabilities": {"a": 0.9}}) == 0.42
+    def test_free_text_domains_are_mapped(self, js):
+        known = js.known_domains(js.load_routing(js.resolve_routing_path()))
+        kept, dropped = js.normalize_kb_domains(
+            ["`tailwind`", "a11y", "sql/postgres", "golang", "genai (rag, guardrails)",
+             "frontend/nextjs", "modelagem de dados/Postgres", "DBT"], known)
+        assert kept == ("tailwind-css", "accessibility", "sql-patterns", "genai",
+                        "frontend-patterns", "nextjs", "data-modeling", "dbt")
+        assert dropped == ("golang",)
 
-    def test_choice_confidence_missing_uses_winning_probability(self, js):
-        assert js.choice_confidence({"probabilities": {"single": 0.2, "multiagent": 0.8}}) == 0.8
+    def test_unknown_catalog_keeps_everything(self, js):
+        assert js.normalize_kb_domains(["a11y", "golang"], frozenset()) == (("accessibility", "golang"), ())
 
-    def test_choice_confidence_nothing(self, js):
-        assert js.choice_confidence({}) == 0.0
+    @pytest.mark.parametrize("p,value,reason", [
+        (0.95, "single", None), (0.6, "single", None), (0.05, "multiagent", None),
+        (0.4, "multiagent", None), (0.55, "multiagent", "uncertain"), (0.45, "multiagent", "uncertain"),
+    ])
+    def test_gate_variant_threshold_and_band(self, js, p, value, reason):
+        d = js.gate_variant({"noul": p}, "multiagent", 0.5, 0.1)
+        assert (d.value, d.fallback_reason) == (value, reason)
+        assert d.probabilities["single"] == p
+
+    def test_gate_variant_rejects_non_noul(self, js):
+        assert js.gate_variant({"choice": "single"}, "single", 0.5, 0.1).fallback_reason == "invalid_response"
+
+    def test_always_candidates_are_added_within_cap(self, js):
+        many = [{"name": f"a{i:02d}", "category": "python", "kb_domains": ["dbt"]} for i in range(20)]
+        catalog = [*many, {"name": "python-developer", "category": "python", "kb_domains": ["python"]},
+                   {"name": "react-developer", "category": "frontend", "kb_domains": ["react"]}]
+        overlap = js.prefilter_candidates(catalog, ["dbt"])
+        cands = js.with_always_candidates(catalog, overlap, ["dbt"])
+        assert len(cands) == js.MAX_CANDIDATES
+        assert [c.name for c in cands[-2:]] == ["python-developer", "react-developer"]
+
+    def test_always_candidates_not_duplicated(self, js):
+        overlap = js.prefilter_candidates(AGENTS, ["react"])
+        assert [c.name for c in js.with_always_candidates(AGENTS, overlap, ["react"])] == ["react-developer"]
 
     @pytest.mark.parametrize("raw,expected", [
         ({"noul": 0.3}, 0.3), ({"noul": 1}, 1.0), ({"noul": 1.7}, None),
@@ -186,7 +216,8 @@ class TestSelect:
         t = FakeTransport(fixture("multiagent_happy.json"))
         r = js.select(make_input(js), settings(js), AGENTS, t)
         assert r["source"] == "jev" and r["fallback_reason"] is None
-        assert r["variant"]["value"] == "multiagent" and r["variant"]["confidence"] == 0.9
+        assert r["variant"]["value"] == "multiagent" and r["variant"]["confidence"] == pytest.approx(0.9)
+        assert r["variant"]["probabilities"] == {"single": 0.05, "multiagent": 0.95}
         assert r["specialists"]["value"] == ["dbt-specialist", "spark-engineer"]
         assert r["specialists"]["applies"] is True
         assert r["specialists"]["probabilities"]["sql-optimizer"] == 0.2
@@ -213,17 +244,20 @@ class TestSelect:
         assert r["specialists"]["fallback_reason"] == reason
         assert r["latency_ms"] is not None
 
-    def test_at006_low_confidence_keeps_probabilities(self, js):
-        r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(fixture("low_confidence.json")))
+    def test_at006_uncertain_keeps_probabilities(self, js):
+        r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(fixture("uncertain.json")))
         assert r["variant"]["source"] == "fallback"
-        assert r["variant"]["fallback_reason"] == "low_confidence"
-        assert r["variant"]["value"] == "multiagent"      # heuristic, not JEV's "single"
-        assert r["variant"]["probabilities"] == {"single": 0.6, "multiagent": 0.4}
-        assert r["variant"]["confidence"] == 0.55
+        assert r["variant"]["fallback_reason"] == "uncertain"
+        assert r["variant"]["value"] == "multiagent"      # heuristic (3 domains), not JEV's lean to single
+        assert r["variant"]["probabilities"] == {"single": 0.55, "multiagent": 0.45}
+        assert r["variant"]["confidence"] == pytest.approx(0.1)
 
-    def test_at007_missing_confidence_is_normalized(self, js):
-        r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(fixture("no_confidence.json")))
-        assert r["variant"]["source"] == "jev" and r["variant"]["confidence"] == 0.8
+    def test_at007_free_text_domains_normalized(self, js):
+        inp = make_input(js, domains=["DBT", "sql/postgres", "golang", "`spark`"])
+        r = js.select(inp, settings(js), AGENTS, FakeTransport(fixture("multiagent_happy.json")))
+        assert r["kb_domains"] == ["dbt", "sql-patterns", "spark"]
+        assert r["kb_domains_dropped"] == ["golang"]
+        assert r["heuristic"]["variant"] == "multiagent"
 
     def test_at008_no_fit_above_threshold(self, js):
         r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(fixture("all_below_threshold.json")))
@@ -236,14 +270,14 @@ class TestSelect:
     def test_at009_locked_variant(self, js):
         t = FakeTransport(fixture("single_happy.json"))
         r = js.select(make_input(js, locked="multiagent"), settings(js), AGENTS, t)
-        assert "variant" not in t.payloads[0]["questions"]
+        assert "single_area" not in t.payloads[0]["questions"]
         assert r["variant"]["value"] == "multiagent" and r["variant"]["source"] == "locked"
         assert r["specialists"]["source"] == "jev" and r["specialists"]["value"] == ["dbt-specialist"]
         assert r["source"] == "jev"
 
     def test_at010_at_most_four_specialists(self, js):
         agents = [{"name": f"s{i}", "category": "python", "kb_domains": ["python"]} for i in range(6)]
-        answers = {"variant": {"choice": "multiagent", "confidence": 0.9}}
+        answers = {"single_area": {"noul": 0.05}}
         answers.update({f"fit_{i}": {"noul": 0.5 + i / 20} for i in range(6)})
         r = js.select(make_input(js, domains=["python"]), settings(js), agents, FakeTransport({"answers": answers}))
         assert r["specialists"]["value"] == ["s5", "s4", "s3", "s2"]
@@ -262,13 +296,20 @@ class TestSelect:
         r = js.select(make_input(js), settings(js), AGENTS, FakeTransport({"error": "weird"}))
         assert r["fallback_reason"] == "invalid_response"
 
-    def test_unknown_choice_is_invalid(self, js):
-        resp = {"answers": {"variant": {"choice": "both", "confidence": 0.99}}}
+    def test_variant_answer_must_be_noul(self, js):
+        resp = {"answers": {"single_area": {"choice": "single", "confidence": 0.99}}}
         r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(resp))
         assert r["variant"]["fallback_reason"] == "invalid_response"
 
+    def test_implementers_are_candidates_without_overlap(self, js):
+        t = FakeTransport(fixture("single_happy.json"))
+        r = js.select(make_input(js, domains=["terraform"]), settings(js), AGENTS, t)
+        assert [c["name"] for c in r["candidates"]] == ["react-developer"]
+        assert r["specialists"]["value"] == ["react-developer"] and r["specialists"]["source"] == "jev"
+        assert r["heuristic"]["specialists"] == []          # heuristic keeps the overlap-only rule
+
     def test_no_candidates(self, js):
-        r = js.select(make_input(js, domains=["terraform"]), settings(js), AGENTS,
+        r = js.select(make_input(js, domains=["terraform"]), settings(js), NO_IMPLEMENTERS,
                       FakeTransport(fixture("single_happy.json")))
         assert r["specialists"]["value"] == [] and r["specialists"]["fallback_reason"] == "no_candidates"
         assert r["variant"]["source"] == "jev"
@@ -280,7 +321,7 @@ class TestSelect:
 
     def test_locked_without_candidates_skips_call(self, js):
         t = FakeTransport(fixture("single_happy.json"))
-        r = js.select(make_input(js, domains=["terraform"], locked="multiagent"), settings(js), AGENTS, t)
+        r = js.select(make_input(js, domains=["terraform"], locked="multiagent"), settings(js), NO_IMPLEMENTERS, t)
         assert t.payloads == [] and r["specialists"]["fallback_reason"] == "no_candidates"
 
 
@@ -330,7 +371,7 @@ class TestPostDecisions:
     def test_success_sends_bearer(self, js, server):
         _Handler.seen_auth = []
         out = js.post_decisions({"model": "m", "state": "s", "questions": {}}, _local(js, server))
-        assert out["answers"]["variant"]["choice"] == "single"
+        assert out["answers"]["single_area"]["noul"] == 0.95
         assert _Handler.seen_auth == ["Bearer sk-test"]
 
     def test_at004_total_timeout_is_enforced(self, js, server):
@@ -374,9 +415,9 @@ class TestEval:
         agents = js.load_routing(js.resolve_routing_path())
 
         def transport(payload, _settings):
-            is_frontend = "react" in payload["state"]["kb_domains"]
+            is_frontend = "frontend" in payload["state"]["spec_summary"].lower()
             fits = [k for k in payload["questions"] if k.startswith("fit_")]
-            answers = {"variant": {"choice": "multiagent" if is_frontend else "single", "confidence": 0.9}}
+            answers = {"single_area": {"noul": 0.1 if is_frontend else 0.9}}
             answers.update({k: {"noul": 0.9 if is_frontend else 0.1} for k in fits})
             return {"answers": answers}
 
@@ -387,7 +428,7 @@ class TestEval:
         text = js.render_eval(report)
         assert "variant accuracy" in text and "PASS" in text
         assert all("system_confidence" in row for row in report["rows"])
-        assert "(conf=0.90)" in text
+        assert "(p_single=0.10)" in text
 
     def test_load_labels_rejects_bad_variant(self, js, tmp_path):
         bad = tmp_path / "labels.json"
