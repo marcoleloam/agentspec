@@ -45,7 +45,7 @@ def test_all_commands_generate_unique_valid_names(gen):
         if command.name not in gen.SKIP_FILES:
             names.append(gen.command_skill_name(command))
 
-    assert len(names) == 39
+    assert len(names) == 40
     assert len(names) == len(set(names))
     assert all(len(name) <= 64 for name in names)
     assert {

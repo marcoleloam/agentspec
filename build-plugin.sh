@@ -131,6 +131,22 @@ for skill in "${REPO_LOCAL_SKILLS[@]}"; do
     fi
 done
 
+# ── Step 2d: Runtime scripts ────────────────────────────────────────────────
+# Python helpers that commands invoke as ${CLAUDE_PLUGIN_ROOT}/scripts/<name>.
+# They live in scripts/ (next to the generators, covered by tests/) and are
+# copied individually; generators stay out of the distributed plugin.
+RUNTIME_SCRIPTS=(judge.py eval_runner.py jev_client.py)
+mkdir -p "${PLUGIN_DIR}/scripts"
+for script in "${RUNTIME_SCRIPTS[@]}"; do
+    if [ ! -f "${SCRIPT_DIR}/scripts/${script}" ]; then
+        echo -e "${RED}  ERROR: runtime script missing: scripts/${script}${NC}" >&2
+        exit 1
+    fi
+    cp "${SCRIPT_DIR}/scripts/${script}" "${PLUGIN_DIR}/scripts/${script}"
+    chmod +x "${PLUGIN_DIR}/scripts/${script}"
+    echo "  Copied runtime script: scripts/${script}"
+done
+
 # ── Step 3: Path rewriting ──────────────────────────────────────────────────
 echo -e "${YELLOW}[4/6] Rewriting paths (.claude/ → \${CLAUDE_PLUGIN_ROOT}/)...${NC}"
 

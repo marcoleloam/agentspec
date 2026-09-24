@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "agent_count": 73,
+  "agent_count": 74,
   "agents": [
     {
       "name": "a11y-specialist",
@@ -458,6 +458,21 @@
       "escalates_to": [
         "build-agent",
         "design-agent"
+      ]
+    },
+    {
+      "name": "eval-agent",
+      "category": "workflow",
+      "path": ".claude/agents/workflow/eval-agent.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Independent post-build acceptance specialist (Phase 3.5).",
+      "kb_domains": [
+        "testing"
+      ],
+      "escalates_to": [
+        "build-agent",
+        "iterate-agent"
       ]
     },
     {
@@ -930,7 +945,8 @@
       "description": "Feature archival and lessons learned specialist (Phase 4).",
       "kb_domains": [],
       "escalates_to": [
-        "build-agent"
+        "build-agent",
+        "eval-agent"
       ]
     },
     {

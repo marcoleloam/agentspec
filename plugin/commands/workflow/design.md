@@ -129,11 +129,24 @@ Provide copy-paste ready code snippets for key patterns.
 | Integration | API | pytest + requests |
 | E2E | Full flow | Manual/automated |
 
-### Step 7: Save
+### Step 6b: Author the Eval Contract
+
+Turn every acceptance test of the DEFINE into at least one eval in the DESIGN's `## Evals` section
+(marker `<!-- agentspec:evals:contract -->` + one ```` ```toml ```` block — skeleton in the template).
+Deterministic first; `graded` only for subjective criteria (≤ 50%); `human` for runtime-agent or external-service ATs.
+
+### Step 7: Save, Validate, Freeze
 
 ```markdown
 Write(.claude/sdd/features/DESIGN_{FEATURE_NAME}.md)
 ```
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE_NAME}
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE_NAME}
+```
+
+Fix every `validate` error (exit 3) before freezing. `freeze` writes the **Evals Digest** metadata row.
 
 ### Step 8: Optional Judge Pass (`--judge`)
 
@@ -207,6 +220,8 @@ Before saving, verify:
 [ ] File manifest is complete (all files listed)
 [ ] Code patterns are copy-paste ready
 [ ] Testing strategy covers requirements
+[ ] Every AT has a contract eval (eval_runner.py validate exit 0)
+[ ] Evals Digest frozen (eval_runner.py freeze exit 0)
 [ ] No circular dependencies in architecture
 ```
 

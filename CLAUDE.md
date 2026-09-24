@@ -6,7 +6,7 @@
 
 ## Project Context
 
-**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 73 agents (data engineering + frontend), 42 commands, 39 KB domains, and 10 distributed skills (14 in-repo; 4 are contributor-only).
+**What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 74 agents (data engineering + frontend), 43 commands, 39 KB domains, and 10 distributed skills (14 in-repo; 4 are contributor-only).
 
 **Current Status:** v3.3.0 — Adds blackboard coordination (Build phase), the `/work` active-feature anchor, and portable file-based memory (project + global tiers, auto-recalled at SessionStart as a compact index). Builds on v3.2.0 (Judge Layer, local-first overrides, /status, agent-router, stack detection, CI). MemPalace MCP dependency dropped in favor of the file-based memory.
 
@@ -26,10 +26,10 @@ agentspec/
 │   │   ├── data-engineering/ # 15 DE implementation specialists
 │   │   ├── frontend/        # 5 React, CSS, UX, a11y, architecture
 │   │   ├── dev/             # 5 developer tools & productivity
-│   │   └── workflow/        # 9 SDD phase agents (incl. 3 multiagent variants)
+│   │   └── workflow/        # 10 SDD phase agents (incl. 3 multiagent variants)
 │   │
 │   ├── commands/            # 31 slash commands
-│   │   ├── workflow/        # SDD commands (8)
+│   │   ├── workflow/        # SDD commands (9)
 │   │   ├── data-engineering/ # DE commands (8)
 │   │   ├── core/            # Utility commands (4)
 │   │   ├── knowledge/       # KB commands (3)
@@ -195,6 +195,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | Blackboard coordination (Build) | Done 2026-06-21 | BLACKBOARD_{FEATURE}.md shared state; specialists coordinate via file, not orchestrator re-explaining |
 | /work active-feature anchor | Done 2026-06-21 | .active pointer; routes post-build tweaks to /continuar or /iterate without re-specifying |
 | File-based memory (2 tiers) | Done 2026-06-21 | Project + global MEMORY.md, recalled at SessionStart as index; dropped MemPalace MCP |
+| Post-build evals (/eval + JEV) | Shipped 2026-09-24 | New Phase 3.5 gate: `## Evals` TOML contract in DESIGN, frozen by digest, PRE-checked before /build, reexecuted by eval-agent via `eval_runner.py`; JEV grades `graded` evals, escalating to `/judge` or a human until calibrated; `/ship` requires a PASS receipt |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -227,7 +228,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Commands Available
 
-### SDD Workflow (8)
+### SDD Workflow (9)
 
 | Command | Purpose |
 |---------|---------|
@@ -236,6 +237,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | `/design` | Create architecture (Phase 2) |
 | `/build` | Execute implementation (Phase 3) |
 | `/continuar` | Resume incomplete build (Phase 3+) |
+| `/eval` | Post-build eval gate (Phase 3.5) |
 | `/ship` | Archive completed work (Phase 4) |
 | `/iterate` | Update existing docs (Cross-phase) |
 | `/create-pr` | Create pull request |
@@ -286,6 +288,9 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | `.claude/agents/python/` | Python dev, code quality, prompt engineering |
 | `.claude/agents/test/` | Testing, data quality, data contracts |
 | `.claude/agents/dev/` | Prompt crafter, codebase explorer, shell scripts, meeting analyst, KB evolution |
+| `scripts/eval_runner.py` | `/eval` gate CLI — `validate/freeze/pre/run/attest/waive/verify/calibrate` |
+| `scripts/jev_client.py` | JEV (TypeSafe) client for graded evals — typed decisions via OpenRouter |
+| `docs/concepts/post-build-evals.md` | `/eval` gate concept doc — TOML contract, digest, JEV, verify codes |
 | `build-plugin.sh` | Packages .claude/ into plugin/ with path rewriting |
 | `plugin/.claude-plugin/plugin.json` | Plugin manifest (name, version, metadata) |
 | `plugin-extras/skills/` | Plugin-only skills (sdd-workflow, data-engineering-guide) |

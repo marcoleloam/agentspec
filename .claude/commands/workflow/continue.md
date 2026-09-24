@@ -58,7 +58,12 @@ Use `/continuar` when a `/build` was incomplete, had errors, or didn't meet expe
 Read(.claude/sdd/reports/BUILD_REPORT_{FEATURE}.md)  → what was built and what failed
 Read(.claude/sdd/features/DEFINE_{FEATURE}.md)        → expected acceptance criteria
 Read(.claude/sdd/features/DESIGN_{FEATURE}.md)        → file manifest from design
+Read(.claude/sdd/reports/EVAL_{FEATURE}.json)         → independent eval results (if /eval ran)
 ```
+
+When `EVAL_{FEATURE}.json` exists, it is the primary source of gaps: every result with `status`
+`fail`, `error`, or `pending` is a gap, and `evidence.stdout` / `evidence.stderr` show why. Prefer it over
+the BUILD_REPORT's self-verification.
 
 If no BUILD_REPORT exists, identify the feature's code files and assess current state.
 
@@ -68,6 +73,9 @@ Compare acceptance criteria from DEFINE with what was delivered in the BUILD_REP
 
 | Gap Type | Action |
 |----------|--------|
+| Eval `fail` (deterministic) | Fix the code until that eval's `run` command passes locally |
+| Eval `error` | The eval cannot run (tool/interpreter missing, bash error): fix the environment, or fix the contract via `/iterate` |
+| Eval `pending` (human / graded) | Not a code gap — ask the owner to verify, then `eval_runner.py attest`; or record a named waiver |
 | Bug or implementation error | Fix inline and re-verify |
 | Missing feature that was in DESIGN | Continue build from file manifest |
 | Missing feature **not** in DESIGN | Ask: use `/iterate` on DESIGN first? |
@@ -97,6 +105,7 @@ Follow the same pattern as the build agent:
 2. Implement only what is missing (do not rewrite what already works)
 3. Verify with linting / type checking / tests as applicable
 4. Confirm that DEFINE acceptance criteria are met
+5. Never edit the DESIGN's `## Evals` block or its **Evals Digest** to make an eval pass — change the code, or change the contract through `/iterate`
 
 ### Step 5: Update Build Report
 
@@ -118,6 +127,8 @@ Append a section to the existing BUILD_REPORT (do not replace it):
 - Modified files: [list]
 ```
 
+Then rerun `/eval {FEATURE}`: the previous receipt is stale as soon as code changes (`STALE_COMMIT` / `STALE_WORKTREE`).
+
 ---
 
 ## Quality Gate
@@ -128,6 +139,7 @@ Append a section to the existing BUILD_REPORT (do not replace it):
 [ ] Only missing pieces were implemented
 [ ] BUILD_REPORT updated with "Continuation {DATE}" section
 [ ] DEFINE acceptance criteria met
+[ ] Eval contract untouched; user pointed to /eval {FEATURE}
 ```
 
 ---

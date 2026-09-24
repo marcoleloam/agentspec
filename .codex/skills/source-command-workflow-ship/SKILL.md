@@ -37,6 +37,7 @@ Phase 0: /brainstorm → .claude/sdd/features/BRAINSTORM_{FEATURE}.md (optional)
 Phase 1: /define     → .claude/sdd/features/DEFINE_{FEATURE}.md
 Phase 2: /design     → .claude/sdd/features/DESIGN_{FEATURE}.md
 Phase 3: /build      → Code + .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md
+Phase 3.5: /eval     → .claude/sdd/reports/EVAL_{FEATURE}.json + EVAL_REPORT_{FEATURE}.md
 Phase 4: /ship       → .claude/sdd/archive/{FEATURE}/SHIPPED_{DATE}.md (THIS COMMAND)
 ```
 
@@ -46,14 +47,39 @@ The `/ship` command archives all feature artifacts and captures lessons learned.
 
 ## What This Command Does
 
-1. **Verify** - Confirm all artifacts exist and build passed
-2. **Archive** - Move feature documents to archive folder
-3. **Document** - Create SHIPPED summary with lessons learned
-4. **Clean** - Remove working files from features folder
+1. **Gate** - `eval_runner.py verify` must return OK (blocking — see Step 0)
+2. **Verify** - Confirm all artifacts exist and build passed
+3. **Archive** - Move feature documents to archive folder
+4. **Document** - Create SHIPPED summary with lessons learned
+5. **Clean** - Remove working files from features folder
 
 ---
 
 ## Process
+
+### Step 0: Eval Gate (blocking)
+
+Run the post-build eval gate **before** reading, copying, or deleting anything:
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" verify {FEATURE}
+```
+
+- Exit `0` (`OK` or `OK_LEGACY_WAIVED`) → continue to Step 1.
+- Exit `1` → **STOP. Do not archive.** Show the code and message to the user:
+
+| Code | What to tell the user |
+|------|-----------------------|
+| `NO_RECEIPT` | Run `/eval {FEATURE}` first |
+| `VERDICT_FAIL` | Evals failed or are pending: `/continuar {FEATURE}`, attest pending human evals, or record a named waiver |
+| `STALE_COMMIT` / `STALE_WORKTREE` | Code changed after `/eval` — rerun `/eval {FEATURE}` |
+| `STALE_CONTRACT` | The eval contract changed after `/eval` — rerun `/eval {FEATURE}` |
+| `CONTRACT_TAMPERED` / `CONTRACT_NOT_FROZEN` | The `## Evals` block does not match its Evals Digest — fix it through `/iterate` |
+| `LEGACY_NO_EVALS` | DESIGN predates evals — add them via `/iterate`, or record `eval_runner.py waive {FEATURE} --legacy --supervisor <name> --reason <why>` and rerun `/eval` |
+
+- Exit `2` → environment problem (Python < 3.11, not a git repo, missing DESIGN). Surface it; do not archive.
+
+There is no flag to bypass this gate. Waivers are recorded by a named supervisor through `eval_runner.py waive` and appear in the receipt and in SHIPPED.
 
 ### Step 1: Verify Completion
 
@@ -61,6 +87,7 @@ The `/ship` command archives all feature artifacts and captures lessons learned.
 Read(.claude/sdd/features/DEFINE_{FEATURE}.md)
 Read(.claude/sdd/features/DESIGN_{FEATURE}.md)
 Read(.claude/sdd/reports/BUILD_REPORT_{FEATURE}.md)
+Read(.claude/sdd/reports/EVAL_{FEATURE}.json)      # verdict, waivers, legacy_waiver
 
 # Verify build report shows success
 ```
@@ -78,6 +105,10 @@ cp .claude/sdd/features/DEFINE_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
 cp .claude/sdd/features/DESIGN_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
 cp .claude/sdd/features/BLACKBOARD_{FEATURE}.md .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 cp .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
+cp .claude/sdd/reports/EVAL_{FEATURE}.json .claude/sdd/archive/{FEATURE}/
+cp .claude/sdd/reports/EVAL_REPORT_{FEATURE}.md .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
+cp .claude/sdd/reports/EVAL_{FEATURE}.attestations.json .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
+cp .claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 ```
 
 ### Step 4: Generate SHIPPED Document
@@ -90,6 +121,7 @@ Create summary with:
 | **Timeline** | Start → Ship dates |
 | **Metrics** | Lines of code, files created |
 | **Lessons Learned** | What went well, what to improve |
+| **Eval Gate** | Verdict, contract digest, and every waiver (supervisor + reason) from `EVAL_{FEATURE}.json` |
 | **Artifacts** | List of all archived documents |
 
 ### Step 5: Update Document Statuses
@@ -113,6 +145,8 @@ rm .claude/sdd/features/DEFINE_{FEATURE}.md
 rm .claude/sdd/features/DESIGN_{FEATURE}.md
 rm -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md
 rm .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md
+rm -f .claude/sdd/reports/EVAL_{FEATURE}.json .claude/sdd/reports/EVAL_REPORT_{FEATURE}.md
+rm -f .claude/sdd/reports/EVAL_{FEATURE}.attestations.json .claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml
 
 # Clear the active-feature pointer if it points to this feature (set by /work and /build)
 if [ -f .claude/sdd/.active ] && grep -q "^feature: {FEATURE}$" .claude/sdd/.active; then
