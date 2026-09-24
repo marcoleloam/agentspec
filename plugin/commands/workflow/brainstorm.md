@@ -5,6 +5,11 @@ description: Explore ideas through collaborative dialogue before requirements ca
 
 # Brainstorm Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Collaborative exploration before requirements capture (Phase 0)
 
 ## Usage
@@ -234,7 +239,7 @@ BAD:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/brainstorm-agent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/brainstorm-agent.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/BRAINSTORM_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Next Phase: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/define.md`

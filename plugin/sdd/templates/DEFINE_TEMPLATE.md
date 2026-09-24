@@ -11,6 +11,7 @@
 | **Autor** | {autor} |
 | **Status** | {Rascunho / Em Andamento / Precisa de Esclarecimento / Pronto para Design} |
 | **Clarity Score** | {X}/15 |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 

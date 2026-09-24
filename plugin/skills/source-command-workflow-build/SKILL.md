@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-b
 
 # Build Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it orchestrates the specialist agents).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Execute implementation with on-the-fly task generation (Phase 3)
 
 ## Usage
@@ -270,7 +275,7 @@ If you encounter issues:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/build-agent.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/BUILD_REPORT_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Next Phase: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/ship.md`

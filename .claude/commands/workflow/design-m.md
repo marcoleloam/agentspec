@@ -5,6 +5,11 @@ description: Multi-agent architecture design with specialist validation (Phase 2
 
 # Design-M Command (Multi-Agent)
 
+<!-- phase-routing: mode=session role=slow -->
+> **Model routing:** this phase runs in the main session (it consults specialists in parallel, and a subagent cannot spawn subagents).
+> Recommended: start it with `omp --model @slow` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Create architecture with specialist validation — catches cross-domain risks, incompatibilities, and version issues
 
 ## Usage

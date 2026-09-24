@@ -58,6 +58,26 @@ The `/design` command combines what used to be Plan + Spec + ADRs into a single 
 
 ---
 
+## Phase Routing (delegated)
+
+<!-- phase-routing: mode=delegated agent=design-agent -->
+
+This phase runs in the **`design-agent` subagent**, so it uses the model routed to the
+design phase (OMP: `task.agentModelOverrides` → `@slow`; Claude Code: `model: opus`).
+Do not do the design work in the main session.
+
+1. Delegate exactly once — Claude Code: spawn_subagent tool, `subagent_type: design-agent`
+   (plugin name `agentspec:design-agent`); OMP: `task` tool, agent `design-agent`.
+2. Pass: the DEFINE path, the FEATURE name, and this instruction: "Fill the
+   **Gerado por** metadata row with your harness, the routed role, and your model id
+   (or `desconhecido`)."
+3. When the subagent returns the DESIGN path, run Step 8 (`--judge`) here in the main
+   session if the flag was given.
+4. If the subagent is unavailable, say so, run Steps 1–7 inline as a fallback, and
+   record the session model in **Gerado por**.
+
+---
+
 ## Process
 
 ### Step 1: Load Context

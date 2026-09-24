@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-e
 
 # Eval Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it asks owners for attestations).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Re-execute the frozen eval contract against the current code, route pending decisions to a human,
 > and write the receipt that `/ship` requires (Phase 3.5).
 

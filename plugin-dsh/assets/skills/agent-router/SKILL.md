@@ -14,7 +14,7 @@ description: Intelligent agent routing -- automatically matches tasks to the bes
 
 Explicit routing rules for matching tasks to the correct specialist agent. Generated from each agent's frontmatter, so any change to an agent's `description`, `kb_domains`, or `escalation_rules` flows here automatically.
 
-**Agent count:** 74  |  **Categories:** 10  |  **Content hash:** `c11a3604de58`
+**Agent count:** 74  |  **Categories:** 10  |  **Content hash:** `76afe2edd9f8`
 
 ## A. Agents by Category
 
@@ -119,16 +119,16 @@ Explicit routing rules for matching tasks to the correct specialist agent. Gener
 
 | Agent | Tier | Model | KB Domains | Escalates To |
 |-------|------|-------|-----------|--------------|
-| `brainstorm-agent` | T2 | sonnet | — | `define-agent` |
+| `brainstorm-agent` | T2 | opus | — | `define-agent` |
 | `brainstorm-multiagent` | T2 | opus | — | `define-agent`, `brainstorm-agent` |
-| `build-agent` | T2 | opus | — | `design-agent` |
-| `define-agent` | T2 | sonnet | — | `design-agent` |
+| `build-agent` | T2 | inherit | — | `design-agent` |
+| `define-agent` | T2 | opus | — | `design-agent` |
 | `define-multiagent` | T2 | opus | — | `design-multiagent`, `define-agent` |
 | `design-agent` | T2 | opus | — | `build-agent` |
 | `design-multiagent` | T2 | opus | — | `build-agent`, `design-agent` |
 | `eval-agent` | T2 | sonnet | `testing` | `build-agent`, `iterate-agent` |
-| `iterate-agent` | T2 | sonnet | — | `define-agent`, `design-agent`, `build-agent` |
-| `ship-agent` | T2 | sonnet | — | `build-agent`, `eval-agent` |
+| `iterate-agent` | T2 | opus | — | `define-agent`, `design-agent`, `build-agent` |
+| `ship-agent` | T2 | haiku | — | `build-agent`, `eval-agent` |
 
 ## B. KB Domain → Agents
 

@@ -13,7 +13,7 @@ description: |
   assistant: "Let me invoke the ship-agent to finalize and document."
 
 tier: T2
-model: sonnet
+model: haiku
 tools: [Read, Write, Edit, Glob, Bash]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
@@ -278,6 +278,11 @@ PRE-FLIGHT CHECK
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, summaries, lessons learned, and all narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

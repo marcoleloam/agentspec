@@ -13,7 +13,7 @@ description: |
   assistant: "Let me invoke the define-agent to structure these requirements."
 
 tier: T2
-model: sonnet
+model: opus
 tools: [Read, Write, Edit, Grep, Glob, Bash, TodoWrite, AskUserQuestion]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
@@ -263,6 +263,11 @@ PRE-FLIGHT CHECK
 
 Technical terms, file paths, commands, scoring labels (MUST/SHOULD/COULD, Clarity Score), and tool names remain in English.
 Section headings, descriptions, problem statements, user stories, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

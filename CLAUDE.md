@@ -170,7 +170,7 @@ That's it. All agents, commands, KB domains, and skills are globally available. 
 Use **local-first agent overrides** (v3.2.0) to customize an agent without forking:
 
 ```bash
-cp $CLAUDE_PLUGIN_ROOT/agents/workflow/build-agent.md \
+cp $CLAUDE_PLUGIN_ROOT/agents/build-agent.md \
    .claude/agents/workflow/build-agent.md
 $EDITOR .claude/agents/workflow/build-agent.md  # keep "name:" identical
 ```
@@ -196,6 +196,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | /work active-feature anchor | Done 2026-06-21 | .active pointer; routes post-build tweaks to /continuar or /iterate without re-specifying |
 | File-based memory (2 tiers) | Done 2026-06-21 | Project + global MEMORY.md, recalled at SessionStart as index; dropped MemPalace MCP |
 | Post-build evals (/eval + JEV) | Shipped 2026-09-24 | New Phase 3.5 gate: `## Evals` TOML contract in DESIGN, frozen by digest, PRE-checked before /build, reexecuted by eval-agent via `eval_runner.py`; JEV grades `graded` evals, escalating to `/judge` or a human until calibrated; `/ship` requires a PASS receipt |
+| LLM phase routing | Done 2026-09-24 | `PHASE_MODEL_ROLES.toml` maps each SDD phase to an OMP model role (+ Claude alias, Codex effort); `/design` and `/ship` delegate to their phase agent; `make omp-roles` prints `task.agentModelOverrides`; `plugin/agents/` flattened so OMP discovers agents; **Gerado por** provenance row in SDD docs |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -277,6 +278,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | File | Purpose |
 |------|---------|
 | `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` | Phase transition rules |
+| `.claude/sdd/architecture/PHASE_MODEL_ROLES.toml` | Per-phase model routing (OMP role, Claude alias, Codex effort); checked by `scripts/phase_routing.py` |
 | `.claude/sdd/templates/*.md` | Document templates (DE-aware) |
 | `.claude/kb/_templates/*.template` | KB domain templates |
 | `.claude/kb/_index.yaml` | KB domain registry (28 domains) |

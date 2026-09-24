@@ -12,6 +12,7 @@
 | **DEFINE** | [DEFINE_{FEATURE}.md](../features/DEFINE_{FEATURE}.md) |
 | **DESIGN** | [DESIGN_{FEATURE}.md](../features/DESIGN_{FEATURE}.md) |
 | **Status** | Em Andamento / Completo / Bloqueado |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 

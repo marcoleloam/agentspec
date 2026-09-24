@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-i
 
 # Iterate Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Update any phase document when requirements or design changes (Cross-Phase)
 
 ## Usage
