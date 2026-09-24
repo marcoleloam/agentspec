@@ -124,6 +124,40 @@ agent_resolution:
     quick_reference: ".claude/agents/README.md (auto-generated in user project)"
 
 # =============================================================================
+# AGENT SELECTION (JEV, with deterministic fallback)
+# =============================================================================
+# /define and /design decide their variant (single | multiagent) and the
+# specialists to consult from the input spec, via scripts/jev_select.py.
+
+agent_selection:
+  applies_to: ["define", "design", "define-m", "design-m"]
+  script: "${CLAUDE_PLUGIN_ROOT}/scripts/jev_select.py"
+  input: '{"phase": "define|design", "summary": "<=4000 chars", "kb_domains": [...], "variant_locked": null|"multiagent"}'
+  output: "JSON on stdout, always exit 0 (variant, specialists, heuristic, source, fallback_reason)"
+  provider:
+    url: "https://openrouter.ai/api/alpha/decisions"
+    model: "typesafe/jev-1.13"
+    auth: "OPENROUTER_API_KEY (or JEV_API_KEY)"
+  gate:
+    variant_min_confidence: 0.7   # JEV_MIN_CONFIDENCE
+    specialist_fit_threshold: 0.5 # JEV_FIT_THRESHOLD (Noul)
+    max_specialists: 4
+    max_candidates: 12
+    timeout_ms: 4000              # JEV_TIMEOUT_MS, total wall clock
+  fallback:
+    rule: "3+ KB domains -> multiagent; specialists = top 4 by kb_domains overlap"
+    reasons: [disabled, missing_key, timeout, network, "http_<code>", invalid_response,
+              low_confidence, no_fit_above_threshold, no_candidates, no_routing,
+              invalid_input, script_unavailable]
+  rules:
+    - "Plain /define and /design follow the selected variant (may switch to the -m process)"
+    - "Explicit /define-m and /design-m lock multiagent; the selector only picks specialists"
+    - "Every generated DEFINE/DESIGN records the result in a 'Seleção de Agentes' section"
+    - "The state sent to JEV carries only spec data; instructions live in the questions"
+  documentation:
+    user_facing: "docs/concepts/jev-agent-selection.md"
+
+# =============================================================================
 # PHASE 0: BRAINSTORM (Optional)
 # =============================================================================
 

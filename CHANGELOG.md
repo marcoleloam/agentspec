@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **JEV agent selection** — `/define` and `/design` now pick their variant (single or
+  `-multiagent`) and the specialists to consult from the input spec, via TypeSafe's JEV
+  decision model on OpenRouter (`typesafe/jev-1.13`). `scripts/jev_select.py` sends one
+  request (Choice + one Noul per pre-filtered candidate), gates on confidence, and falls
+  back to the previous heuristic (3+ KB domains; top 4 by `kb_domains` overlap) on any
+  failure — the phase never blocks. Results are recorded in a new **Seleção de Agentes**
+  section of DEFINE/DESIGN. `--eval` compares JEV with the heuristic on a labeled set.
+  See `docs/concepts/jev-agent-selection.md`.
 - **Grok Build distribution** — `plugin-grok/` is a Grok-native plugin generated from
   `.claude/`: flattened slash commands (`/brainstorm`, `/define`, `/design`, `/build`,
   `/ship`, …), 73 flattened specialist agents with Claude→Grok tool remapping, vendored
@@ -18,6 +26,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Code keeps using `.claude-plugin/` → `plugin/`).
 - `scripts/generate-grok-plugin.py`, `make grok`, `make grok-verify`, and a `--check`
   drift gate wired into `make check` and CI.
+
+### Changed
+
+- `/define-m` and `/design-m` no longer downgrade to the single variant when a spec has
+  fewer than 3 KB domains: an explicit `-m` always runs multiagent, and the selector only
+  picks its specialists.
+- `build-plugin.sh` and `scripts/generate-grok-plugin.py` ship `scripts/jev_select.py`.
 
 ## [3.4.1] - 2026-08-02
 

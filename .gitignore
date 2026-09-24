@@ -40,3 +40,6 @@ entities.json
 
 # AgentSpec status dashboard (generated)
 .claude/sdd/.status/
+
+# JEV agent selection — full labeled eval set (may contain client specs)
+.claude/sdd/evals/agent_selection_labels.json

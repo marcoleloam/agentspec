@@ -119,6 +119,13 @@ if [ -d "${EXTRAS_DIR}" ]; then
     done
 fi
 
+# ── Step 2b': Ship runtime scripts the phase commands call ───────────────────
+# jev_select.py lives in scripts/ (next to its tests) and is invoked by /define,
+# /design and their -m variants via ${CLAUDE_PLUGIN_ROOT}/scripts/jev_select.py.
+mkdir -p "${PLUGIN_DIR}/scripts"
+cp "${SCRIPT_DIR}/scripts/jev_select.py" "${PLUGIN_DIR}/scripts/jev_select.py"
+echo "    Copied scripts/jev_select.py"
+
 # ── Step 2c: Exclude repo-local skills ──────────────────────────────────────
 # Contributor-facing skills that support working *in this repository*. They live
 # in .claude/skills/ so they load for contributors, and are excluded from the
@@ -166,6 +173,7 @@ done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name
 
 # Restore executable permissions on scripts
 find "${PLUGIN_DIR}" -type f -name '*.sh' -exec chmod +x {} +
+chmod +x "${PLUGIN_DIR}/scripts/jev_select.py"
 
 # ── Step 5: Verification ────────────────────────────────────────────────────
 echo -e "${YELLOW}[6/6] Verifying build...${NC}"

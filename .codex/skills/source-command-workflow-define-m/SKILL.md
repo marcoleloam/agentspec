@@ -33,7 +33,7 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 ## Overview
 
-This is the **multi-agent variant** of `/define` (Phase 1). Use when the problem touches **3+ KB domains**.
+This is the **multi-agent variant** of `/define` (Phase 1). Plain `/define` already picks this variant on its own when the spec needs it (JEV agent selection, with the 3+ KB domains rule as fallback); call `/define-m` to force it.
 
 ```text
 /define   → single-agent  → extracts requirements from input
@@ -55,11 +55,28 @@ This is the **multi-agent variant** of `/define` (Phase 1). Use when the problem
 ## What This Command Does
 
 1. **Extract** — Pull requirements from input (same as `/define`)
-2. **Detect Domains** — Count KB domains; if < 3, falls back to `/define`
+2. **Select Specialists** — `jev_select.py` with `variant_locked: "multiagent"` picks up to 4 specialists (see Specialist Selection)
 3. **Draft** — Create preliminary DEFINE document
 4. **Consult** — Send draft to 3-4 domain specialists in parallel
 5. **Synthesize** — Merge specialist feedback: missing requirements, hidden constraints, adjusted criteria
 6. **Score** — Recalculate clarity score with specialist additions
+
+## Specialist Selection
+
+An explicit `/define-m` locks the multiagent variant — it never falls back to `/define`.
+JEV only picks the specialists:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON'
+{"phase": "define", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<domain>"], "variant_locked": "multiagent"}
+JSON
+```
+
+Consult exactly the agents in `specialists.value` (at most 4). When `specialists.source` is
+`fallback` the list is the top 4 by `kb_domains` overlap; when it is empty, consult none and
+note it. If the script is unavailable, compute the top 4 by overlap by hand and record
+`fonte: fallback (script_unavailable)`. Write the **Seleção de Agentes** section into the
+generated document.
 
 ---
 

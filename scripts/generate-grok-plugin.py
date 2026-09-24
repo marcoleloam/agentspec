@@ -51,6 +51,7 @@ SDD_ARCH = REPO_ROOT / ".claude" / "sdd" / "architecture"
 SDD_INDEX = REPO_ROOT / ".claude" / "sdd" / "_index.md"
 SDD_README = REPO_ROOT / ".claude" / "sdd" / "README.md"
 JUDGE_PY = REPO_ROOT / "scripts" / "judge.py"
+JEV_SELECT_PY = REPO_ROOT / "scripts" / "jev_select.py"
 LICENSE = REPO_ROOT / "LICENSE"
 
 PLUGIN_OUT = REPO_ROOT / "plugin-grok"
@@ -411,9 +412,10 @@ def render_plugin(out: Path) -> dict[str, int]:
             if item.is_file():
                 shutil.copy2(item, scripts_out / item.name)
                 counts["scripts"] += 1
-    if JUDGE_PY.is_file():
-        shutil.copy2(JUDGE_PY, scripts_out / JUDGE_PY.name)
-        counts["scripts"] += 1
+    for runtime_script in (JUDGE_PY, JEV_SELECT_PY):
+        if runtime_script.is_file():
+            shutil.copy2(runtime_script, scripts_out / runtime_script.name)
+            counts["scripts"] += 1
     for path in scripts_out.rglob("*"):
         if path.is_file():
             _rewrite_text_file(path)

@@ -33,7 +33,7 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 ## Overview
 
-This is the **multi-agent variant** of `/design` (Phase 2). Use when the DEFINE lists **3+ KB domains**.
+This is the **multi-agent variant** of `/design` (Phase 2). Plain `/design` already picks this variant on its own when the spec needs it (JEV agent selection, with the 3+ KB domains rule as fallback); call `/design-m` to force it.
 
 ```text
 /design   → single-agent  → designs architecture from requirements
@@ -56,10 +56,27 @@ This is the **multi-agent variant** of `/design` (Phase 2). Use when the DEFINE 
 
 1. **Analyze** — Read DEFINE and load KB patterns (same as `/design`)
 2. **Draft** — Create architecture diagram, decisions, file manifest
-3. **Detect Domains** — Count KB domains; if < 3, falls back to `/design`
+3. **Select Specialists** — `jev_select.py` with `variant_locked: "multiagent"` picks up to 4 specialists (see Specialist Selection)
 4. **Consult** — Send draft architecture to 3-4 domain specialists in parallel
 5. **Synthesize** — Integrate specialist risks, blockers, and pattern recommendations
 6. **Finalize** — Update decisions with specialist validation, complete file manifest
+
+## Specialist Selection
+
+An explicit `/design-m` locks the multiagent variant — it never falls back to `/design`.
+JEV only picks the specialists:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON'
+{"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<domain>"], "variant_locked": "multiagent"}
+JSON
+```
+
+Consult exactly the agents in `specialists.value` (at most 4). When `specialists.source` is
+`fallback` the list is the top 4 by `kb_domains` overlap; when it is empty, consult none and
+note it. If the script is unavailable, compute the top 4 by overlap by hand and record
+`fonte: fallback (script_unavailable)`. Write the **Seleção de Agentes** section into the
+generated document.
 
 ---
 

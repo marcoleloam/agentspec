@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "labeled_by": "build-agent (provisional — maintainer must review before using as ground truth)",
+  "cases": [
+    {
+      "id": "FRONTEND_ECOSYSTEM-design",
+      "source_path": ".claude/sdd/archive/FRONTEND_ECOSYSTEM/DEFINE_FRONTEND_ECOSYSTEM.md",
+      "phase": "design",
+      "summary": "O AgentSpec só tem agentes e KBs de Data Engineering. Criar 5 agentes frontend (React, CSS/Tailwind, UX, a11y, arquitetura) e 6 KB domains (react, nextjs, tailwind-css, accessibility, design-systems, frontend-patterns), com stack detection no define-agent e atribuição @frontend no manifesto do design.",
+      "kb_domains": ["react", "nextjs", "tailwind-css", "accessibility", "design-systems", "frontend-patterns"],
+      "expected_variant": "multiagent",
+      "expected_specialists": ["react-developer", "css-specialist", "a11y-specialist", "frontend-architect"]
+    },
+    {
+      "id": "KB_EVOLUTION-design",
+      "source_path": ".claude/sdd/archive/KB_EVOLUTION/DEFINE_KB_EVOLUTION.md",
+      "phase": "design",
+      "summary": "Os 39 KB domains são estáticos. Criar dois comandos (/ingest-kb e /lint-kb) e um agente kb-evolution-agent que buscam docs atualizadas via Context7, reescrevem o KB com LLM e registram log.md por domínio.",
+      "kb_domains": ["prompt-engineering", "genai", "python"],
+      "expected_variant": "single",
+      "expected_specialists": []
+    }
+  ]
+}

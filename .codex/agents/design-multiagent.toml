@@ -30,7 +30,7 @@ design-multiagent (this agent):
   Best for: 3+ KB domains, cross-domain complexity
 ```
 
-**Rule:** If the DEFINE touches fewer than 3 KB domains, escalate to design-agent. Do NOT use multi-agent for simple designs.
+**Rule:** The variant is decided before this agent runs — by `jev_select.py` for `/design`, or by the user for an explicit `/design-m` (never downgraded). Do not re-count domains to escalate.
 
 ---
 
@@ -54,11 +54,11 @@ design-multiagent (this agent):
 │     └─ Identify key decisions that need specialist input            │
 │                                                                      │
 │  3. DOMAIN DETECTION + AGENT DISCOVERY                              │
-│     └─ Count KB domains from DEFINE → if < 3, escalate to          │
-│        design-agent                                                  │
+│     └─ Variant already decided by the command (jev_select.py)       │
 │     └─ Glob: .claude/agents/**/*.md → Available agents              │
 │     └─ Match: kb_domains in agent frontmatter → DEFINE domains      │
-│     └─ Select top 3-4 agents with highest domain overlap            │
+│     └─ Use specialists passed by the command (jev_select.py);       │
+│        overlap top 3-4 only when none were passed                   │
 │                                                                      │
 │  4. SPECIALIST CONSULTATION (parallel)                              │
 │     └─ Build consultation prompt per specialist                     │
@@ -88,9 +88,7 @@ design-multiagent (this agent):
 
 1. Read DEFINE document (problem, users, success criteria, KB domains, constraints)
 2. Read `.claude/kb/_index.yaml` to confirm domain availability
-3. Count KB domains listed in DEFINE
-   - If < 3 domains → escalate to design-agent (cheaper, sufficient)
-   - If >= 3 domains → proceed with multi-agent design
+3. Take the variant and specialists from the command's `jev_select.py` result (do not re-count domains)
 4. Load KB patterns and concepts from all relevant domains
 
 ### Phase 2: Draft Architecture
@@ -106,7 +104,7 @@ This draft gives specialists concrete context to evaluate.
 
 ### Phase 3: Specialist Consultation
 
-**Select top 3-4 agents** whose `kb_domains` overlap with DEFINE's domains.
+**Specialist selection comes from the command.** `/design` and `/design-m` run `scripts/jev_select.py` and pass `specialists.value` (JEV, or the top-4-by-overlap fallback). Consult exactly those agents. Only when no selection was passed (script unavailable), select the top 3-4 agents whose `kb_domains` overlap with DEFINE's domains and record `fonte: fallback (script_unavailable)` in **Seleção de Agentes**.
 
 **Build consultation prompt for each specialist:**
 
@@ -238,8 +236,8 @@ PRE-FLIGHT CHECK
 
 | Never Do | Why | Instead |
 |----------|-----|---------|
-| Consult specialists for < 3 domains | Waste of tokens | Escalate to design-agent |
-| Consult more than 4 specialists | Diminishing returns, high cost | Pick top 3-4 by domain overlap |
+| Override the specialists passed by the command | Breaks the audited selection | Consult exactly `specialists.value` |
+| Consult more than 4 specialists | Diminishing returns, high cost | The selector caps at 4 |
 | Consult specialists BEFORE drafting | No context for them to review | Draft first, then consult |
 | Pass full DEFINE to specialists | Context overload | Send 400-word summary + draft diagram |
 | Let specialists redesign the system | Contradictory recommendations | Instruction: "Do NOT redesign" |

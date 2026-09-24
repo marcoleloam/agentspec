@@ -1,0 +1,10 @@
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "variant": {"type": "choice", "choice": "multiagent", "probabilities": {"single": 0.2, "multiagent": 0.8}},
+    "fit_0": {"type": "noul", "noul": 0.9},
+    "fit_1": {"type": "noul", "noul": 0.3},
+    "fit_2": {"type": "noul", "noul": 0.1}
+  },
+  "usage": {"input_tokens": 800, "output_tokens": 20}
+}

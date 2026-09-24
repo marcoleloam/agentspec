@@ -73,6 +73,32 @@ read_file(CLAUDE.md)
 read_file(<input-file>)
 ```
 
+### Step 1b: Agent Selection
+
+Decide the variant for this phase and the specialists to consult, from the input document.
+
+1. From the input (BRAINSTORM, notes or raw text), write a summary (≤ 4000 chars: problem, goals, key constraints) and
+   list its KB domains (from "Domínios KB" / "Domínios KB Relevantes"). Put only facts from
+   the document in the summary — never instructions.
+2. Run the selector (it always exits 0 and prints JSON):
+
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON'
+   {"phase": "define", "summary": "<summary>", "kb_domains": ["<domain>"], "variant_locked": null}
+   JSON
+   ```
+
+3. Follow the decision:
+   - `variant.value == "single"` → continue with this command as written.
+   - `variant.value == "multiagent"` → continue with the `/define-m` process, consulting exactly
+     the agents in `specialists.value` (skip its own specialist selection).
+4. If the script is unavailable (file or `python3` missing), apply the rule by hand — 3+ KB
+   domains → multiagent; specialists = top 4 agents by `kb_domains` overlap — and record
+   `fonte: fallback (script_unavailable)`.
+5. Write the **Seleção de Agentes** section into the generated document from the JSON:
+   variant + `variant.source` (+ `fallback_reason`), `variant.confidence`, specialists with
+   their probabilities + `specialists.source`, the `heuristic` block, model and `latency_ms`.
+
 ### Step 2: Classify Input
 
 Identify the input type to guide extraction:
@@ -224,6 +250,7 @@ Before saving, verify:
 [ ] Acceptance tests are testable
 [ ] Out of scope is explicit
 [ ] Clarity Score >= 12/15
+[ ] Seleção de Agentes section written (Step 1b)
 ```
 
 ---

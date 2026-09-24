@@ -58,7 +58,7 @@ define-multiagent (this agent):
   Best for: 3+ KB domains, cross-domain requirements
 ```
 
-**Rule:** If the brainstorm touches fewer than 3 KB domains, escalate to define-agent. Do NOT use multi-agent for simple requirements.
+**Rule:** The variant is decided before this agent runs — by `jev_select.py` for `/define`, or by the user for an explicit `/define-m` (never downgraded). Do not re-count domains to escalate.
 
 ---
 
@@ -74,7 +74,7 @@ define-multiagent (this agent):
 │  1. KB DISCOVERY (identify applicable domains)                      │
 │     └─ Read: .claude/kb/_index.yaml → List available domains        │
 │     └─ Match brainstorm keywords to domain descriptions             │
-│     └─ Count matched domains → if < 3, escalate to define-agent    │
+│     └─ Variant already decided by the command (jev_select.py)       │
 │                                                                      │
 │  2. TEMPLATE LOADING                                                │
 │     └─ Read: .claude/sdd/templates/DEFINE_TEMPLATE.md               │
@@ -89,7 +89,8 @@ define-multiagent (this agent):
 │  4. AGENT DISCOVERY (find specialists for matched domains)          │
 │     └─ Glob: .claude/agents/**/*.md → Available agents              │
 │     └─ Match: kb_domains in agent frontmatter → matched domains     │
-│     └─ Select top 3-4 agents with highest domain overlap            │
+│     └─ Use specialists passed by the command (jev_select.py);       │
+│        overlap top 3-4 only when none were passed                   │
 │                                                                      │
 │  5. SPECIALIST CONSULTATION (parallel)                              │
 │     └─ Build consultation prompt per specialist                     │
@@ -114,9 +115,7 @@ define-multiagent (this agent):
 
 1. Read BRAINSTORM document (or raw input)
 2. Read `.claude/kb/_index.yaml` to detect domains
-3. Count KB domains:
-   - If < 3 domains → escalate to define-agent
-   - If >= 3 domains → proceed with multi-agent define
+3. Take the variant and specialists from the command's `jev_select.py` result (do not re-count domains)
 4. Extract all entities using define-agent patterns:
    - Problem statement (one clear sentence)
    - Target users with pain points
@@ -129,7 +128,7 @@ define-multiagent (this agent):
 
 ### Phase 2: Specialist Consultation
 
-**Select top 3-4 agents** whose `kb_domains` overlap with detected domains.
+**Specialist selection comes from the command.** `/define` and `/define-m` run `scripts/jev_select.py` and pass `specialists.value` (JEV, or the top-4-by-overlap fallback). Consult exactly those agents. Only when no selection was passed (script unavailable), select the top 3-4 agents whose `kb_domains` overlap with the detected domains and record `fonte: fallback (script_unavailable)` in **Seleção de Agentes**.
 
 **Build consultation prompt for each specialist:**
 
@@ -267,8 +266,8 @@ PRE-FLIGHT CHECK
 
 | Never Do | Why | Instead |
 |----------|-----|---------|
-| Consult specialists for < 3 domains | Waste of tokens | Escalate to define-agent |
-| Consult more than 4 specialists | Diminishing returns | Pick top 3-4 by domain overlap |
+| Override the specialists passed by the command | Breaks the audited selection | Consult exactly `specialists.value` |
+| Consult more than 4 specialists | Diminishing returns | The selector caps at 4 |
 | Consult specialists BEFORE drafting | No context for them to review | Draft first, then consult |
 | Pass full brainstorm to specialists | Context overload | Send 300-word summary + draft reqs |
 | Let specialists suggest architecture | That's Phase 2 | Instruction: "Do NOT suggest architecture" |
