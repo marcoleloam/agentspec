@@ -1,5 +1,7 @@
 # DEFINE: Seleção de Agentes via JEV
 
+> **Estado final (v1.3):** o JEV não decide. Os testes mostraram LLM + rubrica (0.85–0.89) > JEV (0.72) > regra antiga (0.46), e a decisão passou para a LLM da fase com a rubrica compartilhada. O JEV ficou como segunda opinião opcional. Os objetivos abaixo registram o escopo original, medido no BUILD_REPORT.
+>
 > O JEV (TypeSafe, via OpenRouter) decide, a partir da especificação da fase anterior, qual variante de `/define` e `/design` usar (single ou `-multiagent`) e quais especialistas consultar. Quando ele não decide, vale a heurística atual, e a decisão fica registrada no documento.
 
 ## Metadados
@@ -168,6 +170,7 @@ Nenhuma bloqueia o Design. Para resolver durante o Design ou no início do Build
 | 1.0 | 2026-09-23 | define-agent | Versão inicial a partir de BRAINSTORM_JEV_AGENT_SELECTION.md |
 | 1.1 | 2026-09-24 | iterate-agent | Cascata do DESIGN v1.1: variante por Noul `single_area` e portão por `p(single)` com faixa de incerteza; implementadores sempre candidatos; normalização de domínios; critério de variante medido em holdout; AT-006/AT-007 revistos; SHOULD de normalização de `confidence` removido |
 | 1.2 | 2026-09-25 | iterate-agent | Cascata do DESIGN v1.2: candidatos por ranking amplo em duas etapas; terceiro conjunto a partir de PRDs |
+| 1.3 | 2026-09-25 | iterate-agent | Resultado final: critérios de sucesso do JEV não atingidos; baseline LLM superior. Escopo entregue = rubrica aplicada pela LLM da fase + JEV como segunda opinião opcional |
 
 ---
 

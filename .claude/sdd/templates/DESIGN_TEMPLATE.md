@@ -105,15 +105,14 @@
 
 ## Seleção de Agentes
 
-> Gerada por `scripts/jev_select.py` a partir da especificação de entrada desta fase. Registre o resultado como veio; não edite à mão.
+> Decidida pela LLM da fase aplicando `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` a esta especificação.
 
 | Campo | Valor |
 |-------|-------|
-| **Variante** | {single \| multiagent} — fonte: {jev \| fallback \| locked} {(motivo)} |
-| **Confiança da variante** | {0.00–1.00 ou —} |
-| **Especialistas** | {@agente (p=0.82), @agente (p=0.64) \| nenhum} — fonte: {jev \| fallback} {(motivo)} |
-| **Heurística (referência)** | variante {…}; especialistas {…} |
-| **Modelo / latência** | {typesafe/jev-1.13 \| —} / {N ms \| —} |
+| **Variante** | {single \| multiagent} — fonte: {llm (rubrica) \| locked (/-m explícito)} |
+| **Justificativa da variante** | {Uma linha: por que o trabalho fica numa área técnica ou atravessa várias} |
+| **Especialistas** | {@agente — motivo em uma linha; até 4 \| nenhum} |
+| **Segunda opinião JEV (opcional)** | {só com `JEV_SECOND_OPINION=1`: variante p(single)=…, especialistas …, fonte jev/fallback \| não executada} |
 
 ---
 

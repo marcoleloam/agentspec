@@ -200,7 +200,7 @@ PRE-FLIGHT CHECK
 ├─ [ ] Code patterns are syntactically correct
 ├─ [ ] Testing strategy covers acceptance tests
 ├─ [ ] No shared dependencies across deployable units
-├─ [ ] Seleção de Agentes section filled from the command's jev_select.py result
+├─ [ ] Seleção de Agentes section filled from the command's rubric decision
 └─ [ ] DEFINE status updated to "Designed"
 ```
 

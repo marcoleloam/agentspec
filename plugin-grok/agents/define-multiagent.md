@@ -64,7 +64,7 @@ define-multiagent (this agent):
   Best for: 3+ KB domains, cross-domain requirements
 ```
 
-**Rule:** The variant is decided before this agent runs — by `jev_select.py` for `/define`, or by the user for an explicit `/define-m` (never downgraded). Do not re-count domains to escalate.
+**Rule:** The variant is decided before this agent runs — by the agent selection rubric in `/define`, or by the user for an explicit `/define-m` (never downgraded). Do not re-count domains to escalate.
 
 ---
 
@@ -80,7 +80,7 @@ define-multiagent (this agent):
 │  1. KB DISCOVERY (identify applicable domains)                      │
 │     └─ Read: ${GROK_PLUGIN_ROOT}/kb/_index.yaml → List available domains        │
 │     └─ Match brainstorm keywords to domain descriptions             │
-│     └─ Variant already decided by the command (jev_select.py)       │
+│     └─ Variant already decided by the command (rubric)              │
 │                                                                      │
 │  2. TEMPLATE LOADING                                                │
 │     └─ Read: ${GROK_PLUGIN_ROOT}/sdd/templates/DEFINE_TEMPLATE.md               │
@@ -95,8 +95,8 @@ define-multiagent (this agent):
 │  4. AGENT DISCOVERY (find specialists for matched domains)          │
 │     └─ Glob: ${GROK_PLUGIN_ROOT}/agents/*.md → Available agents              │
 │     └─ Match: kb_domains in agent frontmatter → matched domains     │
-│     └─ Use specialists passed by the command (jev_select.py);       │
-│        overlap top 3-4 only when none were passed                   │
+│     └─ Use specialists passed by the command (rubric); apply        │
+│        the rubric yourself only when none were passed               │
 │                                                                      │
 │  5. SPECIALIST CONSULTATION (parallel)                              │
 │     └─ Build consultation prompt per specialist                     │
@@ -121,7 +121,7 @@ define-multiagent (this agent):
 
 1. Read BRAINSTORM document (or raw input)
 2. Read `${GROK_PLUGIN_ROOT}/kb/_index.yaml` to detect domains
-3. Take the variant and specialists from the command's `jev_select.py` result (do not re-count domains)
+3. Take the variant and specialists from the command's rubric decision (do not re-count domains)
 4. Extract all entities using define-agent patterns:
    - Problem statement (one clear sentence)
    - Target users with pain points
@@ -134,7 +134,7 @@ define-multiagent (this agent):
 
 ### Phase 2: Specialist Consultation
 
-**Specialist selection comes from the command.** `/define` and `/define-m` run `scripts/jev_select.py` and pass `specialists.value` (JEV, or the top-4-by-overlap fallback). Consult exactly those agents. Only when no selection was passed (script unavailable), select the top 3-4 agents whose `kb_domains` overlap with the detected domains and record `fonte: fallback (script_unavailable)` in **Seleção de Agentes**.
+**Specialist selection comes from the command.** `/define` and `/define-m` apply `${GROK_PLUGIN_ROOT}/sdd/architecture/AGENT_SELECTION_RUBRIC.md` and pass the chosen specialists (at most 4). Consult exactly those agents. Only when none were passed, apply the rubric's SPECIALISTS part yourself and record `fonte: llm (rubrica, no agente)` in **Seleção de Agentes**.
 
 **Build consultation prompt for each specialist:**
 

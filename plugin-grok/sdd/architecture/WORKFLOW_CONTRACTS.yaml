@@ -124,44 +124,31 @@ agent_resolution:
     quick_reference: "${GROK_PLUGIN_ROOT}/agents/README.md (auto-generated in user project)"
 
 # =============================================================================
-# AGENT SELECTION (JEV, with deterministic fallback)
+# AGENT SELECTION (phase LLM + rubric; JEV as optional second opinion)
 # =============================================================================
 # /define and /design decide their variant (single | multiagent) and the
-# specialists to consult from the input spec, via scripts/jev_select.py.
+# specialists to consult by having the phase LLM apply one shared rubric.
+# Measured on 46 labeled specs (2026-09-25): old 3+-domains rule 0.46 variant
+# accuracy / 0.19 specialist F1; JEV v1.2 0.72 / 0.38; LLM + rubric 0.85-0.89 / 0.47-0.52.
 
 agent_selection:
   applies_to: ["define", "design", "define-m", "design-m"]
-  script: "${GROK_PLUGIN_ROOT}/scripts/jev_select.py"
-  input: '{"phase": "define|design", "summary": "<=4000 chars", "kb_domains": [...], "variant_locked": null|"multiagent"}'
-  output: "JSON on stdout, always exit 0 (variant, specialists, heuristic, source, fallback_reason)"
-  provider:
-    url: "https://openrouter.ai/api/alpha/decisions"
-    model: "typesafe/jev-1.13"
-    auth: "OPENROUTER_API_KEY (or JEV_API_KEY)"
-  gate:
-    variant_question: "Noul single_area — is the work confined to ONE technical area? (v1.1)"
-    single_threshold: 0.5         # JEV_SINGLE_THRESHOLD: p(single) >= threshold -> single
-    uncertain_band: 0.1           # JEV_UNCERTAIN_BAND: |p - threshold| < band -> fallback 'uncertain'
-    always_candidates: [python-developer, react-developer]
-    two_stage: "call 1 = single_area Noul + rank Choice over all non-workflow/domain agents (top 8); call 2 = Noul per shortlist (v1.2)"
-    timeout_scope: "JEV_TIMEOUT_MS is the total budget of both calls"
-    specialist_fit_threshold: 0.5 # JEV_FIT_THRESHOLD (Noul)
-    max_specialists: 4
-    max_candidates: 12
-    timeout_ms: 4000              # JEV_TIMEOUT_MS, total wall clock
-  fallback:
-    rule: "3+ KB domains -> multiagent; specialists = top 4 by kb_domains overlap"
-    reasons: [disabled, missing_key, timeout, network, "http_<code>", invalid_response,
-              uncertain, no_fit_above_threshold, no_candidates, no_routing,
-              invalid_input, script_unavailable]
+  decided_by: "phase LLM applying ${GROK_PLUGIN_ROOT}/sdd/architecture/AGENT_SELECTION_RUBRIC.md"
+  catalog: "routing.json agents outside the workflow and domain categories"
+  output: "Seleção de Agentes section: variant + justification, up to 4 specialists + reason each"
+  second_opinion:
+    enabled_by: "JEV_SECOND_OPINION=1"
+    script: "${GROK_PLUGIN_ROOT}/scripts/jev_select.py"
+    provider: "OpenRouter /api/alpha/decisions, typesafe/jev-1.13 (OPENROUTER_API_KEY or JEV_API_KEY)"
+    role: "recorded next to the rubric decision; never overrides it"
   rules:
-    - "Plain /define and /design follow the selected variant (may switch to the -m process)"
-    - "Explicit /define-m and /design-m lock multiagent; the selector only picks specialists"
-    - "Every generated DEFINE/DESIGN records the result in a 'Seleção de Agentes' section"
-    - "The state sent to JEV carries only the phase and the spec summary (no KB domains); instructions live in the questions"
-    - "Free-text KB domains are normalized by the script; unknown names are reported in kb_domains_dropped"
+    - "Plain /define and /design follow the rubric's variant (may switch to the -m process)"
+    - "Explicit /define-m and /design-m lock multiagent; the rubric only picks specialists"
+    - "Decide from the document's content, not by counting its Domínios KB line"
+    - "The rubric text is shared with scripts/eval_llm_baseline.py: change it only with a new measurement"
   documentation:
     user_facing: "docs/concepts/jev-agent-selection.md"
+    evidence: ".claude/sdd/reports/BUILD_REPORT_JEV_AGENT_SELECTION.md"
 
 # =============================================================================
 # PHASE 0: BRAINSTORM (Optional)

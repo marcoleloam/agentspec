@@ -210,7 +210,7 @@ PRE-FLIGHT CHECK
 ├─ [ ] Assumptions documented with impact if wrong
 ├─ [ ] KB domains identified for Design phase
 ├─ [ ] Technical context gathered (location, IaC impact)
-├─ [ ] Seleção de Agentes section filled from the command's jev_select.py result
+├─ [ ] Seleção de Agentes section filled from the command's rubric decision
 └─ [ ] Clarity score >= 12/15
 ```
 

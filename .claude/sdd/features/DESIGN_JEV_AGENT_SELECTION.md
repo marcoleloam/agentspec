@@ -1,5 +1,7 @@
 # DESIGN: Seleção de Agentes via JEV
 
+> **Estado final (v1.3):** a LLM da fase decide pela rubrica `AGENT_SELECTION_RUBRIC.md`; o JEV é segunda opinião opcional (Decisão 16). As seções anteriores documentam o caminho até aqui.
+>
 > Design técnico para que `/define` e `/design` escolham a variante (single ou `-multiagent`) e os especialistas consultados a partir da especificação, via JEV (TypeSafe, pelo OpenRouter), com fallback determinístico e registro auditável.
 
 ## Metadados
@@ -432,6 +434,36 @@ A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b
 
 ---
 
+### Decisão 16 (v1.3): a LLM da fase decide pela rubrica; o JEV vira segunda opinião opcional
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita — decisão final; substitui "o JEV decide" (Decisões 2, 9, 10, 14 passam a valer só para o modo segunda opinião) |
+| **Data** | 2026-09-25 |
+
+**Contexto:** no baseline com LLM (46 casos), duas LLMs de famílias diferentes aplicando a mesma rubrica superaram o JEV v1.2 em todos os conjuntos: variante 0.85–0.89 contra 0.72, F1 0.47–0.52 contra 0.38. O JEV superou a regra antiga (0.46 / 0.19), mas não a LLM. Em `/define` e `/design` já existe uma LLM rodando a fase.
+
+**Escolha:**
+- A rubrica do baseline fica num arquivo único, `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md`, entre os marcadores `rubric:start` e `rubric:end`.
+- A **LLM da fase** aplica essa rubrica no passo 1b (variante + até 4 especialistas) e registra justificativa e motivo na seção "Seleção de Agentes".
+- `scripts/eval_llm_baseline.py` lê o mesmo bloco. O que se mede é o que se aplica: o hash dos 46 prompts antes e depois da extração foi idêntico.
+- O JEV só roda com `JEV_SECOND_OPINION=1`, registra a resposta ao lado e **nunca decide**.
+- A regra antiga ("3+ domínios") sai dos comandos e sobrevive só como fallback interno do `jev_select.py`.
+
+**Justificativa:** é a melhor opção medida, e o custo marginal é praticamente zero dentro de uma sessão. O JEV fica disponível onde teve ganho (é barato, rápido e melhor que a regra) para continuar coletando evidência sem afetar o fluxo.
+
+**Alternativas Rejeitadas:**
+1. O JEV decide (v1.0–v1.2) — rejeitada: perde para a LLM em todos os conjuntos.
+2. Remover o `jev_select.py` — rejeitada pelo maintainer ("implementar onde teve ganho"): segue útil como segunda opinião e como ferramenta de medição.
+3. Um híbrido (o JEV decide quando está confiante) — não medido; ficaria para um novo experimento com conjunto novo.
+
+**Consequências:**
+- A decisão deixa de ser determinística. A trilha passa a ser a justificativa escrita pela LLM.
+- **Premissa não medida:** o Claude como decisor. Os rótulos foram escritos por ele, então medi-lo seria circular. A evidência é de GPT e Grok.
+- Mudar a rubrica exige nova medição num conjunto não usado para escrevê-la.
+
+---
+
 ## Manifesto de Arquivos
 
 | # | Arquivo | Ação | Propósito | Agente | Dependências |
@@ -861,6 +893,7 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 | 1.0 | 2026-09-23 | design-agent | Versão inicial a partir de DEFINE_JEV_AGENT_SELECTION.md |
 | 1.1 | 2026-09-24 | iterate-agent | Após o eval real reprovar (variante 0.64 = heurística): Decisões 9–13, ou seja, Noul `single_area` sem domínios no state, portão por `p(single)` com faixa de incerteza, implementadores sempre candidatos, normalização de domínios em texto livre e revalidação em holdout congelado |
 | 1.2 | 2026-09-25 | iterate-agent | Após o holdout reprovar os especialistas (F1 0.08, pré-filtro vazio sem "Domínios KB"): Decisão 14 (duas etapas: Choice `rank` sobre o pool amplo + Noul na lista curta; orçamento de tempo total) e Decisão 15 (terceiro conjunto a partir de PRDs, com limitação declarada) |
+| 1.3 | 2026-09-25 | iterate-agent | Decisão 16 após o baseline LLM (LLM > JEV > regra antiga): a LLM da fase decide pela rubrica compartilhada; o JEV vira segunda opinião opcional (`JEV_SECOND_OPINION=1`) |
 
 ---
 

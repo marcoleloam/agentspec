@@ -4,7 +4,9 @@
 Asks a subscription-backed coding-agent CLI (Codex or Grok, headless, structured
 output) the question jev_select.py asks JEV: which variant a phase should run and
 which specialists matter. The model sees exactly what JEV sees — phase, spec
-summary and the wide specialist pool — and nothing else. Runs in an empty
+summary and the wide specialist pool — and nothing else. The rubric text comes
+from .claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md, the same block the
+phase commands apply. Runs in an empty
 scratch directory so the agent cannot read the label files.
 
 Usage:
@@ -40,21 +42,26 @@ SCHEMA: dict[str, Any] = {
 TIMEOUT_S = 360
 
 
+RUBRIC_CANDIDATES: tuple[Path, ...] = (
+    Path(__file__).resolve().parent.parent / ".claude" / "sdd" / "architecture" / "AGENT_SELECTION_RUBRIC.md",
+    Path(__file__).resolve().parent.parent / "sdd" / "architecture" / "AGENT_SELECTION_RUBRIC.md",
+)
+
+
+def load_rubric() -> str:
+    """The rubric block shipped to the phase commands — the exact text that gets measured."""
+    path = next(p for p in RUBRIC_CANDIDATES if p.is_file())
+    text = path.read_text(encoding="utf-8")
+    start, end = text.index("<!-- rubric:start -->\n"), text.index("\n<!-- rubric:end -->")
+    return text[start + len("<!-- rubric:start -->\n"):end]
+
+
 def build_prompt(case: dict[str, Any], pool: list[js.Candidate]) -> str:
     catalog = "\n".join(f"- {c.name}: {c.description[: js.WIDE_DESCRIPTION_CHARS]}" for c in pool)
     return f"""You are choosing agents for the {case['phase']} phase of a spec-driven workflow.
 Do not run commands or read files. Answer only from the text below.
 
-VARIANT — pick exactly one:
-- single: the implementation work is confined to ONE technical area (for example: only frontend screens
-  with mock data, only infrastructure or configuration changes, only a written document); other
-  technologies are mocked, unchanged or only mentioned.
-- multiagent: two or more areas (for example frontend AND backend/database AND AI) each need real new
-  implementation.
-
-SPECIALISTS — list up to {js.MAX_SPECIALISTS} agent names from the catalog whose expertise would materially
-change the quality of this phase for this spec (list them even when the variant is single; use [] if none).
-Use names exactly as written in the catalog.
+{load_rubric()}
 
 CATALOG:
 {catalog}

@@ -1,101 +1,95 @@
-# JEV Agent Selection
+# Agent Selection (Rubric + Optional JEV Second Opinion)
 
-`/define` and `/design` decide two things from the spec they receive before doing any work:
+Before doing any work, `/define` and `/design` decide two things from the spec they receive:
 
 1. **Which variant runs.** Either `single` (define-agent / design-agent) or `multiagent` (the `-m` process that consults specialists).
-2. **Which specialists are consulted.** At most 4, when the variant is multiagent.
+2. **Which specialists are consulted.** At most 4.
 
-The decision comes from **JEV**, TypeSafe's decision model, called through OpenRouter. JEV does not generate text. It answers typed questions with calibrated probabilities. When JEV cannot decide, AgentSpec falls back to the rule it used before: 3+ KB domains means multiagent, and the specialists are the top 4 agents by `kb_domains` overlap. The phase never blocks.
+The **phase LLM** makes both decisions by applying one shared rubric,
+`.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md`. Every generated DEFINE and DESIGN records the outcome in a
+**Seleção de Agentes** section: the variant with a one-line justification, and each specialist with a one-line reason.
 
-Every generated DEFINE and DESIGN records the outcome in a **Seleção de Agentes** section: variant, source (`jev`, `fallback` or `locked`), `p(single)`, specialists with their probabilities, and the heuristic's answer for comparison.
+## Why a Rubric (and Not the Old Rule or JEV)
 
-## How It Works
+On 46 labeled specs (template DEFINEs, specs written outside the template, and raw PRDs; 2026-09-25):
 
-```text
-spec (BRAINSTORM or DEFINE)
-   │  phase agent writes a ≤4000-char summary + the spec's KB domains
-   ▼
-scripts/jev_select.py
-   │  call 1: single_area (Noul) + rank (Choice over every specialist, top 8)
-   │  shortlist ≤ 12: python/react developers + top 8 ranked + agents sharing a KB domain
-   │  call 2: fit_i (Noul per shortlisted specialist)
-   ▼
-gate
-   ├─ p(single) ≥ 0.6 → single; ≤ 0.4 → multiagent; in between → heuristic ("uncertain")
-   ├─ Noul ≥ 0.5, best 4                → JEV's specialists
-   └─ anything else                     → heuristic, with the reason recorded
-```
+| Decider | Variant accuracy | Specialist F1 | Cost per phase |
+|---------|------------------|---------------|----------------|
+| Old rule: 3+ KB domains → multiagent; top 4 by `kb_domains` overlap | 0.46 | 0.19 | — |
+| JEV v1.2 (`scripts/jev_select.py`, TypeSafe via OpenRouter) | 0.72 | 0.38 | ~1 s, ~US$ 0.00015 |
+| LLM applying the rubric — Grok `grok-4.7-build` | 0.85 | 0.47 | ~85 s outside a session |
+| LLM applying the rubric — Codex `gpt-6-astra` | 0.89 | 0.52 | ~10 s outside a session |
+
+The old rule breaks on documents without a "Domínios KB" line: it always answers `single` and finds no specialists.
+Inside `/define` and `/design` an LLM is already running the phase, so applying the rubric adds almost no cost.
+The full method, the caveats and the label hashes are in `.claude/sdd/reports/BUILD_REPORT_JEV_AGENT_SELECTION.md`.
+One caveat: the labels were written by Claude, and Claude itself was not measured as the decider.
 
 | Command | Variant | Specialists |
 |---------|---------|-------------|
-| `/define`, `/design` | Decided by JEV (may switch to the `-m` process) | Decided by JEV |
-| `/define-m`, `/design-m` | Locked to multiagent (never downgraded) | Decided by JEV |
+| `/define`, `/design` | Rubric (may switch to the `-m` process) | Rubric |
+| `/define-m`, `/design-m` | Locked to multiagent (never downgraded) | Rubric |
 
-> **Behavior change:** `/define-m` and `/design-m` used to fall back to the single variant when a spec had fewer than 3 KB domains. An explicit `-m` now always runs multiagent.
+## Optional: JEV Second Opinion
 
-## Setup
-
-JEV uses the same key as the Judge Layer:
+JEV beat the old rule in every measured set, and it answers in about 1 s for a fraction of a cent. To collect its
+opinion alongside the rubric decision:
 
 ```bash
+export JEV_SECOND_OPINION=1
 export OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
-With no key set, everything still works: selection runs on the heuristic and the document records `fallback (missing_key)`.
+The commands then also run `scripts/jev_select.py` and record its variant and specialists in **Seleção de Agentes**.
+**The rubric decision always stands**; JEV never switches the variant.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `OPENROUTER_API_KEY` | — | Key for the JEV call |
-| `JEV_API_KEY` | — | Takes precedence over `OPENROUTER_API_KEY` (e.g. a direct TypeSafe key) |
-| `JEV_URL` | `https://openrouter.ai/api/alpha/decisions` | Endpoint (`https://api.typesafe.ai/v1/systemone` for TypeSafe direct) |
-| `JEV_MODEL` | `typesafe/jev-1.13` | Model (`jev-1.13.0` for TypeSafe direct) |
-| `JEV_SINGLE_THRESHOLD` | `0.5` | `p(single)` at or above → single |
-| `JEV_UNCERTAIN_BAND` | `0.1` | Distance to the threshold below which the heuristic decides |
-| `JEV_FIT_THRESHOLD` | `0.5` | Specialist gate |
-| `JEV_TIMEOUT_MS` | `4000` | Total wall-clock budget for the call |
-| `JEV_DISABLE` | unset | `1` means never send anything; always use the heuristic |
+`jev_select.py` makes two calls:
 
-## What Leaves Your Machine
+1. a `single_area` Noul plus a `rank` Choice over every specialist, keeping the top 8 with probability above 0;
+2. one Noul per shortlisted agent: the python/react developers, the top ranked and the agents sharing a KB domain, 12 at most.
 
-When a key is set and `JEV_DISABLE` is not, the request sends:
-
-- a summary of the spec (at most 4000 characters);
-- the spec's KB domain names;
-- the names and one-line descriptions of AgentSpec's specialist agents (about 60 in the ranking call, up to 12 in the second).
-
-It goes to OpenRouter, which forwards it to TypeSafe. Set `JEV_DISABLE=1` for projects whose specs must not leave the machine.
-
-## Try It
+It always exits 0 and falls back to the old rule on any failure. The reason for the fallback is recorded.
 
 ```bash
 python3 scripts/jev_select.py <<'JSON'
 {"phase": "design", "summary": "Daily orders ETL from Postgres to Snowflake with dbt marts",
- "kb_domains": ["dbt", "sql-patterns", "airflow"], "variant_locked": null}
+ "kb_domains": ["dbt", "`sql/postgres`", "airflow"], "variant_locked": null}
 JSON
 ```
 
-The script always exits 0. A diagnostic line (`[jev_select] source=… reason=… latency_ms=…`) goes to stderr.
+`kb_domains` may be copied verbatim from a spec; free text such as `tailwind`, `a11y` or `sql/postgres` is normalized
+to KB names, and unknown names are listed in `kb_domains_dropped`.
 
-## Measuring It
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `JEV_SECOND_OPINION` | unset | `1` makes the phase commands also run `jev_select.py` |
+| `OPENROUTER_API_KEY` / `JEV_API_KEY` | — | Key for the JEV call (`JEV_API_KEY` wins) |
+| `JEV_URL` | `https://openrouter.ai/api/alpha/decisions` | Endpoint (`https://api.typesafe.ai/v1/systemone` for TypeSafe direct) |
+| `JEV_MODEL` | `typesafe/jev-1.13` | Model (`jev-1.13.0` for TypeSafe direct) |
+| `JEV_SINGLE_THRESHOLD` / `JEV_UNCERTAIN_BAND` | `0.5` / `0.1` | Variant gate on `p(single)`; inside the band the old rule decides |
+| `JEV_FIT_THRESHOLD` | `0.5` | Specialist gate |
+| `JEV_TIMEOUT_MS` | `4000` | Total budget for both calls |
+| `JEV_DISABLE` | unset | `1` means never send anything; always the old rule |
 
-`--eval` runs the selector on a labeled set and compares it with the heuristic:
+**What leaves your machine** when the second opinion runs:
+- a spec summary of up to 4000 characters;
+- the spec's KB domain names;
+- the names and one-line descriptions of AgentSpec's specialist agents.
+
+It goes to OpenRouter, which forwards it to TypeSafe.
+
+## Measuring a Change
+
+Two tools share the labeled-set format of `tests/fixtures/agent_selection/labels_sample.json`:
 
 ```bash
-python3 scripts/jev_select.py --eval .claude/sdd/evals/agent_selection_labels.json
+# JEV against the old rule
+python3 scripts/jev_select.py --eval labels.json
+
+# An LLM applying the shipped rubric (Codex or Grok headless, via your subscription)
+python3 scripts/eval_llm_baseline.py --provider codex --labels labels.json
 ```
 
-The feature targets are:
-
-- variant accuracy ≥ 85%, and at least 10 points above the heuristic;
-- mean specialist F1 at least 0.10 above the heuristic, on multiagent cases.
-
-The labels format lives in `tests/fixtures/agent_selection/labels_sample.json`. Keep the full labeled set out of git (it is ignored by default) when it contains client specs.
-
-## Known Limits
-
-- **Measured quality (2026-09-24).** On 22 labeled specs, the original Choice question answered `multiagent` for every spec, so variant accuracy equaled the heuristic's (0.64). The v1.1 Noul question replaced it and was then measured on a fresh holdout. See the build report for the numbers before relying on the variant decision.
-
-- **Two calls per phase.** The ranking call removes the dependency on the spec's KB domain line; `JEV_TIMEOUT_MS` bounds both calls together.
-- **Local agent overrides are not candidates.** Candidates come from AgentSpec's generated `routing.json`, so agents in your project's `.claude/agents/` are not considered.
-- **Alpha endpoint.** The OpenRouter `alpha/decisions` endpoint may change. The model version is pinned, and any failure falls back to the heuristic.
-- **Codex and DeepSeek Harness bundles.** These bundles do not ship the script, so the commands apply the heuristic by hand and record `fallback (script_unavailable)`.
+`eval_llm_baseline.py` reads the rubric from `AGENT_SELECTION_RUBRIC.md`, so what you measure is what the commands
+apply. Change the rubric only together with a new measurement, on specs that were not used to write the change.
+Keep labeled sets that contain client specs out of git (`.claude/sdd/evals/` is ignored for them).

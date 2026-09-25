@@ -8,15 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- **JEV agent selection** — `/define` and `/design` now pick their variant (single or
-  `-multiagent`) and the specialists to consult from the input spec, via TypeSafe's JEV
-  decision model on OpenRouter (`typesafe/jev-1.13`). `scripts/jev_select.py` sends one
-  call (a `single_area` Noul + a `rank` Choice over every specialist), then one Noul per
-  shortlisted specialist, gates on `p(single)` with an uncertainty band, and falls
-  back to the previous heuristic (3+ KB domains; top 4 by `kb_domains` overlap) on any
-  failure — the phase never blocks. Results are recorded in a new **Seleção de Agentes**
-  section of DEFINE/DESIGN. `--eval` compares JEV with the heuristic on a labeled set.
-  See `docs/concepts/jev-agent-selection.md`.
+- **Agent selection rubric** — `/define` and `/design` now pick their variant (single or
+  `-multiagent`) and up to 4 specialists by having the phase LLM apply one shared rubric
+  (`.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md`) to the spec, instead of counting KB
+  domains. On 46 labeled specs: old rule 0.46 variant accuracy / 0.19 specialist F1; LLM with
+  the rubric 0.85–0.89 / 0.47–0.52. Results go to a new **Seleção de Agentes** section.
+- **JEV second opinion (opt-in)** — `scripts/jev_select.py` asks TypeSafe's JEV via OpenRouter
+  (`typesafe/jev-1.13`) in two calls (variant Noul + specialist ranking, then a Noul per
+  shortlisted agent) and falls back to the old rule on any failure. With `JEV_SECOND_OPINION=1`
+  the commands record its answer next to the rubric's; it never decides (measured 0.72 / 0.38).
+- `scripts/eval_llm_baseline.py` measures an LLM (Codex or Grok headless, via subscription)
+  applying the shipped rubric; `jev_select.py --eval` measures JEV. See
+  `docs/concepts/jev-agent-selection.md`.
 - **Grok Build distribution** — `plugin-grok/` is a Grok-native plugin generated from
   `.claude/`: flattened slash commands (`/brainstorm`, `/define`, `/design`, `/build`,
   `/ship`, …), 73 flattened specialist agents with Claude→Grok tool remapping, vendored
@@ -34,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   fewer than 3 KB domains: an explicit `-m` always runs multiagent, and the selector only
   picks its specialists.
 - `build-plugin.sh` and `scripts/generate-grok-plugin.py` ship `scripts/jev_select.py`.
+- The "3+ KB domains" rule no longer picks the variant or the specialists; it survives only
+  as `jev_select.py`'s fallback.
 
 ## [3.4.1] - 2026-08-02
 

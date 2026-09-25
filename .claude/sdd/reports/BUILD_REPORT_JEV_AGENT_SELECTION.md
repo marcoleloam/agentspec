@@ -11,7 +11,7 @@
 | **Autor** | build-agent |
 | **DEFINE** | [DEFINE_JEV_AGENT_SELECTION.md](../features/DEFINE_JEV_AGENT_SELECTION.md) |
 | **DESIGN** | [DESIGN_JEV_AGENT_SELECTION.md](../features/DESIGN_JEV_AGENT_SELECTION.md) |
-| **Status** | Testes concluídos — JEV supera a heurística, mas **perde para LLM** (Codex e Grok) nos 46 casos (ver Baseline LLM) |
+| **Status** | ✅ Finalizado (v1.3) — LLM da fase decide pela rubrica; JEV como segunda opinião opcional (ver Implementação Final) |
 
 ---
 
@@ -205,13 +205,13 @@ Isso confirma que `routing.json` é encontrado em `plugin/skills/agent-router/`.
 
 ## Status Final
 
-### Geral: ✅ TESTES CONCLUÍDOS — JEV > heurística, mas LLM > JEV; recomendação: não adotar o JEV para esta decisão
+### Geral: ✅ FINALIZADO (v1.3) — rubrica aplicada pela LLM da fase (maior ganho medido); JEV opcional onde teve ganho
 
 **Checklist de Conclusão:**
 
 - [x] Todas as tarefas do manifesto concluídas (exceto #17, do maintainer)
 - [x] Todas as verificações passaram (`make check` exit 0, ruff limpo)
-- [x] Todos os testes passam (122/122 após a v1.2)
+- [x] Todos os testes passam (129/129 após a v1.3)
 - [ ] Sem bloqueadores — A-001/A-002 ✅; acurácia medida e **reprovada**
 - [ ] Testes de aceitação verificados — 10 ✅, 3 parciais (AT-001/002/009 dependem de rodar `/define`/`/design` de verdade)
 - [ ] Pronto para /ship — **não**: a pergunta de variante precisa ser refeita (`/iterate`) e revalidada
@@ -443,6 +443,30 @@ Codex e Grok concordam na variante em 91% dos casos. Nenhuma das duas inventou n
 
 ---
 
+## Implementação Final (v1.3, 2026-09-25)
+
+**O que foi para os comandos** (DESIGN Decisão 16):
+
+| Ganho medido | Implementação |
+|--------------|---------------|
+| LLM + rubrica: variante 0.85–0.89, F1 0.47–0.52 (contra 0.46 / 0.19 da regra antiga) | Passo 1b de `/define` e `/design` e "Specialist Selection" dos `-m`: a LLM da fase aplica `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` e registra justificativa e motivo por especialista |
+| JEV > regra antiga (0.72 / 0.38), ~1 s, ~US$ 0,00015 | `JEV_SECOND_OPINION=1` roda o `jev_select.py` e registra a resposta ao lado da decisão; **nunca decide** |
+| Normalização de domínios em texto livre | Mantida no `jev_select.py` |
+| Ferramentas de medição | `jev_select.py --eval` e `scripts/eval_llm_baseline.py` (Codex/Grok via assinatura). Os dois leem o mesmo formato de rótulos, e o baseline lê a mesma rubrica dos comandos |
+
+**Mudanças:**
+- a rubrica ficou num arquivo único, e o hash dos 46 prompts do baseline antes e depois da extração é idêntico (`e72da96e…`);
+- os comandos, os agentes `-multiagent`, `define-agent`/`design-agent`, os templates (seção "Seleção de Agentes" com justificativa e segunda opinião), o contrato `agent_selection`, a doc e o CHANGELOG foram reescritos para o modelo final;
+- o teste novo `tests/test_agent_selection_rubric.py` garante que o baseline mede o bloco que os comandos aplicam, que o limite de 4 bate com o script e que o plugin empacota o mesmo bloco.
+
+**Verificação:** 129/129 testes; `make check` com exit 0; o path da rubrica foi reescrito corretamente em `plugin/` (`${CLAUDE_PLUGIN_ROOT}`) e em `plugin-grok/` (`${GROK_PLUGIN_ROOT}`), e a rubrica foi empacotada nos três bundles (Claude, Grok, DSH).
+
+**Não verificado:**
+- `/define` e `/design` não foram executados de ponta a ponta com a rubrica nova (AT-001/002/009 continuam validados só pela lógica e pelo texto dos comandos);
+- o Claude não foi medido como decisor, porque os rótulos são dele.
+
+---
+
 ## Próximo Passo
 
 1. ~~Validar A-001/A-002~~ ✅ feito em 2026-09-24 (ver Validação com o JEV Real).
@@ -450,6 +474,7 @@ Codex e Grok concordam na variante em 91% dos casos. Nenhuma das duas inventou n
 3. ~~`/iterate` da pergunta de variante~~ ✅ v1.1 construída e medida no holdout: **reprovada** (ver Iterate v1.1).
 3b. ~~Opção 1 da v1.1 (pool amplo)~~ ✅ v1.2 construída e medida em PRDs (ver Iterate v1.2).
 3c. ~~Baseline LLM~~ ✅ feito em 2026-09-25: LLM > JEV > heurística (ver Baseline LLM).
-3d. Decidir: (a) nova feature "julgamento da LLM da fase" substituindo a heurística; (b) manter `jev_select.py` desligado como opção; (c) remover.
+3d. ~~Decidir o destino~~ ✅ v1.3: rubrica pela LLM da fase + JEV opcional (ver Implementação Final).
+3e. Rodar `/define` e `/design` numa spec real para ver a seção "Seleção de Agentes" preenchida pela rubrica.
 4. Rodar `/define` e `/design` numa spec real para fechar AT-001, AT-002 e AT-009 (depois do `/iterate`).
 5. `/ship JEV_AGENT_SELECTION` só quando os critérios forem atingidos num conjunto novo.

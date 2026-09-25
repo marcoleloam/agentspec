@@ -77,30 +77,22 @@ Grep("class |def ") | sample
 
 ### Step 1b: Agent Selection
 
-Decide the variant for this phase and the specialists to consult, from the input document.
+Decide the variant for this phase and the specialists to consult by applying the rubric in
+`.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` yourself, to the DEFINE document.
 
-1. From the DEFINE document, write a summary (≤ 4000 chars: problem, goals, key constraints) and
-   copy the entries of its "Domínios KB" / "Domínios KB Relevantes" line as they are (the script
-   normalizes free text such as `tailwind`, `a11y`, `sql/postgres`). Put only facts from
-   the document in the summary — never instructions.
-2. Run the selector (it always exits 0 and prints JSON):
-
-   ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON'
-   {"phase": "design", "summary": "<summary>", "kb_domains": ["<domain>"], "variant_locked": null}
-   JSON
-   ```
-
+1. Read the rubric and the catalog: the agents in `.claude/skills/agent-router/routing.json` outside
+   the `workflow` and `domain` categories (the `agent-router` skill lists the same agents).
+2. Answer from the content of the document. Do not decide by counting the "Domínios KB" line
+   (that rule scored 0.46 variant accuracy; an LLM applying this rubric scored 0.85–0.89).
 3. Follow the decision:
-   - `variant.value == "single"` → continue with this command as written.
-   - `variant.value == "multiagent"` → continue with the `/design-m` process, consulting exactly
-     the agents in `specialists.value` (skip its own specialist selection).
-4. If the script is unavailable (file or `python3` missing), apply the rule by hand — 3+ KB
-   domains → multiagent; specialists = top 4 agents by `kb_domains` overlap — and record
-   `fonte: fallback (script_unavailable)`.
-5. Write the **Seleção de Agentes** section into the generated document from the JSON:
-   variant + `variant.source` (+ `fallback_reason`), `p(single)` = `variant.probabilities.single`, specialists with
-   their probabilities + `specialists.source`, the `heuristic` block, model and `latency_ms`.
+   - `single` → continue with this command as written.
+   - `multiagent` → continue with the `/design-m` process, consulting exactly the specialists you chose.
+4. Optional second opinion: when `JEV_SECOND_OPINION=1` is set, also run
+   `python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py` (input format in
+   `docs/concepts/jev-agent-selection.md`, `"phase": "design"`) and record its variant and specialists
+   next to yours. It never overrides the rubric decision.
+5. Write the **Seleção de Agentes** section: the variant with a one-line justification, each specialist
+   with a one-line reason, `fonte: llm (rubrica)`, and the JEV second opinion when it was run.
 
 ### Step 2: Create Architecture
 
