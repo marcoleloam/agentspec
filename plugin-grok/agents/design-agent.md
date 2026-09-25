@@ -255,6 +255,42 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${GROK_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" gate {FEATURE} --to design` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP. List the 🔴 questions, ask the
+   user to resolve them (answer now or `/iterate`). Do not write the DESIGN. Never close a 🔴
+   with your own assumption — not even in a non-interactive run; if you cannot ask, stop and report.
+2. `python3 "$MI" brief {FEATURE} --phase design` → honor current decisions and pending
+   assumptions; check related-feature decisions before re-deciding the same thing.
+
+ON EXIT (after writing DESIGN, before the Quality Gate)
+1. One `D-###` per inline decision, `Fase` = `design`: one-sentence why, rejected alternative,
+   `Onde Ler` = `DESIGN_{FEATURE}.md#<decision anchor>`. Never copy the decision body.
+2. Close every `🟡 Delegada ao design` as 🟢, citing the `D-###` that answers it.
+3. Mark assumptions ✅ Validada / ❌ Derrubada when the design settles them.
+4. Metadados: `Fase` = Design. Run `python3 "$MI" build`.
+
+**Template:** `read_file(${GROK_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (DESIGN) must be written in Portuguese-BR (pt-BR).**

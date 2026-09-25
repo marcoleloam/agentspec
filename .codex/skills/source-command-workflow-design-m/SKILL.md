@@ -101,6 +101,36 @@ The document includes a **Consulta Multi-Agente** section with:
 
 ---
 
+## Living Memory
+
+Same protocol as `/design` (see its "Step 7: Save — Document + Blackboard" and the agent's
+`## Phase Memory` section). On entry:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" gate {FEATURE} --to design || exit 1   # 1 → 🔴 blocks · 2 → fix unreadable rows, re-run
+python3 "$MI" brief {FEATURE} --phase design
+```
+
+A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
+with your own assumption, not even in a non-interactive run: if you cannot ask, stop and report.
+
+On exit — in the same step that writes the DESIGN document, not after the summary —
+record the phase entries on `BLACKBOARD_{FEATURE}.md`, created from
+`Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` with its headers copied as they are
+(specialist-sourced entries carry the specialist as `Agente` / `Levantado por`), then:
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+```
+
+The final message lists the Blackboard IDs this phase added, next to the DESIGN path.
+
+---
+
 ## References
 
 - Agent: `.claude/agents/workflow/design-multiagent.md`

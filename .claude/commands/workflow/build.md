@@ -74,6 +74,22 @@ updated: $(date +%Y-%m-%d)
 EOF
 ```
 
+Gate and memory brief — a 🔴 open question on the blackboard **blocks** the build.
+A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
+with your own assumption, not even in a non-interactive run: if you cannot ask, stop and report.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" gate {FEATURE} --to build || exit 1   # 1 → 🔴 blocks · 2 → fix unreadable rows, re-run
+python3 "$MI" brief {FEATURE} --phase build
+```
+
+The blackboard usually exists already (created in Brainstorm/Define): **extend it, never
+overwrite it**. Every deviation from the DESIGN is recorded as a `D-###` with `Fase` = `build`
+and `Substitui` = the design decision it replaces. Run `python3 "$MI" build` at the end.
+
 ### Step 2: Extract Tasks from File Manifest
 
 Convert the file manifest to a task list:
@@ -224,6 +240,7 @@ Before marking complete, verify:
 [ ] Tests pass (if applicable)
 [ ] No TODO comments left in code
 [ ] Build report generated
+[ ] Deviations from DESIGN recorded as D-### with Substitui; no 🔴 left on the blackboard
 ```
 
 ---

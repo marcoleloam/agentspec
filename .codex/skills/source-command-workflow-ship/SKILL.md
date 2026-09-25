@@ -74,6 +74,7 @@ mkdir -p .claude/sdd/archive/{FEATURE_NAME}/
 ### Step 3: Copy Artifacts to Archive
 
 ```bash
+cp .claude/sdd/features/BRAINSTORM_{FEATURE}.md .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 cp .claude/sdd/features/DEFINE_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
 cp .claude/sdd/features/DESIGN_{FEATURE}.md .claude/sdd/archive/{FEATURE}/
 cp .claude/sdd/features/BLACKBOARD_{FEATURE}.md .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
@@ -109,6 +110,7 @@ Edit: archive/{FEATURE}/DESIGN_{FEATURE}.md
 ### Step 6: Clean Up Working Files
 
 ```bash
+rm -f .claude/sdd/features/BRAINSTORM_{FEATURE}.md
 rm .claude/sdd/features/DEFINE_{FEATURE}.md
 rm .claude/sdd/features/DESIGN_{FEATURE}.md
 rm -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md
@@ -153,6 +155,20 @@ Edit/Write(.claude/sdd/MEMORY.md) — add at the top, below the title:
 Keep it to the highest-signal 3-5 items. If a lesson applies to ANY project (not just this
 one), also surface it with `/memory --global`.
 
+### Step 9: Rebuild the Memory Index (Living Memory)
+
+Before archiving, `python3 "$MI" brief {FEATURE} --phase ship` shows any
+`⚠ sem registro nas fases` gap — mention it under Lessons Learned (Process). After the
+archive and MEMORY.md are written, rebuild the cross-feature index so the next feature's
+`/define` sees these decisions and lessons:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" build
+```
+
 ---
 
 ## Output
@@ -178,6 +194,7 @@ Before shipping, verify:
 [ ] All tests passing
 [ ] Code deployed (if applicable)
 [ ] Lessons consolidated into .claude/sdd/MEMORY.md
+[ ] Memory index rebuilt after archiving (memory-index.py build)
 [ ] Active-feature pointer (.active) cleared
 ```
 

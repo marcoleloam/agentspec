@@ -501,14 +501,16 @@ build:
     file: ".claude/sdd/features/BLACKBOARD_{FEATURE}.md"
     template: "${GROK_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md"
     lifecycle:
-      seed: "build-agent creates it at build start from DESIGN (interfaces + file status)"
+      seed: "brainstorm-agent (or define-agent when brainstorm was skipped) creates it; see living_memory"
+      build_start: "build-agent creates it ONLY IF MISSING; otherwise extends it (fills Interfaces + Status dos Arquivos from DESIGN) and keeps every existing entry"
       read: "every delegated specialist reads it FIRST, before writing any file"
-      append: "every specialist appends new interfaces, decisions, and blockers"
+      append: "every specialist appends new interfaces, decisions (Fase=build), and blockers"
       archive: "ship-agent moves it into archive/{FEATURE}/ with other artifacts"
     sections:
       - "Interfaces Compartilhadas — contracts every agent must respect (no redefinition)"
-      - "Log de Decisões — append-only ADR-lite, never edit existing entries"
-      - "Perguntas Abertas e Bloqueadores — raise instead of assuming"
+      - "Log de Decisões — append-only ADR-lite with Fase column, never edit existing entries"
+      - "Premissas — assumptions from Define, validated or refuted downstream"
+      - "Perguntas Abertas e Bloqueadores — raise instead of assuming (🔴 / 🟡 / 🟢)"
       - "Status dos Arquivos — mirrors DESIGN manifest, marked per file"
     rules:
       - "Order delegations so a file's producer runs before its consumer"
@@ -766,6 +768,83 @@ active_feature:
       - "Never re-dump full artifacts; load once on /work, then reference"
 
 # =============================================================================
+# LIVING MEMORY (cross-phase, cross-feature, cross-session)
+# =============================================================================
+# The BLACKBOARD is the feature's memory of its TRAJECTORY (decisions, rejected
+# alternatives, assumptions, questions, course changes) from Brainstorm to Ship.
+# Phase documents stay the source of truth for the RESULT. Agents only WRITE
+# Markdown rows; all aggregated READING is done by a deterministic script.
+
+living_memory:
+  file: ".claude/sdd/features/BLACKBOARD_{FEATURE}.md"
+  script: "${GROK_PLUGIN_ROOT}/scripts/memory-index.py  (exact form — only this is filled in at load; then $AGENTSPEC_MEMORY_INDEX from the SessionStart hook; repo dev fallback: plugin-extras/scripts/memory-index.py)"
+  template: "${GROK_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md  (Read it before creating a blackboard — the script reads only its sections and columns)"
+  exit_codes: "gate: 0 pass · 1 🔴 blocks · 2 unreadable blackboard rows (fix columns, re-run). build: 0 ok · 2 unreadable rows (index still written)"
+  index: ".claude/sdd/MEMORY_INDEX.md  (derived, gitignored, rebuilt by `memory-index.py build`)"
+
+  entry_types:
+    D: "Decision — Log de Decisões. One sentence of why + rejected alternative + pointer (Onde Ler)"
+    Q: "Question — Perguntas Abertas e Bloqueadores"
+    A: "Assumption — Premissas"
+    M: "Improvement after build — Melhorias / Iterações (written by /work)"
+    L: "Lesson — SHIPPED lessons and MEMORY.md blocks (read by the index, not written to the blackboard)"
+
+  question_status:
+    "🔴 Aberto": "blocks Define→Design and Design→Build; closes only with the user's answer or /iterate — never with an agent's own assumption, not even in non-interactive runs (the plugin PreToolUse hook blocks creating DESIGN_*.md while one is open)"
+    "🟡 Delegada ao {fase}": "passed on purpose to the next phase; does not block; that phase must close it as 🟢 citing a D-###"
+    "🟢 Resolvido": "closed; Resolução holds the answer or the D-### that answers it"
+
+  phases:
+    brainstorm:
+      creates_blackboard: true
+      records: ["Q 🟢 answered discovery questions that shaped the direction", "D chosen approach + rejected approaches", "D YAGNI cuts"]
+    define:
+      creates_blackboard: "if missing (import BRAINSTORM key decisions when it exists)"
+      entry: "brief --phase define"
+      records: ["A assumptions", "Q 🔴/🟡/🟢", "D scope changes vs brainstorm (with Substitui)"]
+      metadata: "fill Domínios KB from the DEFINE Technical Context"
+    design:
+      entry: ["gate --to design", "brief --phase design"]
+      records: ["D one per inline decision, Onde Ler = DESIGN_{FEATURE}.md#<anchor>", "close every 🟡 delegated to design", "mark A ✅/❌ when settled"]
+    build:
+      entry: ["gate --to build", "brief --phase build"]
+      records: ["Interfaces + Status dos Arquivos", "D for every DEVIATION from DESIGN, Substitui = the design D-### it replaces"]
+    iterate:
+      records: ["D with Substitui for every accepted requirement/design change"]
+    ship:
+      records: ["3-5 lessons to .claude/sdd/MEMORY.md", "memory-index.py build", "archive the blackboard"]
+
+  gate:
+    command: "memory-index.py gate {FEATURE} --to design|build"
+    exit_codes: {0: "proceed", 1: "blocked — list the 🔴 questions, ask the user, do not write the phase document", 2: "usage error"}
+    not_gated: ["Brainstorm→Define", "Build→Ship (build already requires zero open blockers)"]
+    no_python_fallback: "read 'Perguntas Abertas e Bloqueadores' and apply the same rule"
+
+  brief:
+    command: "memory-index.py brief {FEATURE} --phase {phase} [--max 15]"
+    budget_lines: 15
+    bands_in_order:
+      - "header"
+      - "🔴 open questions of the feature"
+      - "🟡 questions delegated to the entering phase"
+      - "⚠ earlier phases with no entries (capture-gap warning)"
+      - "current decisions of the feature (superseded excluded), max 6"
+      - "⏳ unvalidated assumptions, max 3"
+      - "decisions/lessons of OTHER features sharing a KB domain (or Relacionada a), max 4"
+      - "footer '… N omitidas' when anything was cut"
+    kb_domains_cascade: ["Blackboard Metadados 'Domínios KB'", "DEFINE Contexto Técnico 'Domínios KB'", "whole-word scan of kb/_index.yaml domain keys in the DEFINE"]
+
+  session_start: "init-workspace.sh appends `memory-index.py tail --n 5` for the .active feature (disabled by AGENTSPEC_MEMORY_SILENT=1)"
+
+  rules:
+    - "Append-only. Supersede with a new entry; never rewrite or delete an existing one. Exception: the Status and Resolução cells of Q and A entries are updated in place when a later phase closes them (🟡→🟢, ⏳→✅/❌) — the script reads the current status from the row"
+    - "Pointer + one sentence. Never copy phase-document content into the blackboard"
+    - "3-8 entries per phase; record only what a later phase or feature needs"
+    - "Entry content in pt-BR; IDs, paths and code in English"
+    - "Missing blackboard or missing entries never break a phase (local overrides may ignore it)"
+    - "No new dependencies: stdlib script, no MCP, no DB, no network"
+
+# =============================================================================
 # FOLDER STRUCTURE
 # =============================================================================
 
@@ -790,8 +869,10 @@ folder_structure:
       path: "archive/"
       structure: "{FEATURE_NAME}/"
       contains:
+        - "BRAINSTORM_*.md"
         - "DEFINE_*.md"
         - "DESIGN_*.md"
+        - "BLACKBOARD_*.md"
         - "BUILD_REPORT_*.md"
         - "SHIPPED_*.md"
 

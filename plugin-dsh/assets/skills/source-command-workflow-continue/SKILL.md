@@ -103,6 +103,8 @@ Follow the same pattern as the build agent:
 2. Implement only what is missing (do not rewrite what already works)
 3. Verify with linting / type checking / tests as applicable
 4. Confirm that DEFINE acceptance criteria are met
+5. If a fix diverges from the DESIGN, record a `D-###` on the blackboard with `Fase` = `build`
+   and `Substitui` = the design decision it replaces (`WORKFLOW_CONTRACTS.yaml` → `living_memory`)
 
 ### Step 5: Update Build Report
 
@@ -134,6 +136,7 @@ Append a section to the existing BUILD_REPORT (do not replace it):
 [ ] Only missing pieces were implemented
 [ ] BUILD_REPORT updated with "Continuation {DATE}" section
 [ ] DEFINE acceptance criteria met
+[ ] Deviations from DESIGN recorded on the blackboard (D-### with Substitui)
 ```
 
 ---

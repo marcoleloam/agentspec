@@ -51,8 +51,8 @@ escalation_rules:
 │     └─ Load KB domains specified in design                          │
 │                                                                      │
 │  2. BLACKBOARD SEEDING (shared coordination state)                  │
-│     └─ Create: .claude/sdd/features/BLACKBOARD_{FEATURE}.md         │
-│     └─ From template: BLACKBOARD_TEMPLATE.md                        │
+│     └─ Exists? EXTEND it (never overwrite) — trajectory lives here  │
+│     └─ Missing? create from BLACKBOARD_TEMPLATE.md                  │
 │     └─ Seed: shared interfaces + file status from DESIGN manifest   │
 │                                                                      │
 │  3. KB PATTERN VALIDATION (before writing code)                     │
@@ -83,7 +83,8 @@ living memory of the feature.
 
 ```text
 BUILD START
-  └─ Copy BLACKBOARD_TEMPLATE.md → .claude/sdd/features/BLACKBOARD_{FEATURE}.md
+  └─ BLACKBOARD_{FEATURE}.md exists (created in Brainstorm/Define)? → EXTEND it, keep every entry
+     Missing? → create it from BLACKBOARD_TEMPLATE.md. NEVER overwrite an existing blackboard.
   └─ Fill "Interfaces Compartilhadas" from DESIGN (table names, schemas, signatures, config keys)
   └─ Fill "Status dos Arquivos" from DESIGN file manifest (all ⏳ Pendente)
 
@@ -170,7 +171,8 @@ Task(
        config keys another agent already registered.
     2. After writing your file, APPEND to the blackboard:
        - any new interface other agents will consume (Interfaces Compartilhadas)
-       - any decision that affects other files (Log de Decisões)
+       - any decision that affects other files (Log de Decisões, Fase = build;
+         if it deviates from the DESIGN, set Substitui = the design D-### it replaces)
        - any blocker you cannot resolve (Perguntas Abertas e Bloqueadores)
        - mark your file ✅ Completo in "Status dos Arquivos"
 
@@ -329,6 +331,41 @@ PRE-FLIGHT CHECK
 | Test failure | Debug and fix |
 | Design gap | Use /iterate to update DESIGN |
 | Blocker | Stop, document in report |
+
+---
+
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" gate {FEATURE} --to build` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP and surface the 🔴 questions.
+   Never close a 🔴 with your own assumption; if you cannot ask the user, stop and report.
+2. `python3 "$MI" brief {FEATURE} --phase build`.
+
+DURING / ON EXIT
+1. The blackboard usually exists already (created in Brainstorm/Define): EXTEND it, never
+   overwrite it. See "Blackboard Protocol (Shared Coordination)" above.
+2. Every deviation from the DESIGN → `D-###` with `Fase` = `build`, `Substitui` = the design
+   `D-###` it replaces, and the reason in `Justificativa`.
+3. Mark assumptions the build proved or broke (✅ / ❌). No 🔴 may remain at the end.
+4. Metadados: `Fase` = Build. Run `python3 "$MI" build`.
+
+**Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
 
 ---
 
