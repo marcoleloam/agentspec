@@ -11,7 +11,7 @@
 | **Autor** | build-agent |
 | **DEFINE** | [DEFINE_JEV_AGENT_SELECTION.md](../features/DEFINE_JEV_AGENT_SELECTION.md) |
 | **DESIGN** | [DESIGN_JEV_AGENT_SELECTION.md](../features/DESIGN_JEV_AGENT_SELECTION.md) |
-| **Status** | v1.2 construída (iterate) — variante ainda abaixo de 0.85; especialistas passam só no critério relativo (ver Iterate v1.2) |
+| **Status** | Testes concluídos — JEV supera a heurística, mas **perde para LLM** (Codex e Grok) nos 46 casos (ver Baseline LLM) |
 
 ---
 
@@ -205,7 +205,7 @@ Isso confirma que `routing.json` é encontrado em `plugin/skills/agent-router/`.
 
 ## Status Final
 
-### Geral: ✅ COMPLETO (implementação v1.2) — ❌ critério de variante não atingido em nenhum conjunto; decisão do maintainer pendente
+### Geral: ✅ TESTES CONCLUÍDOS — JEV > heurística, mas LLM > JEV; recomendação: não adotar o JEV para esta decisão
 
 **Checklist de Conclusão:**
 
@@ -391,12 +391,65 @@ Nenhum conjunto independente sobrou para mais um ajuste. As opções são decis�
 
 ---
 
+## Baseline LLM (2026-09-25) — fechamento dos testes
+
+**Pergunta:** o JEV escolhe melhor que uma LLM? Até aqui ele só tinha sido comparado com a **heurística** (a regra "3+ domínios" / "top 4 por overlap", que é o que o fluxo manda a LLM aplicar hoje).
+
+**Montagem:**
+- `scripts/eval_llm_baseline.py` faz a mesma pergunta a duas LLMs, via **assinatura** e CLI headless, com saída validada por JSON Schema:
+  - **Codex** (`gpt-6-astra`), com `codex exec --ephemeral -s read-only`;
+  - **Grok** (`grok-4.7-build`), com `grok -p --permission-mode plan`.
+- O OpenRouter foi usado **só para o JEV**.
+- As duas LLMs recebem exatamente o que o JEV recebe: fase, resumo da spec, o mesmo pool de 59 especialistas e as mesmas definições de single/multiagent.
+- Rodam num diretório vazio em `/tmp`, sem acesso aos rótulos.
+- Os rótulos são os mesmos, sem alteração (hashes registrados nas seções anteriores).
+- O JEV foi medido na mesma versão (v1.2) nos três conjuntos. No conjunto de 22 e no holdout isso é medição final, sem ajuste.
+
+### Resultado (46 casos: 22 + 15 + 9)
+
+| Sistema | Variante | F1 especialistas (31 multiagent) | Latência / fase | Custo marginal |
+|---------|----------|----------------------------------|-----------------|----------------|
+| Heurística | 0.46 (21/46) | 0.19 | 0 | 0 |
+| **JEV v1.2** | 0.72 (33/46) | 0.38 | ~1 s (2 chamadas) | ~US$ 0,00015 (OpenRouter) |
+| **Grok** (`grok-4.7-build`) | 0.85 (39/46) | 0.47 | mediana 85 s (p90 128 s) | assinatura (~15–27 mil tokens/caso) |
+| **Codex** (`gpt-6-astra`) | **0.89 (41/46)** | **0.52** | mediana 9,7 s (p90 12,6 s) | assinatura (~20 mil tokens/caso) |
+
+Por conjunto (variante / F1):
+
+| Conjunto | Heurística | JEV v1.2 | Codex | Grok |
+|----------|------------|----------|-------|------|
+| 22 (diagnóstico) | 0.64 / 0.35 | 0.68 / 0.48 | 0.82 / 0.61 | 0.82 / 0.51 |
+| Holdout (15) | 0.40 / 0.10 | 0.73 / 0.39 | 1.00 / 0.55 | 0.93 / 0.50 |
+| PRDs (9) | 0.11 / 0.00 | 0.78 / 0.22 | 0.89 / 0.35 | 0.78 / 0.37 |
+
+Codex e Grok concordam na variante em 91% dos casos. Nenhuma das duas inventou nome de agente.
+
+### Leitura
+
+1. **O JEV supera a heurística em todos os conjuntos, mas perde para as duas LLMs em todos eles**, na variante e nos especialistas. O único empate é a variante do Grok nos PRDs.
+2. **A vantagem do JEV é só custo e latência:** ~1 s e ~US$ 0,00015, contra 10–85 s e ~20 mil tokens de assinatura. Em `/define` e `/design`, porém, **já existe uma LLM rodando a fase**. Pedir a ela que aplique a mesma rubrica praticamente não adiciona chamada nem latência.
+3. **A v1.2 confirmou o ganho nos especialistas:** no holdout, o F1 do JEV foi de 0.08 (v1.1) para 0.39 (v1.2).
+4. **Ressalvas:**
+   - os rótulos são do build-agent (Claude), e LLMs podem concordar mais entre si que com o JEV;
+   - com duas famílias diferentes (GPT e Grok) chegando ao mesmo resultado, esse viés não explica sozinho a diferença;
+   - os conjuntos são pequenos.
+
+### Recomendação final
+
+- **Não adotar o JEV para escolher variante e especialistas.** Ele é melhor que a regra atual, mas uma LLM é melhor que ele. E, nessas fases, a LLM já está presente.
+- **Troca de maior impacto:** substituir a heurística por um **julgamento da LLM da fase**, com a mesma rubrica usada no baseline (definições de single/multiagent, catálogo de especialistas, até 4 nomes). A ordem de ganho medida é heurística 0.46 → LLM ~0.85–0.89. Isso seria uma nova feature ou um `/iterate` de escopo; não foi implementado aqui.
+- **Onde o JEV ainda faz sentido:** decisões em lote, fora de uma sessão de LLM, em que custo e latência dominam (ex.: roteamento em massa, triagem). É o tipo de uso que a própria TypeSafe documenta.
+- **Destino do código:** `jev_select.py` fica funcional e testado (122 testes). Mantê-lo como opção desligada, ou removê-lo, é decisão do maintainer.
+
+---
+
 ## Próximo Passo
 
 1. ~~Validar A-001/A-002~~ ✅ feito em 2026-09-24 (ver Validação com o JEV Real).
 2. ~~Rotular e rodar `--eval`~~ ✅ feito em 2026-09-24: **reprovado** (ver Avaliação Completa).
 3. ~~`/iterate` da pergunta de variante~~ ✅ v1.1 construída e medida no holdout: **reprovada** (ver Iterate v1.1).
 3b. ~~Opção 1 da v1.1 (pool amplo)~~ ✅ v1.2 construída e medida em PRDs (ver Iterate v1.2).
-3c. Escolher entre as opções da Recomendação v1.2.
+3c. ~~Baseline LLM~~ ✅ feito em 2026-09-25: LLM > JEV > heurística (ver Baseline LLM).
+3d. Decidir: (a) nova feature "julgamento da LLM da fase" substituindo a heurística; (b) manter `jev_select.py` desligado como opção; (c) remover.
 4. Rodar `/define` e `/design` numa spec real para fechar AT-001, AT-002 e AT-009 (depois do `/iterate`).
 5. `/ship JEV_AGENT_SELECTION` só quando os critérios forem atingidos num conjunto novo.
