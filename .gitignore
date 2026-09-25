@@ -40,3 +40,6 @@ entities.json
 
 # AgentSpec status dashboard (generated)
 .claude/sdd/.status/
+
+# AgentSpec Living Memory index (derived; rebuild with memory-index.py build)
+.claude/sdd/MEMORY_INDEX.md

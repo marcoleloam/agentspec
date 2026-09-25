@@ -272,6 +272,37 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" brief {FEATURE} --phase ship` → a `⚠ sem registro nas fases` line means a
+   phase left no trajectory; mention it under Lessons Learned (Process).
+
+ON EXIT
+1. Consolidate 3–5 lessons into `.claude/sdd/MEMORY.md` (create it if missing) — see `/ship` Step 8.
+2. Blackboard Metadados: `Fase` = Ship, `Status` = ✅ Completo; archive it with the other artifacts.
+3. After archiving, run `python3 "$MI" build` so the lessons join the cross-feature index.
+
+**Template:** `Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (SHIPPED) must be written in Portuguese-BR (pt-BR).**

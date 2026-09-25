@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Living Memory (second brain across phases)** — the feature `BLACKBOARD_{FEATURE}.md`
+  now spans Brainstorm → Ship. Every phase agent appends its trajectory (decisions with the
+  rejected alternative, assumptions, questions, course changes via `Substitui`) on exit.
+  New `plugin-extras/scripts/memory-index.py` (stdlib only) serves a ≤15-line `brief` on
+  phase entry, a `gate` where a 🔴 open question blocks Define→Design and Design→Build, a
+  `tail` of the `.active` feature at SessionStart, and a derived, gitignored
+  `.claude/sdd/MEMORY_INDEX.md` spanning active features, `archive/` and `MEMORY.md`.
+  Contract: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Docs: `docs/concepts/living-memory.md`.
+  Plugin hooks (`scripts/memory-hook.py`) make the script calls deterministic: the brief is
+  injected on phase commands, creating a `DESIGN_*.md` is blocked while a 🔴 question is open,
+  and every blackboard write rebuilds the index. `gate`/`build` exit 2 on blackboard rows they
+  cannot read instead of dropping them silently; the ID column may be `#` or `ID`. The
+  SessionStart hook exports `AGENTSPEC_MEMORY_INDEX` via `CLAUDE_ENV_FILE`, because the Bash
+  tool does not see `CLAUDE_PLUGIN_ROOT`.
+
+### Changed
+
+- **Build no longer overwrites the blackboard** — `build-agent` / `/build` now create
+  `BLACKBOARD_{FEATURE}.md` only if missing and otherwise extend it; deviations from the
+  DESIGN are recorded as decisions that supersede the design decision.
+- `/ship` now also archives `BRAINSTORM_{FEATURE}.md` and rebuilds the memory index.
+
 ## [3.5.0] - 2026-09-24
 
 ### Added

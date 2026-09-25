@@ -252,6 +252,37 @@ When cascade is needed, ask user:
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" brief {FEATURE} --phase iterate` → see what the change may supersede.
+
+ON EXIT (after the documents are updated)
+1. For every accepted change: `D-###` with `Fase` = `iterate`, `Substitui` = the `D-###` it
+   overrides (if any), `Onde Ler` = the changed section of DEFINE/DESIGN.
+2. Update questions the change resolves (🟢) or raises (🔴 blocks the next Design/Build).
+3. Run `python3 "$MI" build`.
+
+**Template:** `read_file(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All updated SDD documents (BRAINSTORM, DEFINE, DESIGN) must be written in Portuguese-BR (pt-BR).**

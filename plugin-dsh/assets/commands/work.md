@@ -78,6 +78,16 @@ Read(.claude/sdd/features/BLACKBOARD_{FEATURE}.md)    → live state, interfaces
 Read(.claude/sdd/reports/BUILD_REPORT_{FEATURE}.md)   → what was built and verified
 ```
 
+For the trajectory (current decisions, open questions, pending assumptions) use the
+living-memory brief instead of re-reading the whole blackboard:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase {phase from .active}
+```
+
 Present a compact orientation (do NOT dump full files):
 
 ```text

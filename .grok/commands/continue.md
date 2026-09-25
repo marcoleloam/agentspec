@@ -113,7 +113,9 @@ Follow the same pattern as the build agent:
 2. Implement only what is missing (do not rewrite what already works)
 3. Verify with linting / type checking / tests as applicable
 4. Confirm that DEFINE acceptance criteria are met
-5. Never edit the DESIGN's `## Evals` block or its **Evals Digest** to make an eval pass — change the code, or change the contract through `/iterate`
+5. If a fix diverges from the DESIGN, record a `D-###` on the blackboard with `Fase` = `build`
+   and `Substitui` = the design decision it replaces (`WORKFLOW_CONTRACTS.yaml` → `living_memory`)
+6. Never edit the DESIGN's `## Evals` block or its **Evals Digest** to make an eval pass — change the code, or change the contract through `/iterate`
 
 ### Step 5: Update Build Report
 
@@ -147,6 +149,7 @@ Then rerun `/eval {FEATURE}`: the previous receipt is stale as soon as code chan
 [ ] Only missing pieces were implemented
 [ ] BUILD_REPORT updated with "Continuation {DATE}" section
 [ ] DEFINE acceptance criteria met
+[ ] Deviations from DESIGN recorded on the blackboard (D-### with Substitui)
 [ ] Eval contract untouched; user pointed to /eval {FEATURE}
 ```
 

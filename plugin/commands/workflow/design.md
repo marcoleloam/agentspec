@@ -82,11 +82,24 @@ Do not do the design work in the main session.
 ```markdown
 Read(.claude/sdd/features/DEFINE_{FEATURE}.md)
 Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/DESIGN_TEMPLATE.md)
+Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)   # Living Memory: exact sections/columns
 Read(CLAUDE.md)
 
 # Explore codebase for patterns:
 Glob(**/*.py) | head -20
 Grep("class |def ") | sample
+```
+
+Gate and memory brief — a 🔴 open question on the blackboard **blocks** this phase.
+A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
+with your own assumption, not even in a non-interactive run: if you cannot ask, stop and report.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" gate {FEATURE} --to design || exit 1   # 1 → list the 🔴, ask the user, stop · 2 → fix unreadable rows, re-run
+python3 "$MI" brief {FEATURE} --phase design
 ```
 
 ### Step 2: Create Architecture
@@ -155,10 +168,31 @@ Turn every acceptance test of the DEFINE into at least one eval in the DESIGN's 
 (marker `<!-- agentspec:evals:contract -->` + one ```` ```toml ```` block — skeleton in the template).
 Deterministic first; `graded` only for subjective criteria (≤ 50%); `human` for runtime-agent or external-service ATs.
 
-### Step 7: Save, Validate, Freeze
+### Step 7: Save — Document + Blackboard, Validate, Freeze
+
+Both files are written in this step; the phase ends only after both are updated
+and the eval contract is frozen.
 
 ```markdown
 Write(.claude/sdd/features/DESIGN_{FEATURE_NAME}.md)
+```
+
+Then append to `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` (create it from
+`BLACKBOARD_TEMPLATE.md` if it is still missing), with `Fase` = `design`:
+
+- one `D-###` per inline decision — one-sentence why, rejected alternative,
+  `Onde Ler` = `DESIGN_{FEATURE}.md#<decision anchor>` (never copy the body)
+- close every `🟡 Delegada ao design` as 🟢 citing its `D-###`
+- mark assumptions ✅ Validada / ❌ Derrubada
+
+Copy the table headers from `BLACKBOARD_TEMPLATE.md` as they are (ID column `#`, sections
+`## Log de Decisões` / `## Premissas` / `## Perguntas Abertas e Bloqueadores`) — the index reads
+only those. Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status /
+Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
 ```
 
 ```bash
@@ -225,6 +259,10 @@ python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
 | Artifact | Location |
 |----------|----------|
 | **DESIGN** | `.claude/sdd/features/DESIGN_{FEATURE_NAME}.md` |
+| **Blackboard** | `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — list the IDs this phase added |
+
+Report the Blackboard row in your final message. If you cannot name the IDs design added,
+the phase is not complete — go back to the save step.
 
 **Next Step:** `/build .claude/sdd/features/DESIGN_{FEATURE_NAME}.md`
 
@@ -243,6 +281,7 @@ Before saving, verify:
 [ ] Every AT has a contract eval (eval_runner.py validate exit 0)
 [ ] Evals Digest frozen (eval_runner.py freeze exit 0)
 [ ] No circular dependencies in architecture
+[ ] Gate passed (no 🔴 on the blackboard) and one D-### per inline decision recorded
 ```
 
 ---

@@ -368,6 +368,7 @@ generate_context_hint() {
 # Tuning env vars:
 #   AGENTSPEC_MEMORY_SILENT=1      → disable index injection (read on demand only)
 #   AGENTSPEC_MEMORY_MAX_LINES=N   → cap index entries per tier (default 30)
+#   AGENTSPEC_MEMORY_TAIL=N        → latest blackboard entries of the .active feature (default 5)
 
 # Extract a compact index from a MEMORY.md file: prefer "## " headings; if none,
 # fall back to top-level bullets. Echoes nothing when the file has no real content.
@@ -381,6 +382,28 @@ memory_index() {
     fi
     [[ -z "${idx//[$'\n\t ']/}" ]] && return 0
     printf '%s\n' "$idx" | head -n "$cap"
+}
+
+# Latest blackboard entries of the .active feature (Living Memory). Silent when
+# there is no active feature, no python3, or the script is missing — never fails.
+active_feature_tail() {
+    local here mi
+    here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    mi="${here}/memory-index.py"
+    [[ -f ".claude/sdd/.active" && -f "$mi" ]] || return 0
+    command -v python3 >/dev/null 2>&1 || return 0
+    python3 "$mi" tail --n "${AGENTSPEC_MEMORY_TAIL:-5}" 2>/dev/null || true
+}
+
+# Commands locate memory-index.py through ${GROK_PLUGIN_ROOT}, which Claude Code fills in
+# only in that exact form and does not export to the Bash tool. Persist the resolved path
+# via CLAUDE_ENV_FILE (set for SessionStart hooks) so agent Bash calls can find the script.
+export_memory_index_path() {
+    local here mi
+    here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    mi="${here}/memory-index.py"
+    [[ -n "${CLAUDE_ENV_FILE:-}" && -f "$mi" ]] || return 0
+    printf 'export AGENTSPEC_MEMORY_INDEX=%q\n' "$mi" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true
 }
 
 surface_memory() {
@@ -412,11 +435,12 @@ EOF
 
     [[ "${AGENTSPEC_MEMORY_SILENT:-0}" == "1" ]] && return 0
 
-    local project_idx="" global_idx=""
+    local project_idx="" global_idx="" active_tail=""
     [[ -f "$project_file" ]] && project_idx="$(memory_index "$project_file" "$cap")"
     [[ -f "$global_file" ]] && global_idx="$(memory_index "$global_file" "$cap")"
+    active_tail="$(active_feature_tail)"
 
-    [[ -z "$project_idx" && -z "$global_idx" ]] && return 0
+    [[ -z "$project_idx" && -z "$global_idx" && -z "$active_tail" ]] && return 0
 
     echo "=== AgentSpec Memory index — read the file for full detail when relevant ==="
     echo ""
@@ -430,6 +454,10 @@ EOF
         printf '%s\n' "$global_idx"
         echo ""
     fi
+    if [[ -n "$active_tail" ]]; then
+        printf '%s\n' "$active_tail"
+        echo ""
+    fi
     echo "=== end memory index (update with /memory or /memory --global) ==="
 }
 
@@ -440,4 +468,5 @@ EOF
 init_workspace
 init_agent_overrides
 generate_context_hint
+export_memory_index_path
 surface_memory

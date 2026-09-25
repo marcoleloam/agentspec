@@ -116,6 +116,21 @@ Write(<target-file>)
 Write(<downstream-document>)
 ```
 
+### Step 7: Record to Blackboard (Living Memory)
+
+For every accepted change, append a `D-###` with `Fase` = `iterate`, `Substitui` = the
+decision it overrides (if any) and `Onde Ler` = the changed section. Update questions the
+change resolves (🟢) or raises (🔴 blocks the next `/design` or `/build`).
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" build
+```
+
+Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status / Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.
+
 ---
 
 ## Output
