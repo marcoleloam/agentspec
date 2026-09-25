@@ -377,6 +377,59 @@ A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b
 
 ---
 
+### Decisão 14 (v1.2): especialistas em duas etapas — ranking amplo e depois Noul na lista curta
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita — substitui o pool da Decisão 11 como fonte principal de candidatos |
+| **Data** | 2026-09-25 |
+
+**Contexto:** no holdout, 6 dos 9 casos multiagent não tinham a linha "Domínios KB". Sem ela, o pré-filtro por overlap não devolvia nenhum candidato, sobravam só os 2 implementadores fixos, e o F1 caiu para 0.08. O pool dependia de um campo que specs escritas fora do template não têm (premissa A-004 refutada).
+
+**Escolha:** a seleção passa a ter duas etapas, no mesmo padrão do cookbook *Skill suggestion* da TypeSafe.
+
+1. **Requisição 1 (fan-out):** o Noul `single_area` (a menos que a variante esteja travada) + um **Choice `rank`** sobre o **pool amplo**, que são todos os agentes do `routing.json` fora das categorias `workflow` e `domain` (~60). Cada opção leva a descrição de uma linha do agente, truncada em 120 caracteres. Pergunta: "Which specialist's expertise is MOST needed to get this spec right?" As `WIDE_TOP_K = 8` opções de maior probabilidade formam o ranking.
+2. **Requisição 2:** um Noul `fit_i` para cada agente da lista curta. A lista curta tem, nesta ordem de prioridade, `ALWAYS_CANDIDATES` + top 8 do ranking + candidatos por overlap, sem duplicatas e com teto de 12. As perguntas e o portão dos Nouls não mudam.
+
+**Tempo:** `JEV_TIMEOUT_MS` passa a ser o orçamento **total** das duas chamadas; a segunda recebe o que sobrar. Se sobrar menos de 0,5 s, os especialistas vão para o fallback com `fallback_reason = "timeout"`, e a variante já decidida é mantida.
+
+**Falhas:**
+- a requisição 1 falha → comportamento de antes (variante e especialistas pela heurística);
+- o `rank` vem inválido → a lista curta usa só implementadores + overlap e registra `rank_fallback`;
+- a requisição 2 falha → só os especialistas vão para a heurística.
+
+**Justificativa:** o ranking amplo tira a dependência dos `kb_domains` sem mandar ~60 Nouls de uma vez (state maior e mais custo). É a mesma arquitetura rank → rerank que a TypeSafe documenta no cookbook.
+
+**Alternativas Rejeitadas:**
+1. Um Noul para cada um dos ~60 agentes numa requisição só — rejeitada: aumenta muito as perguntas e o custo, e não há limite documentado de perguntas por requisição.
+2. Etapa ampla só quando faltarem domínios — rejeitada: uma regra condicional a mais, sem evidência de que o overlap seja melhor quando os domínios existem.
+3. Incluir a categoria `domain` (agentes de curso/demo como `aide-slide-*` e `shopagent-builder`) — rejeitada: ruído específico de projeto.
+
+**Consequências:**
+- Duas chamadas por fase (latência típica ~0,8–1 s; teto continua em `JEV_TIMEOUT_MS`).
+- A heurística continua só por overlap, como baseline.
+- Nenhum limiar muda: `WIDE_TOP_K = 8` e o teto de 12 foram fixados antes de qualquer medição.
+
+---
+
+### Decisão 15 (v1.2): terceiro conjunto de avaliação a partir de PRDs, com a limitação declarada
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita |
+| **Data** | 2026-09-25 |
+
+**Contexto:** as 37 specs SDD disponíveis já foram usadas (22 no diagnóstico e 15 no holdout). A Decisão 13 exige um terceiro conjunto para qualquer ajuste.
+
+**Escolha:** usar como entrada da fase `define` os PRDs em `~/projetos` (documento válido para `/define`). Eles são rotulados às cegas **antes** da primeira chamada, com hash registrado, e avaliados uma vez. O relatório separa dois grupos:
+- os PRDs de produtos que **não** aparecem em nenhum conjunto anterior (independentes);
+- os PRDs de produtos cujas DEFINE/BRAINSTORM já foram rotulados (parcialmente independentes: documento novo, produto conhecido pelo rotulador).
+
+**Consequências:**
+- O grupo independente é pequeno (~3 casos) e serve como sinal, não como prova. O critério formal do DEFINE é aplicado ao conjunto inteiro, com a ressalva registrada.
+
+---
+
 ## Manifesto de Arquivos
 
 | # | Arquivo | Ação | Propósito | Agente | Dependências |
@@ -402,6 +455,15 @@ A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b
 **Total de Arquivos:** 17 entradas (≈ 26 arquivos físicos contando os fixtures e os pares). Os artefatos gerados (`plugin/`, `plugin-grok/`, `plugin-dsh/`, `.codex/`) são regenerados por `make build`, não editados à mão.
 
 ---
+
+### Manifesto v1.2 (cascata do iterate)
+
+| # | Arquivo | Ação | Propósito |
+|---|---------|------|-----------|
+| 23 | `scripts/jev_select.py` | Modificar | Decisão 14: `wide_pool`, `build_rank_request`, `shortlist`, segunda chamada com orçamento restante |
+| 24 | `tests/test_jev_select.py` | Modificar | Duas chamadas, falha em cada etapa, `rank` inválido, orçamento, teto de 12 |
+| 25 | `WORKFLOW_CONTRACTS.yaml`, `docs/concepts/jev-agent-selection.md`, `CHANGELOG.md` | Modificar | Duas etapas e novas constantes |
+| 26 | `.claude/sdd/evals/agent_selection_prd_set.json` (não versionado) | Criar | Terceiro conjunto (Decisão 15) |
 
 ### Manifesto v1.1 (cascata do iterate)
 
@@ -796,6 +858,7 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | design-agent | Versão inicial a partir de DEFINE_JEV_AGENT_SELECTION.md |
 | 1.1 | 2026-09-24 | iterate-agent | Após o eval real reprovar (variante 0.64 = heurística): Decisões 9–13, ou seja, Noul `single_area` sem domínios no state, portão por `p(single)` com faixa de incerteza, implementadores sempre candidatos, normalização de domínios em texto livre e revalidação em holdout congelado |
+| 1.2 | 2026-09-25 | iterate-agent | Após o holdout reprovar os especialistas (F1 0.08, pré-filtro vazio sem "Domínios KB"): Decisão 14 (duas etapas: Choice `rank` sobre o pool amplo + Noul na lista curta; orçamento de tempo total) e Decisão 15 (terceiro conjunto a partir de PRDs, com limitação declarada) |
 
 ---
 

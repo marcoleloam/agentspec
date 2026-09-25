@@ -38,7 +38,7 @@ A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas
 | **MUST** | A mesma saída JSON é produzida pelo **fallback determinístico em Python**, que reproduz a heurística atual (≥ 3 domínios de KB → multiagent; top-4 por overlap de `kb_domains`). Formato idêntico, campo `source: "jev" \| "fallback"` e campo `fallback_reason`. |
 | **MUST** | Portão (v1.1): a variante é decidida pelo JEV quando `p(single)` sai da faixa de incerteza (padrão 0.4–0.6); `p ≥ 0.5` → single. Dentro da faixa, vale o fallback `uncertain`. Um especialista entra se `Noul ≥ limiar` (padrão configurável, inicial 0.5). Entram no máximo 4, ordenados por probabilidade. Em qualquer outro caso vale o fallback. |
 | **MUST** | Fallback nos casos: chave ausente, erro HTTP, timeout (padrão 4 s), resposta inválida, confiança abaixo do limiar, e zero especialistas acima do limiar quando a variante é multiagent. O script **nunca** retorna código de erro que bloqueie a fase. |
-| **MUST** | Candidatos pré-filtrados de forma determinística a partir de `.claude/skills/agent-router/routing.json`: agentes cujos `kb_domains` intersectam os domínios da spec, excluindo a categoria `workflow`, e sempre com `python-developer` e `react-developer` (v1.1). Domínios em texto livre são normalizados pelo script (v1.1). |
+| **MUST** | Candidatos pré-filtrados de forma determinística a partir de `.claude/skills/agent-router/routing.json`: agentes cujos `kb_domains` intersectam os domínios da spec, excluindo a categoria `workflow`, e sempre com `python-developer` e `react-developer` (v1.1). Domínios em texto livre são normalizados pelo script (v1.1). A partir da v1.2 os candidatos vêm de um ranking amplo (Choice sobre todos os agentes fora de `workflow`/`domain`) somado ao overlap, sem depender da linha "Domínios KB". |
 | **MUST** | `/define` e `/design` chamam o script antes de gerar o documento e **seguem na variante decidida**, podendo subir para a `-multiagent`. `/define-m` e `/design-m` respeitam a variante explícita e usam o script só para os especialistas. |
 | **MUST** | DEFINE e DESIGN gerados contêm a seção "Seleção de Agentes" com fonte, variante, probabilidades, especialistas escolhidos (com probabilidade) e motivo do fallback. Os templates DEFINE e DESIGN ganham essa seção. |
 | **MUST** | Um conjunto rotulado de **20 specs reais** (ao menos 5 single e 5 multiagent) e um modo de avaliação (`--eval`) que roda JEV e fallback sobre o conjunto e imprime acurácia de variante e F1 de especialistas para cada um. |
@@ -167,6 +167,7 @@ Nenhuma bloqueia o Design. Para resolver durante o Design ou no início do Build
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | define-agent | Versão inicial a partir de BRAINSTORM_JEV_AGENT_SELECTION.md |
 | 1.1 | 2026-09-24 | iterate-agent | Cascata do DESIGN v1.1: variante por Noul `single_area` e portão por `p(single)` com faixa de incerteza; implementadores sempre candidatos; normalização de domínios; critério de variante medido em holdout; AT-006/AT-007 revistos; SHOULD de normalização de `confidence` removido |
+| 1.2 | 2026-09-25 | iterate-agent | Cascata do DESIGN v1.2: candidatos por ranking amplo em duas etapas; terceiro conjunto a partir de PRDs |
 
 ---
 
