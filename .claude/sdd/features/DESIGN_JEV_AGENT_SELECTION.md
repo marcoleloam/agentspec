@@ -410,6 +410,8 @@ A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b
 - A heurística continua só por overlap, como baseline.
 - Nenhum limiar muda: `WIDE_TOP_K = 8` e o teto de 12 foram fixados antes de qualquer medição.
 
+**Emenda (2026-09-25, antes da avaliação no terceiro conjunto):** numa chamada de sanidade com uma spec inventada (fora de todos os conjuntos), o Choice `rank` deu probabilidade > 0 a só 4 das 59 opções, e o top 8 era completado com opções de probabilidade zero em ordem alfabética (ex.: `a11y-specialist` num pipeline Kafka). O ranking passa a considerar **só opções com p > 0**. É correção de lógica, não ajuste de limiar: um zero não carrega ordem.
+
 ---
 
 ### Decisão 15 (v1.2): terceiro conjunto de avaliação a partir de PRDs, com a limitação declarada

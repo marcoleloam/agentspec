@@ -11,8 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **JEV agent selection** — `/define` and `/design` now pick their variant (single or
   `-multiagent`) and the specialists to consult from the input spec, via TypeSafe's JEV
   decision model on OpenRouter (`typesafe/jev-1.13`). `scripts/jev_select.py` sends one
-  request (a `single_area` Noul + one Noul per candidate), gates on `p(single)` with an
-  uncertainty band, and falls
+  call (a `single_area` Noul + a `rank` Choice over every specialist), then one Noul per
+  shortlisted specialist, gates on `p(single)` with an uncertainty band, and falls
   back to the previous heuristic (3+ KB domains; top 4 by `kb_domains` overlap) on any
   failure — the phase never blocks. Results are recorded in a new **Seleção de Agentes**
   section of DEFINE/DESIGN. `--eval` compares JEV with the heuristic on a labeled set.

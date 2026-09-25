@@ -16,8 +16,9 @@ spec (BRAINSTORM or DEFINE)
    │  phase agent writes a ≤4000-char summary + the spec's KB domains
    ▼
 scripts/jev_select.py
-   │  routing.json → up to 12 candidates sharing a KB domain + python/react developers
-   │  one request:  single_area (Noul, spec summary only) + fit_i (Noul per candidate)
+   │  call 1: single_area (Noul) + rank (Choice over every specialist, top 8)
+   │  shortlist ≤ 12: python/react developers + top 8 ranked + agents sharing a KB domain
+   │  call 2: fit_i (Noul per shortlisted specialist)
    ▼
 gate
    ├─ p(single) ≥ 0.6 → single; ≤ 0.4 → multiagent; in between → heuristic ("uncertain")
@@ -60,7 +61,7 @@ When a key is set and `JEV_DISABLE` is not, the request sends:
 
 - a summary of the spec (at most 4000 characters);
 - the spec's KB domain names;
-- the names and one-line descriptions of up to 12 AgentSpec agents.
+- the names and one-line descriptions of AgentSpec's specialist agents (about 60 in the ranking call, up to 12 in the second).
 
 It goes to OpenRouter, which forwards it to TypeSafe. Set `JEV_DISABLE=1` for projects whose specs must not leave the machine.
 
@@ -94,7 +95,7 @@ The labels format lives in `tests/fixtures/agent_selection/labels_sample.json`. 
 
 - **Measured quality (2026-09-24).** On 22 labeled specs, the original Choice question answered `multiagent` for every spec, so variant accuracy equaled the heuristic's (0.64). The v1.1 Noul question replaced it and was then measured on a fresh holdout. See the build report for the numbers before relying on the variant decision.
 
-- **Candidates need a shared KB domain.** An agent with no domain in common with the spec is never considered.
+- **Two calls per phase.** The ranking call removes the dependency on the spec's KB domain line; `JEV_TIMEOUT_MS` bounds both calls together.
 - **Local agent overrides are not candidates.** Candidates come from AgentSpec's generated `routing.json`, so agents in your project's `.claude/agents/` are not considered.
 - **Alpha endpoint.** The OpenRouter `alpha/decisions` endpoint may change. The model version is pinned, and any failure falls back to the heuristic.
 - **Codex and DeepSeek Harness bundles.** These bundles do not ship the script, so the commands apply the heuristic by hand and record `fallback (script_unavailable)`.

@@ -143,6 +143,8 @@ agent_selection:
     single_threshold: 0.5         # JEV_SINGLE_THRESHOLD: p(single) >= threshold -> single
     uncertain_band: 0.1           # JEV_UNCERTAIN_BAND: |p - threshold| < band -> fallback 'uncertain'
     always_candidates: [python-developer, react-developer]
+    two_stage: "call 1 = single_area Noul + rank Choice over all non-workflow/domain agents (top 8); call 2 = Noul per shortlist (v1.2)"
+    timeout_scope: "JEV_TIMEOUT_MS is the total budget of both calls"
     specialist_fit_threshold: 0.5 # JEV_FIT_THRESHOLD (Noul)
     max_specialists: 4
     max_candidates: 12

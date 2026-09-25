@@ -140,25 +140,104 @@ class TestPrefilterAndHeuristic:
 # ── Request shape ────────────────────────────────────────────────────────────
 
 class TestBuildRequest:
-    def test_state_holds_only_phase_and_summary(self, js):
-        cands = js.prefilter_candidates(AGENTS, DOMAINS)
-        req = js.build_request(make_input(js), cands, "typesafe/jev-1.13")
+    def test_rank_request_holds_only_phase_and_summary(self, js):
+        pool = js.wide_pool(AGENTS, DOMAINS)
+        req = js.build_rank_request(make_input(js), pool, "typesafe/jev-1.13")
         assert set(req["state"]) == {"phase", "spec_summary"}   # no kb_domains (v1.1)
         assert req["questions"]["single_area"]["type"] == "noul"
         assert set(req["questions"]["single_area"]["criteria"]) == {"true", "false"}
-        assert [k for k in req["questions"] if k.startswith("fit_")] == ["fit_0", "fit_1", "fit_2"]
+        assert req["questions"]["rank"]["type"] == "choice"
+        assert set(req["questions"]["rank"]["criteria"]) == {"dbt-specialist", "spark-engineer", "sql-optimizer", "react-developer"}
+
+    def test_fit_request_one_noul_per_candidate(self, js):
+        cands = js.prefilter_candidates(AGENTS, DOMAINS)
+        req = js.build_fit_request(make_input(js), cands, "m")
+        assert list(req["questions"]) == ["fit_0", "fit_1", "fit_2"]
         assert req["questions"]["fit_0"]["type"] == "noul"
         assert "dbt-specialist" in req["questions"]["fit_0"]["instructions"]
+        assert set(req["state"]) == {"phase", "spec_summary"}
 
     def test_locked_variant_omits_variant_question(self, js):
-        cands = js.prefilter_candidates(AGENTS, DOMAINS)
-        req = js.build_request(make_input(js, locked="multiagent"), cands, "m")
-        assert "single_area" not in req["questions"]
+        req = js.build_rank_request(make_input(js, locked="multiagent"), js.wide_pool(AGENTS, DOMAINS), "m")
+        assert "single_area" not in req["questions"] and "rank" in req["questions"]
 
     def test_summary_truncated(self, js):
-        long = make_input(js, summary="x" * 10_000)
-        req = js.build_request(long, [], "m")
+        req = js.build_rank_request(make_input(js, summary="x" * 10_000), [], "m")
         assert len(req["state"]["spec_summary"]) == js.SUMMARY_MAX_CHARS
+
+    def test_wide_pool_excludes_phase_and_domain_agents(self, js):
+        agents = js.load_routing(js.resolve_routing_path())
+        pool = js.wide_pool(agents, [])
+        assert pool and all(c.category not in {"workflow", "domain"} for c in pool)
+        assert {"python-developer", "react-developer", "dbt-specialist"} <= {c.name for c in pool}
+
+
+class TestTwoStage:
+    def test_rank_top_orders_and_filters(self, js):
+        pool = js.wide_pool(AGENTS, DOMAINS)
+        ans = {"probabilities": {"sql-optimizer": 0.5, "dbt-specialist": 0.3, "ghost": 0.9, "spark-engineer": 0.2}}
+        assert js.rank_top(ans, pool, k=2) == ("sql-optimizer", "dbt-specialist")
+        assert js.rank_top({"choice": "x"}, pool) is None
+        assert js.rank_top({"probabilities": {"ghost": 1.0}}, pool) is None
+        zeros = {"probabilities": {"sql-optimizer": 0.9, "dbt-specialist": 0, "spark-engineer": 0.0}}
+        assert js.rank_top(zeros, pool) == ("sql-optimizer",)     # zeros are not a ranking
+
+    def test_shortlist_priority_survives_cap(self, js):
+        many = [{"name": f"a{i:02d}", "category": "python", "kb_domains": ["dbt"]} for i in range(20)]
+        catalog = [*many, {"name": "python-developer", "category": "python", "kb_domains": ["python"]},
+                   {"name": "react-developer", "category": "frontend", "kb_domains": ["react"]},
+                   {"name": "z-ranked", "category": "cloud", "kb_domains": []}]
+        overlap = js.prefilter_candidates(catalog, ["dbt"])
+        short = js.build_shortlist(catalog, overlap, ("z-ranked",), ["dbt"])
+        names = [c.name for c in short]
+        assert len(names) == js.MAX_CANDIDATES
+        assert {"python-developer", "react-developer", "z-ranked"} <= set(names)
+        assert names[:9] == [f"a{i:02d}" for i in range(9)]      # overlap first, tail dropped by the cap
+
+    def test_two_calls_and_ranked_candidate_reaches_shortlist(self, js):
+        first = {"answers": {"single_area": {"noul": 0.05},
+                             "rank": {"type": "choice", "choice": "react-developer",
+                                      "probabilities": {"react-developer": 0.6, "sql-optimizer": 0.3}}}}
+        second = {"answers": {"fit_0": {"noul": 0.2}, "fit_1": {"noul": 0.9}}}
+        calls = []
+
+        def transport(payload, _s):
+            calls.append(payload)
+            return first if len(calls) == 1 else second
+
+        r = js.select(make_input(js, domains=["terraform"]), settings(js), AGENTS, transport)
+        assert len(calls) == 2
+        assert "rank" in calls[0]["questions"] and list(calls[1]["questions"]) == ["fit_0", "fit_1"]
+        assert r["rank"]["top"] == ["react-developer", "sql-optimizer"]
+        assert [c["name"] for c in r["candidates"]] == ["react-developer", "sql-optimizer"]
+        assert r["specialists"]["value"] == ["sql-optimizer"] and r["specialists"]["source"] == "jev"
+
+    def test_second_call_failure_keeps_variant(self, js):
+        calls = []
+
+        def transport(payload, _s):
+            calls.append(payload)
+            if len(calls) == 2:
+                raise js.TransportError("http_529")
+            return fixture("multiagent_happy.json")
+
+        r = js.select(make_input(js), settings(js), AGENTS, transport)
+        assert r["variant"]["source"] == "jev" and r["variant"]["value"] == "multiagent"
+        assert r["specialists"]["fallback_reason"] == "http_529"
+        assert r["specialists"]["value"] == ["dbt-specialist", "spark-engineer", "sql-optimizer"]
+
+    def test_budget_exhausted_skips_second_call(self, js, monkeypatch):
+        clock = iter([0.0, 3.8, 3.9])
+        monkeypatch.setattr(js.time, "monotonic", lambda: next(clock))
+        t = FakeTransport(fixture("multiagent_happy.json"))
+        r = js.select(make_input(js), settings(js), AGENTS, t)
+        assert len(t.payloads) == 1
+        assert r["specialists"]["fallback_reason"] == "timeout" and r["variant"]["source"] == "jev"
+
+    def test_invalid_rank_is_reported_not_fatal(self, js):
+        r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(fixture("multiagent_happy.json")))
+        assert r["rank"] == {"top": [], "fallback_reason": "rank_fallback"}
+        assert r["specialists"]["source"] == "jev"
 
 
 # ── Normalization ────────────────────────────────────────────────────────────
@@ -221,7 +300,7 @@ class TestSelect:
         assert r["specialists"]["value"] == ["dbt-specialist", "spark-engineer"]
         assert r["specialists"]["applies"] is True
         assert r["specialists"]["probabilities"]["sql-optimizer"] == 0.2
-        assert r["usage"] == {"input_tokens": 812, "output_tokens": 21}
+        assert r["usage"][0] == {"input_tokens": 812, "output_tokens": 21} and len(r["usage"]) == 2
 
     def test_at002_single_happy_path(self, js):
         r = js.select(make_input(js), settings(js), AGENTS, FakeTransport(fixture("single_happy.json")))
@@ -319,10 +398,17 @@ class TestSelect:
                       routing_found=False)
         assert r["specialists"]["fallback_reason"] == "no_routing"
 
-    def test_locked_without_candidates_skips_call(self, js):
+    def test_locked_without_catalog_skips_call(self, js):
+        t = FakeTransport(fixture("single_happy.json"))
+        r = js.select(make_input(js, domains=["terraform"], locked="multiagent"), settings(js), [], t,
+                      routing_found=False)
+        assert t.payloads == [] and r["specialists"]["fallback_reason"] == "no_routing"
+
+    def test_locked_with_empty_shortlist_asks_only_rank(self, js):
         t = FakeTransport(fixture("single_happy.json"))
         r = js.select(make_input(js, domains=["terraform"], locked="multiagent"), settings(js), NO_IMPLEMENTERS, t)
-        assert t.payloads == [] and r["specialists"]["fallback_reason"] == "no_candidates"
+        assert len(t.payloads) == 1 and list(t.payloads[0]["questions"]) == ["rank"]
+        assert r["specialists"]["fallback_reason"] == "no_candidates"
 
 
 # ── Transport against a local server ─────────────────────────────────────────

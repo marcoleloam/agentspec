@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """JEV agent selection — pick the phase variant and specialists from a spec.
 
-Asks TypeSafe's JEV decision model (via OpenRouter) two typed questions about
-a spec summary: which variant a phase should run (``single`` or
-``multiagent``) and which pre-filtered specialists materially matter. When JEV
+Asks TypeSafe's JEV decision model (via OpenRouter) about a spec summary in
+two calls: (1) which variant a phase should run (``single`` or ``multiagent``)
+plus a wide ranking of every specialist; (2) whether each shortlisted
+specialist materially matters. When JEV
 cannot decide (no key, network error, timeout, uncertain answer, bad response)
 the deterministic heuristic that AgentSpec used before this script takes over.
 
@@ -44,7 +45,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,11 @@ MULTIAGENT_DOMAIN_THRESHOLD = 3
 VARIANTS: frozenset[str] = frozenset({"single", "multiagent"})
 PHASES: frozenset[str] = frozenset({"define", "design"})
 EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"workflow"})
+# Wide ranking pool (stage 1): every specialist except phase agents and course/demo agents.
+WIDE_EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"workflow", "domain"})
+WIDE_TOP_K = 8
+WIDE_DESCRIPTION_CHARS = 120
+MIN_SECOND_CALL_S = 0.5
 # General implementers the overlap pre-filter tends to hide; JEV still decides whether they fit.
 ALWAYS_CANDIDATES: tuple[str, ...] = ("python-developer", "react-developer")
 
@@ -254,29 +260,54 @@ def prefilter_candidates(
     return found[:limit]
 
 
+def _as_candidate(agent: Mapping[str, object], wanted: set[str]) -> Candidate:
+    agent_domains = normalize_domains(agent.get("kb_domains") or ())
+    return Candidate(
+        name=str(agent["name"]),
+        category=str(agent.get("category", "")),
+        description=str(agent.get("description", "")).strip(),
+        kb_domains=agent_domains,
+        overlap=len(wanted.intersection(agent_domains)),
+    )
+
+
+def wide_pool(agents: Iterable[Mapping[str, object]], domains: Iterable[str]) -> list[Candidate]:
+    """Stage-1 ranking pool: every specialist, independent of the spec's KB domains."""
+    wanted = set(domains)
+    pool = [_as_candidate(a, wanted) for a in agents if str(a.get("category", "")) not in WIDE_EXCLUDED_CATEGORIES]
+    return sorted(pool, key=lambda c: c.name)
+
+
+def build_shortlist(
+    agents: Iterable[Mapping[str, object]],
+    overlap: list[Candidate],
+    ranked: Iterable[str],
+    domains: Iterable[str],
+    limit: int = MAX_CANDIDATES,
+) -> list[Candidate]:
+    """Stage-2 candidates: implementers, then JEV's top ranked, then overlap — capped at ``limit``.
+
+    Priority decides who survives the cap; the returned order keeps overlap
+    candidates first so question indexes stay stable across runs.
+    """
+    wanted = set(domains)
+    by_name = {str(a.get("name")): a for a in agents}
+    always = [n for n in ALWAYS_CANDIDATES if n in by_name]
+    ranked = [n for n in ranked if n in by_name]
+    keep = set(list(dict.fromkeys([*always, *ranked, *(c.name for c in overlap)]))[:limit])
+    ordered = dict.fromkeys([*(c.name for c in overlap), *ranked, *always])
+    overlap_by_name = {c.name: c for c in overlap}
+    return [overlap_by_name.get(n) or _as_candidate(by_name[n], wanted) for n in ordered if n in keep]
+
+
 def with_always_candidates(
     agents: Iterable[Mapping[str, object]],
     overlap: list[Candidate],
     domains: Iterable[str],
     limit: int = MAX_CANDIDATES,
 ) -> list[Candidate]:
-    """Overlap candidates plus ALWAYS_CANDIDATES, still within ``limit``."""
-    present = {c.name for c in overlap}
-    wanted = set(domains)
-    extra: list[Candidate] = []
-    for agent in agents:
-        name = str(agent.get("name"))
-        if name in ALWAYS_CANDIDATES and name not in present:
-            agent_domains = normalize_domains(agent.get("kb_domains") or ())
-            extra.append(Candidate(
-                name=name,
-                category=str(agent.get("category", "")),
-                description=str(agent.get("description", "")).strip(),
-                kb_domains=agent_domains,
-                overlap=len(wanted.intersection(agent_domains)),
-            ))
-    extra.sort(key=lambda c: ALWAYS_CANDIDATES.index(c.name))
-    return overlap[: max(limit - len(extra), 0)] + extra
+    """Overlap candidates plus ALWAYS_CANDIDATES, still within ``limit`` (no ranking)."""
+    return build_shortlist(agents, overlap, (), domains, limit)
 
 
 def heuristic(domains: tuple[str, ...], candidates: list[Candidate]) -> tuple[str, tuple[str, ...]]:
@@ -287,28 +318,43 @@ def heuristic(domains: tuple[str, ...], candidates: list[Candidate]) -> tuple[st
 
 # ── JEV request / response ───────────────────────────────────────────────────
 
-def build_request(inp: SelectionInput, candidates: list[Candidate], model: str) -> dict[str, object]:
-    """State carries only the phase and the spec summary; every instruction lives in a question.
+SINGLE_AREA_QUESTION: dict[str, object] = {
+    "type": "noul",
+    "instructions": (
+        "Is the implementation work in this spec confined to ONE technical area "
+        "(for example: only frontend screens with mock data, only infrastructure or "
+        "configuration changes, only a written document)?"
+    ),
+    "criteria": {
+        "true": "One area does all the real work; other technologies are mocked, unchanged or only mentioned",
+        "false": "Two or more areas (for example frontend AND backend/database AND AI) each need real new implementation",
+    },
+}
 
-    KB domains stay out of the state: listing 3+ domains next to the variant
-    question made JEV answer "multiagent" for every spec (literal reading).
-    """
+
+def _state(inp: SelectionInput) -> dict[str, object]:
+    """Only the phase and the summary: KB domains in the state made JEV answer "multiagent" for everything."""
+    return {"phase": inp.phase, "spec_summary": inp.summary[:SUMMARY_MAX_CHARS]}
+
+
+def build_rank_request(inp: SelectionInput, pool: list[Candidate], model: str) -> dict[str, object]:
+    """Call 1: the variant Noul (unless locked) + one Choice ranking the whole specialist pool."""
     questions: dict[str, object] = {}
     if inp.variant_locked is None:
-        questions["single_area"] = {
-            "type": "noul",
-            "instructions": (
-                "Is the implementation work in this spec confined to ONE technical area "
-                "(for example: only frontend screens with mock data, only infrastructure or "
-                "configuration changes, only a written document)?"
-            ),
-            "criteria": {
-                "true": "One area does all the real work; other technologies are mocked, unchanged or only mentioned",
-                "false": "Two or more areas (for example frontend AND backend/database AND AI) each need real new implementation",
-            },
+        questions["single_area"] = SINGLE_AREA_QUESTION
+    if pool:
+        questions["rank"] = {
+            "type": "choice",
+            "instructions": f"Which specialist's expertise is MOST needed to get the {inp.phase} phase of this spec right?",
+            "criteria": {c.name: (c.description[:WIDE_DESCRIPTION_CHARS] or c.name) for c in pool},
         }
-    for i, cand in enumerate(candidates):
-        questions[f"fit_{i}"] = {
+    return {"model": model, "state": _state(inp), "questions": questions}
+
+
+def build_fit_request(inp: SelectionInput, shortlist: list[Candidate], model: str) -> dict[str, object]:
+    """Call 2: one Noul per shortlisted specialist."""
+    questions = {
+        f"fit_{i}": {
             "type": "noul",
             "instructions": (
                 f"Would the specialist '{cand.name}' ({cand.description}) materially "
@@ -319,14 +365,9 @@ def build_request(inp: SelectionInput, candidates: list[Candidate], model: str) 
                 "false": "The domain is absent, incidental, or already covered by another specialist",
             },
         }
-    return {
-        "model": model,
-        "state": {
-            "phase": inp.phase,
-            "spec_summary": inp.summary[:SUMMARY_MAX_CHARS],
-        },
-        "questions": questions,
+        for i, cand in enumerate(shortlist)
     }
+    return {"model": model, "state": _state(inp), "questions": questions}
 
 
 def post_decisions(payload: dict[str, object], settings: Settings) -> dict[str, object]:
@@ -390,6 +431,26 @@ def noul_value(answer: object) -> float | None:
 
 def _is_number(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def rank_top(answer: object, pool: list[Candidate], k: int = WIDE_TOP_K) -> tuple[str, ...] | None:
+    """Top-k pool names by the rank Choice's probabilities; None when the answer is unusable."""
+    if not isinstance(answer, Mapping) or not isinstance(answer.get("probabilities"), Mapping):
+        return None
+    names = {c.name for c in pool}
+    # Zero-probability options carry no ranking; keeping them would pad the top-k alphabetically.
+    scored = [(str(n), float(p)) for n, p in answer["probabilities"].items()
+              if str(n) in names and _is_number(p) and float(p) > 0]
+    scored.sort(key=lambda t: (-t[1], t[0]))
+    return tuple(n for n, _ in scored[:k]) or None
+
+
+def _ask(transport: Transport, payload: dict[str, object], settings: Settings) -> tuple[Mapping[str, object], object]:
+    response = transport(payload, settings)
+    answers = response.get("answers")
+    if not isinstance(answers, Mapping):
+        raise TransportError("invalid_response")
+    return answers, response.get("usage")
 
 
 # ── Gates ────────────────────────────────────────────────────────────────────
@@ -458,37 +519,50 @@ def select(
 ) -> dict[str, object]:
     domains, dropped = normalize_kb_domains(inp.kb_domains, known_domains(agents))
     overlap = prefilter_candidates(agents, domains)
-    candidates = with_always_candidates(agents, overlap, domains)
+    pool = wide_pool(agents, domains)
     h_variant, h_specialists = heuristic(domains, overlap)
-
     locked = inp.variant_locked is not None
-    if not candidates:
-        no_cand_reason = "no_routing" if not routing_found else "no_candidates"
-    else:
-        no_cand_reason = None
 
-    answers: Mapping[str, object] = {}
-    transport_reason: str | None = None
+    shortlist = build_shortlist(agents, overlap, (), domains)
+    first: Mapping[str, object] = {}
+    second: Mapping[str, object] = {}
+    ranked: tuple[str, ...] = ()
+    transport_reason: str | None = None   # call 1 failed: everything falls back
+    second_reason: str | None = None      # call 2 failed: only specialists fall back
+    rank_reason: str | None = None
+    usage: list[object] = []
     latency_ms: int | None = None
-    usage: object = None
 
-    needs_call = not locked or bool(candidates)
     if settings.disabled:
         transport_reason = "disabled"
     elif not settings.api_key:
         transport_reason = "missing_key"
-    elif needs_call:
+    else:
         started = time.monotonic()
-        try:
-            response = transport(build_request(inp, candidates, settings.model), settings)
-            raw_answers = response.get("answers")
-            if isinstance(raw_answers, Mapping):
-                answers = raw_answers
-                usage = response.get("usage")
+        first_request = build_rank_request(inp, pool, settings.model)
+        if first_request["questions"]:
+            try:
+                first, u = _ask(transport, first_request, settings)
+                usage.append(u)
+            except TransportError as err:
+                transport_reason = err.reason
+        if not transport_reason:
+            top = rank_top(first.get("rank"), pool)
+            if top is None:
+                rank_reason = "rank_fallback" if pool else None
             else:
-                transport_reason = "invalid_response"
-        except TransportError as err:
-            transport_reason = err.reason
+                ranked = top
+            shortlist = build_shortlist(agents, overlap, ranked, domains)
+            remaining = settings.timeout_s - (time.monotonic() - started)
+            if shortlist and remaining < MIN_SECOND_CALL_S:
+                second_reason = "timeout"
+            elif shortlist:
+                try:
+                    second, u = _ask(transport, build_fit_request(inp, shortlist, settings.model),
+                                     replace(settings, timeout_s=remaining))
+                    usage.append(u)
+                except TransportError as err:
+                    second_reason = err.reason
         latency_ms = int((time.monotonic() - started) * 1000)
 
     if locked:
@@ -496,15 +570,15 @@ def select(
     elif transport_reason:
         variant = Decision(h_variant, "fallback", transport_reason)
     else:
-        variant = gate_variant(answers.get("single_area"), h_variant,
+        variant = gate_variant(first.get("single_area"), h_variant,
                                settings.single_threshold, settings.uncertain_band)
 
-    if no_cand_reason:
-        specialists = Decision((), "fallback", no_cand_reason)
-    elif transport_reason:
-        specialists = Decision(h_specialists, "fallback", transport_reason)
+    if not shortlist:
+        specialists = Decision((), "fallback", "no_routing" if not routing_found else "no_candidates")
+    elif transport_reason or second_reason:
+        specialists = Decision(h_specialists, "fallback", transport_reason or second_reason)
     else:
-        specialists = gate_specialists(answers, candidates, h_specialists, settings.fit_threshold)
+        specialists = gate_specialists(second, shortlist, h_specialists, settings.fit_threshold)
 
     primary = specialists if locked else variant
     first_reason = variant.fallback_reason or specialists.fallback_reason
@@ -519,9 +593,10 @@ def select(
         "kb_domains_dropped": list(dropped),
         "variant": variant.to_dict(),
         "specialists": {**specialists.to_dict(), "applies": variant.value == "multiagent"},
-        "candidates": [{"name": c.name, "overlap": c.overlap} for c in candidates],
+        "rank": {"top": list(ranked), "fallback_reason": rank_reason},
+        "candidates": [{"name": c.name, "overlap": c.overlap} for c in shortlist],
         "heuristic": {"variant": h_variant, "specialists": list(h_specialists)},
-        "usage": usage,
+        "usage": usage or None,
     }
 
 
@@ -539,6 +614,7 @@ def fallback_result(reason: str) -> dict[str, object]:
         "kb_domains_dropped": [],
         "variant": Decision("single", "fallback", reason).to_dict(),
         "specialists": {**empty.to_dict(), "applies": False},
+        "rank": {"top": [], "fallback_reason": reason},
         "candidates": [],
         "heuristic": {"variant": "single", "specialists": []},
         "usage": None,
