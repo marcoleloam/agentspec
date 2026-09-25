@@ -81,11 +81,18 @@ Decide the variant for this phase and the specialists to consult by applying the
 3. Follow the decision:
    - `single` → continue with this command as written.
    - `multiagent` → continue with the `/design-m` process, consulting exactly the specialists you chose.
-4. Optional second opinion: when `JEV_SECOND_OPINION=1` is set, also run
-   `python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py` (input format in
-   `docs/concepts/jev-agent-selection.md`, `"phase": "design"`) and record its variant and specialists
-   next to yours. It never overrides the rubric decision.
-5. Write the **Seleção de Agentes** section: the variant with a one-line justification, each specialist
+4. Second opinion (opt-in): **always run** this snippet — it does nothing unless
+   `JEV_SECOND_OPINION=1` is set, so you do not need to check the environment yourself:
+
+   ```bash
+   [ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON' || echo "JEV second opinion: not run"
+   {"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": null}
+   JSON
+   ```
+
+   When it prints JSON, record its `variant` and `specialists` next to your decision. It never
+   overrides the rubric decision.
+5. Write the **Seleção de Agentes** section using the template's table (one row per field): the variant with a one-line justification, each specialist
    with a one-line reason, `fonte: llm (rubrica)`, and the JEV second opinion when it was run.
 
 ### Step 2: Create Architecture

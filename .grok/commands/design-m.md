@@ -62,10 +62,17 @@ This is the **multi-agent variant** of `/design` (Phase 2). Plain `/design` alre
 
 An explicit `/design-m` locks the multiagent variant — it never falls back to `/design`.
 Pick the specialists by applying the SPECIALISTS part of `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` to the input
-(at most 4, names exactly as in the catalog). With `JEV_SECOND_OPINION=1`, also run
-`python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py` with `"variant_locked": "multiagent"` and record
-its list next to yours; the rubric decision stands. Write the **Seleção de Agentes** section into the
-generated document.
+(at most 4, names exactly as in the catalog). Then **always run** the second-opinion snippet — it
+does nothing unless `JEV_SECOND_OPINION=1` is set:
+
+```bash
+[ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON' || echo "JEV second opinion: not run"
+{"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": "multiagent"}
+JSON
+```
+
+Record its specialists next to yours when it prints JSON; the rubric decision stands. Write the **Seleção de Agentes** section into the
+generated document using the template's table.
 
 ---
 

@@ -467,6 +467,22 @@ Codex e Grok concordam na variante em 91% dos casos. Nenhuma das duas inventou n
 
 ---
 
+## Testes E2E com o plugin construído (2026-09-25)
+
+`claude -p --plugin-dir plugin/ --permission-mode bypassPermissions`, em diretórios descartáveis de `/tmp` (sem acesso ao repo), com specs arquivadas deste repo.
+
+| Teste | Comando | Resultado | Status |
+|-------|---------|-----------|--------|
+| AT-002 (single) | `/define` na BRAINSTORM do KB_EVOLUTION | Variante `single`, fonte `llm (rubrica)`, justificativa escrita; especialista `kb-architect`. A regra antiga daria `multiagent` (3 domínios). 65 s | ✅ |
+| AT-001 (multi / 2ª opinião) | `/design` na DEFINE do FRONTEND_ECOSYSTEM com `JEV_SECOND_OPINION=1` | Variante `single`: o agente viu que o escopo já estava construído e restava só trabalho interno do framework, uma leitura defensável e diferente do rótulo. **Defeito:** segunda opinião não executada e seção fora do formato de tabela. 135 s | ❌ → corrigido |
+| AT-009 + 2ª opinião | `/design-m` na mesma DEFINE com `JEV_SECOND_OPINION=1` (após a correção) | Variante `multiagent` (`locked`); especialistas pela rubrica: `kb-architect`, `frontend-architect`, `react-developer`, `css-specialist`, cada um com motivo e os 4 consultados; JEV executado e registrado (964 ms, divergiu em `kb-architect` → `a11y-specialist`, e a rubrica se manteve); seção em tabela. 379 s | ✅ |
+
+**Defeito encontrado e corrigido:** o passo "quando `JEV_SECOND_OPINION=1` estiver definida…" dependia de o agente consultar o ambiente, e ele pulou o passo. Os 4 comandos agora mandam **sempre** executar um snippet que testa a variável sozinho (`[ "${JEV_SECOND_OPINION:-}" = "1" ] && … || echo "not run"`). O snippet foi verificado com a variável ligada e desligada, e a seção passou a exigir a tabela do template.
+
+**Ainda não re-executado após a correção:** `/design` com a variável ligada (o mesmo snippet foi validado no `/design-m`).
+
+---
+
 ## Próximo Passo
 
 1. ~~Validar A-001/A-002~~ ✅ feito em 2026-09-24 (ver Validação com o JEV Real).
@@ -475,6 +491,7 @@ Codex e Grok concordam na variante em 91% dos casos. Nenhuma das duas inventou n
 3b. ~~Opção 1 da v1.1 (pool amplo)~~ ✅ v1.2 construída e medida em PRDs (ver Iterate v1.2).
 3c. ~~Baseline LLM~~ ✅ feito em 2026-09-25: LLM > JEV > heurística (ver Baseline LLM).
 3d. ~~Decidir o destino~~ ✅ v1.3: rubrica pela LLM da fase + JEV opcional (ver Implementação Final).
-3e. Rodar `/define` e `/design` numa spec real para ver a seção "Seleção de Agentes" preenchida pela rubrica.
+3e. ~~E2E~~ ✅ `/define` (AT-002) e `/design-m` (AT-009 + 2ª opinião) passaram; defeito da 2ª opinião corrigido (ver Testes E2E).
+4. Push e PR, quando o maintainer decidir.
 4. Rodar `/define` e `/design` numa spec real para fechar AT-001, AT-002 e AT-009 (depois do `/iterate`).
 5. `/ship JEV_AGENT_SELECTION` só quando os critérios forem atingidos num conjunto novo.
