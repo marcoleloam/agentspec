@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 # Define Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements and validate them in one pass (Phase 1)
 
 ## Usage
@@ -278,7 +283,7 @@ Before saving, verify:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-agent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/define-agent.md`
 - Multi-agent variant: `/define-m` (`${CLAUDE_PLUGIN_ROOT}/commands/workflow/define-m.md`)
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/DEFINE_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`

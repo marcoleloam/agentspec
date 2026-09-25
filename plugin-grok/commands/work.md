@@ -8,6 +8,11 @@ description: Enter and stay anchored to an active feature so improvement request
 
 # Work Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it anchors the session to the active feature).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Enter a feature's working context and stay anchored to it. Once active, plain requests
 > like "melhora o tratamento de erro" are understood against this feature — no need to
 > re-specify which feature or re-explain its design. Closes the post-build gap where every

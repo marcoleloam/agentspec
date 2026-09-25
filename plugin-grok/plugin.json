@@ -1,6 +1,6 @@
 {
   "name": "agentspec",
-  "version": "3.4.1",
+  "version": "3.5.0",
   "description": "Spec-Driven Development for Grok Build — 73 agents, 39 KB domains, 5-phase SDD workflow, flattened slash commands.",
   "author": {
     "name": "Marco Aurelio Almeida Monteiro",

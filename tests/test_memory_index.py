@@ -233,16 +233,29 @@ def test_brief_respects_custom_budget(tree, capsys, budget):
 
 
 def test_real_archive_pointer_exists():
-    """AT-007 on real data: pointers resolve to an existing file and heading."""
+    """AT-007 on real data: every cross-feature pointer resolves to an existing file and heading."""
     mem = mi.collect(REAL)
     lines = mi.brief(mem, "NEW", "define", extra_domains={"genai"})
-    cross = [l for l in lines if "↔ KB_EVOLUTION" in l]
+    cross = [l for l in lines if "↔ " in l and "→ " in l]
     assert cross
     for line in cross:
         target = line.rsplit("→ ", 1)[1]
         path, anchor = target.split("#", 1)
         text = (REAL / path).read_text(encoding="utf-8")
-        assert any(mi.slug(h.lstrip("#").strip()) == anchor for h in text.splitlines() if h.startswith("#"))
+        assert any(mi.slug(h.lstrip("#").strip()) == anchor for h in text.splitlines() if h.startswith("#")), target
+
+
+def test_blackboard_pointers_become_root_relative(tree):
+    """'DESIGN_X.md#a' next to the blackboard reads as 'features/DESIGN_X.md#a', like archive/ entries."""
+    (tree / "features" / "DESIGN_PTR.md").write_text("# D\n\n### Decisão 1: A\n", encoding="utf-8")
+    write_raw_blackboard(tree, "PTR", (
+        "## Log de Decisões\n\n| # | Fase | Decisão | Onde Ler |\n|---|---|---|---|\n"
+        "| D-001 | design | A | DESIGN_PTR.md#decisão-1-a |\n"
+        "| D-002 | design | B | plugin-extras/scripts/x.py |\n"
+        "| D-003 | design | C | MISSING.md#x |\n"))
+    where = {e.id: e.where for e in mi.collect(tree).entries if e.feature == "PTR"}
+    assert where == {"D-001": "features/DESIGN_PTR.md#decisão-1-a",
+                     "D-002": "plugin-extras/scripts/x.py", "D-003": "MISSING.md#x"}
 
 
 # --- gate ----------------------------------------------------------------------

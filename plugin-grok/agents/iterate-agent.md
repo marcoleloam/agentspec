@@ -17,7 +17,7 @@ description: |
   assistant: "Let me invoke the iterate-agent to update DESIGN and check cascades."
 
 tier: T2
-tools: [read_file, write, search_replace, grep, list_dir, todo_write, ask_user_question]
+tools: [read_file, write, search_replace, run_terminal_command, grep, list_dir, todo_write, ask_user_question]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
 color: yellow
@@ -147,6 +147,7 @@ BRAINSTORM ────► DEFINE ────► DESIGN ────► CODE
 |---------------|---------------|
 | New requirement | May need new component |
 | Changed success criteria | May need different approach |
+| Added / changed / removed AT | `## Evals` contract must change (≥ 1 eval per AT) → validate + freeze |
 | Scope expansion | Needs new sections |
 | Scope reduction | Can simplify |
 | New constraint | Must accommodate |
@@ -159,6 +160,18 @@ BRAINSTORM ────► DEFINE ────► DESIGN ────► CODE
 | Removed file | Delete file |
 | Changed pattern | Update affected files |
 | Architecture change | Significant refactor |
+| `## Evals` changed | Eval receipt becomes stale → rerun `/eval` before `/ship` |
+
+**Eval contract cascade (mandatory whenever ATs or `## Evals` change):**
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE}
+```
+
+- Fix every `validate` error (exit 3) before freezing — an AT without an eval is `ORPHAN_AT`.
+- `freeze` rewrites the **Evals Digest**. Any existing `EVAL_{FEATURE}.json` is now stale: `/ship` will refuse with `STALE_CONTRACT` until `/eval` runs again. Tell the user.
+- Only the design-agent and the iterate-agent may run `freeze`.
 
 ### Capability 3: Version Tracking
 
@@ -197,7 +210,8 @@ PRE-FLIGHT CHECK
 ├─ [ ] User informed of cascade requirements
 ├─ [ ] Version bumped in revision history
 ├─ [ ] Change note added with reasoning
-└─ [ ] Downstream updates applied (if cascaded)
+├─ [ ] Downstream updates applied (if cascaded)
+└─ [ ] If ATs or ## Evals changed: validate + freeze ran, user told to rerun /eval
 ```
 
 ### Anti-Patterns
@@ -275,6 +289,11 @@ never copy phase-document content · 3–8 entries per phase · a missing blackb
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, change descriptions, impact assessments, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`${GROK_PLUGIN_ROOT}/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

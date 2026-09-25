@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 # Define-M Command (Multi-Agent)
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements with specialist validation — catches missing requirements, hidden constraints, and unrealistic criteria
 
 ## Usage
@@ -124,7 +129,7 @@ The final message lists the Blackboard IDs this phase added, next to the DEFINE 
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-multiagent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/define-multiagent.md`
 - Single-agent variant: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/define.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/DEFINE_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`

@@ -13,7 +13,7 @@ description: |
   assistant: "Let me invoke the build-agent to build from the design."
 
 tier: T2
-model: opus
+model: inherit
 tools: [Read, Write, Edit, Grep, Glob, Bash, TodoWrite, Task]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
@@ -117,6 +117,29 @@ Has @agent-name in manifest?
          • Verify against KB
          • Handle errors locally
 ```
+
+---
+
+### Pre-Build Eval Check (blocking, before the first task)
+
+Before generating any code, run the eval pre-check on the DESIGN's `## Evals` contract:
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" pre {FEATURE}
+```
+
+| Exit | Meaning | Action |
+|------|---------|--------|
+| `0` | Every deterministic eval runs cleanly and fails (nothing is built yet) | Proceed. Copy any `ALREADY_PASSING` warning into the BUILD_REPORT |
+| `1` | An eval cannot run (bash error, missing interpreter/tool) | **STOP.** The contract is broken — fix it through `/iterate` on the DESIGN, never by editing `## Evals` directly |
+| `3` | Structural contract error (orphan AT, invalid TOML, missing Evals Digest) | **STOP.** Escalate to design-agent / `/iterate` |
+
+A DESIGN without `## Evals` (legacy) prints a notice and exits `0`; the gap is enforced later by `/ship`.
+
+Rules:
+- Never edit the `## Evals` block or its **Evals Digest** during a build — `/eval` rejects the contract as `CONTRACT_TAMPERED`.
+- Evals that call Python must use `"$AGENTSPEC_PYTHON"`; set `AGENTSPEC_PYTHON` to the interpreter that has the project's test dependencies.
+- The build's own acceptance table in the BUILD_REPORT is **self-verification**. It does not replace `/eval`.
 
 ---
 
@@ -263,6 +286,7 @@ python -c "from pyspark.sql import SparkSession; exec(open('{file}').read())"
 
 ```text
 PRE-FLIGHT CHECK
+├─ [ ] Eval pre-check ran before the first task (exit 0)
 ├─ [ ] Blackboard seeded from DESIGN at build start
 ├─ [ ] All files from manifest created
 ├─ [ ] Each file verified (lint, types, tests)
@@ -273,7 +297,8 @@ PRE-FLIGHT CHECK
 ├─ [ ] Error cases handled
 ├─ [ ] DEFINE status updated to "Built"
 ├─ [ ] DESIGN status updated to "Built"
-└─ [ ] BUILD_REPORT generated
+├─ [ ] BUILD_REPORT generated
+└─ [ ] Next step points to /eval (not /ship)
 ```
 
 ### Anti-Patterns
@@ -283,6 +308,8 @@ PRE-FLIGHT CHECK
 | Skip DESIGN loading | No patterns to follow | Always load DESIGN first |
 | Ignore agent assignments | Lose specialization | Delegate as specified |
 | Skip verification | Broken code ships | Verify every file |
+| Edit `## Evals` or its digest during build | Contract tampering; `/eval` rejects it | Change evals only through `/iterate` |
+| Mark ATs as passed from your own run | Self-verification is not acceptance | Leave acceptance to `/eval` |
 | Improvise beyond DESIGN | Scope creep | Follow patterns exactly |
 | Leave TODO comments | Incomplete code | Finish or escalate |
 
@@ -316,8 +343,11 @@ PRE-FLIGHT CHECK
 | Lint (ruff) | ✅ Pass |
 | Types (mypy) | ✅ Pass |
 | Tests (pytest) | ✅ 8/8 pass |
+| Eval pre-check | ✅ 5 evals fail as expected (0 errors) |
 
 ## Status: ✅ COMPLETE
+
+Next: `/eval {FEATURE}` (independent acceptance), then `/ship`.
 ```
 
 ---
@@ -375,6 +405,11 @@ never copy phase-document content · 3–8 entries per phase · a missing blackb
 
 Technical terms, file paths, commands, code, and tool names remain in English.
 Section headings, descriptions, notes, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

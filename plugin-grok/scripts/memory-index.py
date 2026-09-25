@@ -219,6 +219,15 @@ def entry_rows(md: str) -> set[str]:
     return found
 
 
+def root_relative(where: str, folder: Path, root: Path) -> str:
+    """'DESIGN_X.md#a' written next to the blackboard → 'features/DESIGN_X.md#a' (like archive/ entries)."""
+    target, sep, anchor = where.partition("#")
+    target = target.strip().strip("`")
+    if not target or "/" in target or not (folder / target).is_file():
+        return where
+    return f"{rel(folder / target, root)}{sep}{anchor}"
+
+
 def blackboard_entries(path: Path, root: Path, feature: str, mem: Memory) -> list[Entry]:
     md = read(path)
     where_file = rel(path, root)
@@ -250,7 +259,7 @@ def blackboard_entries(path: Path, root: Path, feature: str, mem: Memory) -> lis
                 phase = "iterate" if "design" in fold(cell(row, "tipo")) else "build"
             else:
                 phase = phase_of(cell(row, "fase"))
-            where = cell(row, "onde ler")
+            where = root_relative(cell(row, "onde ler"), path.parent, root)
             seq += 1
             out.append(Entry(
                 feature=feature, phase=phase, kind=kind, id=entry_id, text=text,

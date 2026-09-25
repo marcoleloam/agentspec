@@ -26,7 +26,7 @@ Rules:
 
 ## Specialist agents
 
-73 specialist agents live under `.codex/agents/`. Codex loads them as
+74 specialist agents live under `.codex/agents/`. Codex loads them as
 subagents - delegate explicitly ("use the dbt-specialist agent", "spawn two agents in
 parallel") and Codex will spawn them. They are grouped by category:
 
@@ -41,7 +41,7 @@ parallel") and Codex will spawn them. They are grouped by category:
 | `platform` | 6 |
 | `python` | 6 |
 | `test` | 3 |
-| `workflow` | 9 |
+| `workflow` | 10 |
 
 <!-- agentspec:end -->
 

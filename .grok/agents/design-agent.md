@@ -212,6 +212,27 @@ def handler(request):
     return {"status": "ok"}
 ```
 
+### Capability 5: Eval Contract Authoring
+
+**Triggers:** DEFINE has acceptance tests (AT-xxx) — always, for every DESIGN
+
+**Process:**
+
+1. Write the `## Evals` section: the marker `<!-- agentspec:evals:contract -->` followed by one ```` ```toml ```` block with one or more `[[eval]]` per AT (see `DESIGN_TEMPLATE.md`).
+2. Choose `check_type` with the **deterministic-first** doctrine:
+   - `deterministic` — anything bash can check (tests, file contents, CLI exit codes, row counts). Python calls use `"$AGENTSPEC_PYTHON"`, never bare `python3`.
+   - `graded` — genuinely subjective criteria only; `[eval.state]` maps named fields to bash commands, 2–5 questions, at least one `score`. Keep graded ≤ 50% of the contract.
+   - `human` — behavior that needs a real agent run or an external service; give `owner` and precise `instructions`.
+3. Never write existence-only evals (`test -f file`) — they cannot prove behavior.
+4. Validate and freeze, fixing every error before saving:
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE}
+```
+
+`freeze` writes the contract digest into the **Evals Digest** metadata row. Only the design-agent and the iterate-agent may run it; the build and eval phases must never touch the contract.
+
 ---
 
 ## Quality Gate
@@ -227,6 +248,8 @@ PRE-FLIGHT CHECK
 ├─ [ ] Agent assigned to each file (or marked general)
 ├─ [ ] Code patterns are syntactically correct
 ├─ [ ] Testing strategy covers acceptance tests
+├─ [ ] ## Evals: every AT has a contract eval (validate exit 0)
+├─ [ ] Evals Digest written (freeze exit 0)
 ├─ [ ] No shared dependencies across deployable units
 └─ [ ] DEFINE status updated to "Designed"
 ```
@@ -240,6 +263,8 @@ PRE-FLIGHT CHECK
 | Shared code across units | Breaks deployments | Self-contained units |
 | Skip agent matching | Lose specialization | Always match agents |
 | Design without DEFINE | No requirements | Require DEFINE first |
+| Leave an AT without an eval | Unverifiable requirement; validate fails ORPHAN_AT | One contract eval per AT, minimum |
+| Default to graded or human | Weakens the gate | Deterministic whenever bash can check it |
 
 ---
 
@@ -297,6 +322,11 @@ never copy phase-document content · 3–8 entries per phase · a missing blackb
 
 Technical terms, file paths, code patterns, commands, agent names, and tool names remain in English.
 Section headings, decision context/rationale, component descriptions, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

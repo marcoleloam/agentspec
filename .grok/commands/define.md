@@ -8,6 +8,11 @@ description: Capture and validate requirements in one pass (Phase 1)
 
 # Define Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements and validate them in one pass (Phase 1)
 
 ## Usage

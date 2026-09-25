@@ -58,6 +58,26 @@ The `/design` command combines what used to be Plan + Spec + ADRs into a single 
 
 ---
 
+## Phase Routing (delegated)
+
+<!-- phase-routing: mode=delegated agent=design-agent -->
+
+This phase runs in the **`design-agent` subagent**, so it uses the model routed to the
+design phase (OMP: `task.agentModelOverrides` → `@slow`; Claude Code: `model: opus`).
+Do not do the design work in the main session.
+
+1. Delegate exactly once — Claude Code: spawn_subagent tool, `subagent_type: design-agent`
+   (plugin name `agentspec:design-agent`); OMP: `task` tool, agent `design-agent`.
+2. Pass: the DEFINE path, the FEATURE name, and this instruction: "Fill the
+   **Gerado por** metadata row with your harness, the routed role, and your model id
+   (or `desconhecido`)."
+3. When the subagent returns the DESIGN path, run Step 8 (`--judge`) here in the main
+   session if the flag was given.
+4. If the subagent is unavailable, say so, run Steps 1–7 inline as a fallback, and
+   record the session model in **Gerado por**.
+
+---
+
 ## Process
 
 ### Step 1: Load Context
@@ -145,9 +165,16 @@ Provide copy-paste ready code snippets for key patterns.
 | Integration | API | pytest + requests |
 | E2E | Full flow | Manual/automated |
 
-### Step 7: Save — Document + Blackboard
+### Step 6b: Author the Eval Contract
 
-Both files are written in this step; the phase ends only after both are updated.
+Turn every acceptance test of the DEFINE into at least one eval in the DESIGN's `## Evals` section
+(marker `<!-- agentspec:evals:contract -->` + one ```` ```toml ```` block — skeleton in the template).
+Deterministic first; `graded` only for subjective criteria (≤ 50%); `human` for runtime-agent or external-service ATs.
+
+### Step 7: Save — Document + Blackboard, Validate, Freeze
+
+Both files are written in this step; the phase ends only after both are updated
+and the eval contract is frozen.
 
 ```markdown
 write(.claude/sdd/features/DESIGN_{FEATURE_NAME}.md)
@@ -170,6 +197,13 @@ Resolução cells of Q and A change in place), pointer + one sentence, pt-BR con
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
 python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
 ```
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE_NAME}
+"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE_NAME}
+```
+
+Fix every `validate` error (exit 3) before freezing. `freeze` writes the **Evals Digest** metadata row.
 
 ### Step 8: Optional Judge Pass (`--judge`)
 
@@ -247,6 +281,8 @@ Before saving, verify:
 [ ] File manifest is complete (all files listed)
 [ ] Code patterns are copy-paste ready
 [ ] Testing strategy covers requirements
+[ ] Every AT has a contract eval (eval_runner.py validate exit 0)
+[ ] Evals Digest frozen (eval_runner.py freeze exit 0)
 [ ] No circular dependencies in architecture
 [ ] Gate passed (no 🔴 on the blackboard) and one D-### per inline decision recorded
 ```

@@ -7,9 +7,9 @@ AgentSpec ships for multiple harnesses:
 - **Grok Build** — [grok-harness.md](grok-harness.md) (generated `plugin-grok/` + `.grok/`).
 - **DeepSeek Harness** — [deepseek-harness.md](deepseek-harness.md) (generated `plugin-dsh/` bundle).
 
-## Slash Commands (21 total)
+## Slash Commands (22 total)
 
-### Workflow Commands (7)
+### Workflow Commands (8)
 
 | Command | Purpose | Input | Output |
 |---------|---------|-------|--------|
@@ -17,7 +17,8 @@ AgentSpec ships for multiple harnesses:
 | `/define` | Capture requirements (Phase 1) | Brainstorm file, notes, or description | `DEFINE_{FEATURE}.md` |
 | `/design` | Create architecture (Phase 2) | DEFINE file path | `DESIGN_{FEATURE}.md` |
 | `/build` | Execute implementation (Phase 3) | DESIGN file path | `BUILD_REPORT_{FEATURE}.md` |
-| `/ship` | Archive completed work (Phase 4) | DEFINE file path | `SHIPPED_{DATE}.md` |
+| `/eval` | Post-build eval gate (Phase 3.5) | Feature name or active feature | `EVAL_{F}.json` + `EVAL_REPORT_{F}.md` |
+| `/ship` | Archive completed work (Phase 4) | DEFINE file path; requires a `PASS` eval receipt | `SHIPPED_{DATE}.md` |
 | `/iterate` | Update any phase document | File path + change description | Updated document + cascades |
 | `/create-pr` | Create pull request | Optional title, `--draft`, `--review` | GitHub PR |
 
@@ -57,7 +58,7 @@ AgentSpec ships for multiple harnesses:
 
 ---
 
-## Agents (58 total)
+## Agents (59 total)
 
 Agents are organized into 8 categories. Each agent declares a tier (T1/T2/T3) governing its template requirements, line budget, and response format.
 
@@ -67,7 +68,7 @@ Agents are organized into 8 categories. Each agent declares a tier (T1/T2/T3) go
 | T2 | Domain Expert | Domain specialists with KB resolution and confidence scoring (150-350 lines) |
 | T3 | Platform Specialist | MCP-dependent agents with live platform access (350-600 lines) |
 
-### Workflow Agents (6)
+### Workflow Agents (7)
 
 Drive the SDD workflow phases.
 
@@ -77,6 +78,7 @@ Drive the SDD workflow phases.
 | `define-agent` | T2 | Sonnet | 1 | Capture requirements with clarity scoring |
 | `design-agent` | T2 | Opus | 2 | Create technical architecture with file manifest |
 | `build-agent` | T2 | Opus | 3 | Execute implementation with agent delegation |
+| `eval-agent` | T2 | Sonnet | 3.5 | Reexecute the eval contract via `eval_runner.py`; no Edit tool |
 | `ship-agent` | T2 | Sonnet | 4 | Archive with lessons learned |
 | `iterate-agent` | T2 | Sonnet | All | Update documents with cascade awareness |
 

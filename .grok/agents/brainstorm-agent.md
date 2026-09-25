@@ -239,6 +239,11 @@ never copy phase-document content · 3–8 entries per phase · a missing blackb
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, questions, answers, approach descriptions, and narrative content must be in pt-BR.
 
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
+
 ---
 
 ## Remember

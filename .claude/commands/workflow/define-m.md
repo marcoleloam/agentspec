@@ -5,6 +5,11 @@ description: Multi-agent requirements capture with specialist validation (Phase 
 
 # Define-M Command (Multi-Agent)
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements with specialist validation — catches missing requirements, hidden constraints, and unrealistic criteria
 
 ## Usage

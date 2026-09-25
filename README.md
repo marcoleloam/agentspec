@@ -12,7 +12,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-Compatible-black.svg)](docs/reference/codex-cli.md)
 [![Grok Build](https://img.shields.io/badge/Grok%20Build-Compatible-black.svg)](docs/reference/grok-harness.md)
-[![Version](https://img.shields.io/badge/version-3.4.1-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.0-green.svg)](CHANGELOG.md)
 [![Agents](https://img.shields.io/badge/agents-73-orange.svg)](.claude/agents/)
 [![Commands](https://img.shields.io/badge/commands-42-blue.svg)](.claude/commands/)
 [![KB Domains](https://img.shields.io/badge/KB%20domains-39-blue.svg)](.claude/kb/)
@@ -114,7 +114,7 @@ AgentSpec v3.2.0 supports **local-first agent overrides**. To customize a specif
 
 ```bash
 # 1. Copy the agent you want to override
-cp $CLAUDE_PLUGIN_ROOT/agents/workflow/build-agent.md \
+cp $CLAUDE_PLUGIN_ROOT/agents/build-agent.md \
    .claude/agents/workflow/build-agent.md
 
 # 2. Edit (keep the name: field identical to the plugin version)
@@ -278,6 +278,7 @@ agentspec/
 | [Getting Started](docs/getting-started/) | Install and build your first feature |
 | [Core Concepts](docs/concepts/) | SDD pillars and how agents work |
 | [Agent Overrides](docs/concepts/agent-overrides.md) | Customize agents per project |
+| [Phase Model Routing](docs/concepts/phase-model-routing.md) | Which model role runs each SDD phase (OMP, Claude Code, Codex) |
 | [Judge Setup](docs/getting-started/judge-setup.md) | Enable cross-model second opinion |
 | [Tutorials](docs/tutorials/) | dbt, star schema, data quality, Spark, streaming |
 | [Reference](docs/reference/) | Full catalog: agents, commands, KB domains |

@@ -5,6 +5,11 @@ description: Resume an incomplete or unsatisfactory build by analyzing the gap b
 
 # Continuar Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it orchestrates the specialist agents).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Resume an incomplete or unsatisfactory build — identify gaps and implement only what is missing, without restarting from zero.
 
 ## Usage
@@ -58,7 +63,12 @@ Use `/continuar` when a `/build` was incomplete, had errors, or didn't meet expe
 Read(.claude/sdd/reports/BUILD_REPORT_{FEATURE}.md)  → what was built and what failed
 Read(.claude/sdd/features/DEFINE_{FEATURE}.md)        → expected acceptance criteria
 Read(.claude/sdd/features/DESIGN_{FEATURE}.md)        → file manifest from design
+Read(.claude/sdd/reports/EVAL_{FEATURE}.json)         → independent eval results (if /eval ran)
 ```
+
+When `EVAL_{FEATURE}.json` exists, it is the primary source of gaps: every result with `status`
+`fail`, `error`, or `pending` is a gap, and `evidence.stdout` / `evidence.stderr` show why. Prefer it over
+the BUILD_REPORT's self-verification.
 
 If no BUILD_REPORT exists, identify the feature's code files and assess current state.
 
@@ -68,6 +78,9 @@ Compare acceptance criteria from DEFINE with what was delivered in the BUILD_REP
 
 | Gap Type | Action |
 |----------|--------|
+| Eval `fail` (deterministic) | Fix the code until that eval's `run` command passes locally |
+| Eval `error` | The eval cannot run (tool/interpreter missing, bash error): fix the environment, or fix the contract via `/iterate` |
+| Eval `pending` (human / graded) | Not a code gap — ask the owner to verify, then `eval_runner.py attest`; or record a named waiver |
 | Bug or implementation error | Fix inline and re-verify |
 | Missing feature that was in DESIGN | Continue build from file manifest |
 | Missing feature **not** in DESIGN | Ask: use `/iterate` on DESIGN first? |
@@ -99,6 +112,7 @@ Follow the same pattern as the build agent:
 4. Confirm that DEFINE acceptance criteria are met
 5. If a fix diverges from the DESIGN, record a `D-###` on the blackboard with `Fase` = `build`
    and `Substitui` = the design decision it replaces (`WORKFLOW_CONTRACTS.yaml` → `living_memory`)
+6. Never edit the DESIGN's `## Evals` block or its **Evals Digest** to make an eval pass — change the code, or change the contract through `/iterate`
 
 ### Step 5: Update Build Report
 
@@ -120,6 +134,8 @@ Append a section to the existing BUILD_REPORT (do not replace it):
 - Modified files: [list]
 ```
 
+Then rerun `/eval {FEATURE}`: the previous receipt is stale as soon as code changes (`STALE_COMMIT` / `STALE_WORKTREE`).
+
 ---
 
 ## Quality Gate
@@ -131,6 +147,7 @@ Append a section to the existing BUILD_REPORT (do not replace it):
 [ ] BUILD_REPORT updated with "Continuation {DATE}" section
 [ ] DEFINE acceptance criteria met
 [ ] Deviations from DESIGN recorded on the blackboard (D-### with Substitui)
+[ ] Eval contract untouched; user pointed to /eval {FEATURE}
 ```
 
 ---

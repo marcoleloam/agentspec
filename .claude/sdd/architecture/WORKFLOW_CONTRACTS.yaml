@@ -1,9 +1,9 @@
 # AgentSpec - Workflow Contracts
 # 5-Phase Development Workflow with Agent Matching and Delegation
-# Version: 2.1.0
-# Date: 2026-03-26
+# Version: 2.3.0
+# Date: 2026-09-25
 
-version: "2.1.0"
+version: "2.3.0"
 name: "AgentSpec"
 description: "5-phase spec-driven development workflow with agent orchestration for software and data engineering"
 
@@ -11,6 +11,8 @@ description: "5-phase spec-driven development workflow with agent orchestration 
 # WORKFLOW OVERVIEW
 # =============================================================================
 
+# Model routing per phase/agent lives in PHASE_MODEL_ROLES.toml (single source of
+# truth, synced and checked by scripts/phase_routing.py). Do not add `model:` here.
 workflow:
   phases:
     - name: "Brainstorm"
@@ -20,7 +22,6 @@ workflow:
       purpose: "Collaborative exploration to clarify intent and approach"
       input: "Raw idea, request, or problem statement"
       output: "BRAINSTORM_{FEATURE}.md"
-      model: "opus"
       optional: true
 
     - name: "Define"
@@ -30,7 +31,6 @@ workflow:
       purpose: "Capture and validate requirements"
       input: "Raw notes, emails, conversations, BRAINSTORM document, or direct requirements"
       output: "DEFINE_{FEATURE}.md"
-      model: "opus"
 
     - name: "Design"
       number: 2
@@ -39,7 +39,6 @@ workflow:
       purpose: "Create architecture and technical specification"
       input: "DEFINE_{FEATURE}.md"
       output: "DESIGN_{FEATURE}.md"
-      model: "opus"
 
     - name: "Build"
       number: 3
@@ -48,8 +47,13 @@ workflow:
       purpose: "Execute implementation with verification"
       input: "DESIGN_{FEATURE}.md"
       output: "Code files + BUILD_REPORT_{FEATURE}.md"
-      model: "sonnet"
-
+    - name: "Eval"
+      number: 3.5
+      command: "/eval"
+      agent: "eval-agent"
+      purpose: "Independent acceptance: re-run the frozen eval contract and write the receipt /ship requires"
+      input: "DEFINE_{FEATURE}.md + DESIGN_{FEATURE}.md (## Evals) + current code"
+      output: "EVAL_{FEATURE}.json + EVAL_REPORT_{FEATURE}.md"
     - name: "Ship"
       number: 4
       command: "/ship"
@@ -57,7 +61,6 @@ workflow:
       purpose: "Archive feature with lessons learned"
       input: "All feature artifacts"
       output: "archive/{FEATURE}/SHIPPED_{DATE}.md"
-      model: "haiku"
 
   cross_phase:
     - name: "Iterate"
@@ -66,7 +69,6 @@ workflow:
       purpose: "Update any phase document when changes needed"
       works_with: ["Brainstorm", "Define", "Design"]
       phase_3_note: "To change code during Build, update DESIGN then run /build"
-      model: "sonnet"
 
     - name: "Work"
       command: "/work"
@@ -76,7 +78,6 @@ workflow:
       routes_to:
         code_change: "/continuar behavior on the active feature"
         document_change: "/iterate behavior on DEFINE/DESIGN"
-      model: "sonnet"
 
 # =============================================================================
 # AGENT RESOLUTION (Local-First Precedence)
@@ -140,7 +141,6 @@ brainstorm:
   agent:
     name: "brainstorm-agent"
     file: ".claude/agents/workflow/brainstorm-agent.md"
-    model: "opus"
     tools:
       - Read
       - Write
@@ -263,7 +263,6 @@ define:
   agent:
     name: "define-agent"
     file: ".claude/agents/workflow/define-agent.md"
-    model: "opus"
     tools:
       - Read
       - Write
@@ -379,7 +378,6 @@ design:
   agent:
     name: "design-agent"
     file: ".claude/agents/workflow/design-agent.md"
-    model: "opus"
     tools:
       - Read
       - Write
@@ -423,6 +421,7 @@ design:
     - file_manifest
     - code_patterns
     - testing_strategy
+    - evals  # ## Evals contract (>= 1 eval per AT) + frozen Evals Digest
 
   inline_decisions:
     format:
@@ -447,6 +446,7 @@ design:
     - hardcoded_config: "Values that should be in YAML"
     - circular_deps: "A depends on B depends on A"
     - missing_tests: "No testing strategy defined"
+    - orphan_at: "An acceptance test with no contract eval"
 
 # =============================================================================
 # PHASE 3: BUILD
@@ -463,7 +463,6 @@ build:
   agent:
     name: "build-agent"
     file: ".claude/agents/workflow/build-agent.md"
-    model: "sonnet"
     tools:
       - Read
       - Write
@@ -490,6 +489,7 @@ build:
     order: "by dependencies"
     verification: "after each file"
     retry_limit: 3
+    pre_check: "eval_runner.py pre {FEATURE} before the first task — exit 1/3 stops the build"
 
   blackboard:
     description: |
@@ -567,6 +567,84 @@ build:
     - inline_comments: "Explaining code with comments"
 
 # =============================================================================
+# PHASE 3.5: EVAL (independent acceptance gate)
+# =============================================================================
+
+eval:
+  command:
+    name: "/eval"
+    file: ".claude/commands/workflow/eval.md"
+    args: "[feature]  # default: .claude/sdd/.active"
+    examples:
+      - "/eval USER_NOTIFICATIONS"
+      - "/eval"
+
+  agent:
+    name: "eval-agent"
+    file: ".claude/agents/workflow/eval-agent.md"
+    tools:
+      - Read
+      - Write   # only EVALS_EXTRA_{FEATURE}.toml
+      - Grep
+      - Glob
+      - Bash
+      - TodoWrite
+      - AskUserQuestion
+
+  runner: "scripts/eval_runner.py"   # stdlib, Python >= 3.11; the verdict comes from here, never from the agent
+  jev_client: "scripts/jev_client.py"
+
+  input:
+    required:
+      - ".claude/sdd/features/DEFINE_{FEATURE}.md"   # AT table
+      - ".claude/sdd/features/DESIGN_{FEATURE}.md"   # ## Evals contract + Evals Digest
+    optional:
+      - ".claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml"
+      - ".claude/sdd/reports/EVAL_{FEATURE}.attestations.json"
+
+  output:
+    receipt: ".claude/sdd/reports/EVAL_{FEATURE}.json"          # schema agentspec/eval-receipt/v1
+    report: ".claude/sdd/reports/EVAL_REPORT_{FEATURE}.md"      # rendered by the runner, pt-BR
+    template: ".claude/sdd/templates/EVAL_REPORT_TEMPLATE.md"
+
+  contract:
+    location: "DESIGN ## Evals — marker <!-- agentspec:evals:contract --> + one ```toml block (outside code fences)"
+    check_types: ["deterministic", "graded", "human"]
+    rules:
+      - "Every DEFINE AT has >= 1 contract eval (ORPHAN_AT otherwise)"
+      - "Deterministic first; graded <= 50% of the contract (warning)"
+      - "Graded: named [eval.state] fields, 2-5 questions, >= 1 score question"
+      - "Human: owner + instructions"
+      - "Existence-only evals are warned (EXISTENCE_ONLY)"
+    freeze: "design-agent / iterate-agent run `eval_runner.py freeze`; digest = sha256 of canonical parsed TOML, stored in the DESIGN **Evals Digest** row"
+    who_may_change: "Only /iterate (then re-freeze). Build and eval phases never touch it."
+
+  gates:
+    pre_build: "`eval_runner.py pre` at build start — bash/interpreter error blocks; already-passing evals warn"
+    run: "`eval_runner.py run` — PASS iff every required eval is pass or waived and the contract digest matches"
+    ship: "`eval_runner.py verify` — receipt must be PASS and match current commit, worktree digest, and contract digest"
+
+  jev:
+    model: "typesafe/jev-1.13"
+    endpoints: ["https://openrouter.ai/api/v1/systemone", "https://openrouter.ai/api/alpha/decisions"]
+    decision: "pass iff all noul >= 0.85 and every score confident (>= 0.75) at its top level; fail iff a noul <= 0.15 and a confident score at its lowest level; else escalated"
+    authority: "Authoritative only when .claude/sdd/evals/JEV_CALIBRATION.json is approved for the same model; otherwise advisory"
+    escalation: "judge.py (if OPENROUTER_API_KEY) → human attestation"
+    invariant: "No infrastructure failure (network, budget, config) ever yields pass"
+
+  statuses: ["pass", "fail", "error", "escalated", "pending", "waived"]
+
+  binding:
+    receipt: "commit + worktree_digest (git diff HEAD + untracked, excluding .claude/sdd and .claude/storage) + contract_digest + extras_digest"
+    attestations_and_waivers: "bound to the same commit + worktree + contract; stale ones become pending"
+
+  anti_patterns:
+    - self_acceptance: "Build agent marking ATs as accepted"
+    - contract_edit_during_build: "Editing ## Evals or its digest outside /iterate"
+    - forged_attestation: "Recording a human decision the user did not give"
+    - noul_only_grading: "Graded eval without a score question"
+
+# =============================================================================
 # PHASE 4: SHIP
 # =============================================================================
 
@@ -581,7 +659,6 @@ ship:
   agent:
     name: "ship-agent"
     file: ".claude/agents/workflow/ship-agent.md"
-    model: "haiku"
     tools:
       - Read
       - Write
@@ -593,6 +670,7 @@ ship:
       - ".claude/sdd/features/DEFINE_{FEATURE}.md"
       - ".claude/sdd/features/DESIGN_{FEATURE}.md"
       - ".claude/sdd/reports/BUILD_REPORT_{FEATURE}.md"
+      - ".claude/sdd/reports/EVAL_{FEATURE}.json"   # must pass `eval_runner.py verify`
 
   output:
     archive_folder: ".claude/sdd/archive/{FEATURE}/"
@@ -605,6 +683,10 @@ ship:
     - "DESIGN_{FEATURE}.md"
     - "BLACKBOARD_{FEATURE}.md"  # Shared coordination state from Build
     - "BUILD_REPORT_{FEATURE}.md"
+    - "EVAL_{FEATURE}.json"                # eval receipt (required)
+    - "EVAL_REPORT_{FEATURE}.md"
+    - "EVAL_{FEATURE}.attestations.json"   # optional
+    - "EVALS_EXTRA_{FEATURE}.toml"         # optional
     - "SHIPPED_{DATE}.md"
 
   lessons_learned:
@@ -615,6 +697,7 @@ ship:
       - tools
 
   pre_ship_checklist:
+    - eval_gate_verified   # eval_runner.py verify exit 0 — blocking, no bypass flag
     - build_report_complete
     - all_tests_passing
     - no_blocking_issues
@@ -637,7 +720,6 @@ iterate:
   agent:
     name: "iterate-agent"
     file: ".claude/agents/workflow/iterate-agent.md"
-    model: "sonnet"
     tools:
       - Read
       - Write
@@ -859,11 +941,20 @@ folder_structure:
         - "DEFINE_*.md"
         - "DESIGN_*.md"
         - "BLACKBOARD_*.md"
+        - "EVALS_EXTRA_*.toml"
 
     reports:
       path: "reports/"
       contains:
         - "BUILD_REPORT_*.md"
+        - "EVAL_*.json"
+        - "EVAL_REPORT_*.md"
+        - "EVAL_*.attestations.json"
+
+    evals:
+      path: "evals/"
+      contains:
+        - "JEV_CALIBRATION.json"
 
     archive:
       path: "archive/"
@@ -874,6 +965,8 @@ folder_structure:
         - "DESIGN_*.md"
         - "BLACKBOARD_*.md"
         - "BUILD_REPORT_*.md"
+        - "EVAL_*.json"
+        - "EVAL_REPORT_*.md"
         - "SHIPPED_*.md"
 
     templates:
@@ -884,6 +977,7 @@ folder_structure:
         - "DESIGN_TEMPLATE.md"
         - "BLACKBOARD_TEMPLATE.md"
         - "BUILD_REPORT_TEMPLATE.md"
+        - "EVAL_REPORT_TEMPLATE.md"
         - "SHIPPED_TEMPLATE.md"
 
     architecture:
@@ -909,6 +1003,10 @@ naming:
     define: "DEFINE_{FEATURE}.md"
     design: "DESIGN_{FEATURE}.md"
     build_report: "BUILD_REPORT_{FEATURE}.md"
+    eval_receipt: "EVAL_{FEATURE}.json"
+    eval_report: "EVAL_REPORT_{FEATURE}.md"
+    eval_attestations: "EVAL_{FEATURE}.attestations.json"
+    evals_extra: "EVALS_EXTRA_{FEATURE}.toml"
     shipped: "SHIPPED_{YYYY-MM-DD}.md"
 
   date_format: "YYYY-MM-DD"
@@ -935,6 +1033,7 @@ status_transitions:
     ready: "Ready for Design"
     after_design: "✅ Complete (Designed)"
     after_build: "✅ Complete (Built)"
+    after_eval: "✅ Complete (Evaluated)"
     after_ship: "✅ Shipped"
 
   design:
@@ -977,6 +1076,18 @@ status_transitions:
           field: "Next Step"
           value: "/ship"
         - file: "DESIGN_{FEATURE}.md"
+          field: "Next Step"
+          value: "/ship"
+
+    - trigger: "/eval completes with verdict PASS"
+      updates:
+        - file: "DEFINE_{FEATURE}.md"
+          field: "Status"
+          value: "✅ Complete (Evaluated)"
+        - file: "DESIGN_{FEATURE}.md"
+          field: "Status"
+          value: "✅ Complete (Evaluated)"
+        - file: "DEFINE_{FEATURE}.md"
           field: "Next Step"
           value: "/ship"
 
@@ -1041,6 +1152,21 @@ quality:
 # =============================================================================
 
 version_history:
+  - version: "2.3.0"
+    date: "2026-09-25"
+    changes:
+      - "living_memory: BLACKBOARD spans Brainstorm → Ship; memory-index.py brief/gate/tail/build"
+      - "🔴 blocks Define→Design and Design→Build; closes only with the user's answer"
+      - "Plugin hooks (memory-hook.py): brief on phase commands, gate before creating DESIGN_*.md, index rebuilt on blackboard writes"
+
+  - version: "2.2.0"
+    date: "2026-09-23"
+    changes:
+      - "Phase 3.5 /eval: independent acceptance gate (eval-agent + scripts/eval_runner.py)"
+      - "DESIGN requires ## Evals (>= 1 eval per AT), frozen by digest; build runs a pre-check"
+      - "/ship requires a PASS eval receipt bound to commit, worktree, and contract"
+      - "JEV (typesafe/jev-1.13) grades subjective evals once calibrated; escalates otherwise"
+
   - version: "2.1.0"
     date: "2026-03-26"
     changes:

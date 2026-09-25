@@ -1,0 +1,188 @@
+# Calibration cases for `eval_runner.py calibrate`.
+#
+# 12 labelled cases (>= CALIBRATION_MIN_CASES). Each pairs a `state` with the
+# same two-question rubric used by the graded eval fixtures (Noul + Score)
+# and an `expected` reference verdict from a human/judge review. The test
+# that consumes this file monkeypatches `jev_client.decide` so no network
+# call happens; the file only needs to be structurally valid TOML with the
+# fields `calibrate` reads: id, expected, [case.state], [[case.questions]].
+
+[[case]]
+id = "case_01"
+expected = "pass"
+[case.state]
+report = "O eval saiu com exit 0 e todas as asserções passaram."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_02"
+expected = "pass"
+[case.state]
+report = "pytest -q reportou 12 passed, 0 failed."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_03"
+expected = "pass"
+[case.state]
+report = "Build concluído sem erros; smoke test verde."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_04"
+expected = "pass"
+[case.state]
+report = "Todos os 3 ATs do DEFINE foram verificados manualmente e passaram."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_05"
+expected = "pass"
+[case.state]
+report = "Relatório de lint sem findings; todos os arquivos conformes."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_06"
+expected = "pass"
+[case.state]
+report = "Deploy de staging validado; health-check retornou 200 em todos os endpoints."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_07"
+expected = "fail"
+[case.state]
+report = "pytest -q reportou 1 failed: AssertionError em test_totais."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_08"
+expected = "fail"
+[case.state]
+report = "Build falhou: ModuleNotFoundError na etapa de import."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_09"
+expected = "fail"
+[case.state]
+report = "Nenhum eval foi executado; claim de sucesso não tem verificação associada."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_10"
+expected = "fail"
+[case.state]
+report = "Relatório de lint aponta 4 issues críticos não resolvidos."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_11"
+expected = "fail"
+[case.state]
+report = "Deploy de staging falhou; health-check retornou 500."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
+
+[[case]]
+id = "case_12"
+expected = "pass"
+[case.state]
+report = "Caso ambíguo: eval parcialmente executado, resultado inconclusivo."
+[[case.questions]]
+id = "consistent"
+type = "noul"
+instructions = "O `report` apoia a alegação de sucesso?"
+[[case.questions]]
+id = "quality"
+type = "score"
+instructions = "Quão forte é a evidência no `report`?"
+criteria = ["contradiz", "sem evidência", "evidência fraca", "evidência forte"]
