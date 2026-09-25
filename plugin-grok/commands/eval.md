@@ -74,7 +74,7 @@ Write additive evals to `.claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml` only (
 ### Step 3: Run
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" run {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" run {FEATURE}
 ```
 
 ### Step 4: Resolve Pending Evals
@@ -82,9 +82,9 @@ Write additive evals to `.claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml` only (
 Ask each owner (ask_user_question), then `attest` or `waive`, then run again:
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" attest {FEATURE} --eval {id} --verdict pass --owner "{name}" --evidence "{what was checked}" --recorded-via eval-agent
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" waive {FEATURE} --eval {id} --supervisor "{name}" --reason "{why}"
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" run {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" attest {FEATURE} --eval {id} --verdict pass --owner "{name}" --evidence "{what was checked}" --recorded-via eval-agent
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" waive {FEATURE} --eval {id} --supervisor "{name}" --reason "{why}"
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" run {FEATURE}
 ```
 
 ### Step 5: Report

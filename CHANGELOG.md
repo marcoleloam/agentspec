@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-09-25
+
 ### Added
 
 - **Living Memory (second brain across phases)** — the feature `BLACKBOARD_{FEATURE}.md`
@@ -29,6 +31,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `BLACKBOARD_{FEATURE}.md` only if missing and otherwise extend it; deviations from the
   DESIGN are recorded as decisions that supersede the design decision.
 - `/ship` now also archives `BRAINSTORM_{FEATURE}.md` and rebuilds the memory index.
+
+### Fixed
+
+- **Plugin script paths.** Commands and agents called `eval_runner.py`, `judge.py` and
+  `status-dashboard.py` as `${CLAUDE_PLUGIN_ROOT:-.}/scripts/…`. Claude Code never fills in
+  that form and the Bash tool does not see `CLAUDE_PLUGIN_ROOT`, so in a user project the
+  path was `./scripts/…`; agents only got there by searching for the script. Sources now call
+  `"${AGENTSPEC_SCRIPTS:-scripts}/x.py"`: the SessionStart hook exports `AGENTSPEC_SCRIPTS`
+  through `CLAUDE_ENV_FILE`, and `build-plugin.sh` (and the Grok generator) rewrite the
+  fallback to the exact `${CLAUDE_PLUGIN_ROOT}` form, which the loader fills in. The hook
+  exports nothing inside the AgentSpec source repo, so its commands run the repo's own
+  scripts. Guarded by `tests/test_plugin_script_paths.py`.
 
 ## [3.5.0] - 2026-09-24
 

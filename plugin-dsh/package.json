@@ -1,6 +1,6 @@
 {
   "name": "@agentspec/agentspec-dsh",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "AgentSpec Spec-Driven Development workflow as a DeepSeek Harness (dsh) bundle — skills + native slash commands.",
   "type": "module",
   "license": "MIT",

@@ -68,7 +68,8 @@ python3 "$MI" build                                # write .claude/sdd/MEMORY_IN
 Claude Code fills in `${CLAUDE_PLUGIN_ROOT}` only in that exact form, and only when it
 loads a plugin command. The Bash tool does not export the variable, so `${CLAUDE_PLUGIN_ROOT:-.}`
 would resolve to `./scripts/…` in a user project. That is why the second line exists: the
-SessionStart hook writes `AGENTSPEC_MEMORY_INDEX` to `$CLAUDE_ENV_FILE`.
+SessionStart hook writes `AGENTSPEC_MEMORY_INDEX` to `$CLAUDE_ENV_FILE`. The same hook exports
+`AGENTSPEC_SCRIPTS`, which `eval_runner.py`, `judge.py` and `status-dashboard.py` are called through.
 
 `gate` and `build` exit **2** when a blackboard has entry rows they cannot read (for example a
 table in a section the template does not have). They say which IDs were lost, and the fix

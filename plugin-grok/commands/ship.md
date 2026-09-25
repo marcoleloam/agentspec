@@ -79,7 +79,7 @@ ship phase (OMP: `task.agentModelOverrides` → `@smol`; Claude Code: `model: ha
 Run the post-build eval gate **before** reading, copying, or deleting anything:
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" verify {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" verify {FEATURE}
 ```
 
 - Exit `0` (`OK` or `OK_LEGACY_WAIVED`) → continue to Step 1.

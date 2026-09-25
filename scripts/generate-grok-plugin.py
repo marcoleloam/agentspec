@@ -130,6 +130,8 @@ _PLUGIN_PATHS: list[tuple[str, str]] = [
     (".claude/sdd/README.md", "${GROK_PLUGIN_ROOT}/sdd/README.md"),
     (".claude/kb/", "${GROK_PLUGIN_ROOT}/kb/"),
     (".claude/skills/", "${GROK_PLUGIN_ROOT}/skills/"),
+    ("${AGENTSPEC_SCRIPTS:-scripts}", "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}"),
+    ("${AGENTSPEC_SCRIPTS:-plugin-extras/scripts}", "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}"),
     ("${CLAUDE_PLUGIN_ROOT}", "${GROK_PLUGIN_ROOT}"),
 ]
 

@@ -202,8 +202,8 @@ python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to 
 ```
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE_NAME}
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE_NAME}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" validate {FEATURE_NAME}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" freeze {FEATURE_NAME}
 ```
 
 Fix every `validate` error (exit 3) before freezing. `freeze` writes the **Evals Digest** metadata row.
@@ -231,7 +231,7 @@ MODEL=""   # empty → judge.py picks phase default
 STRICT_FLAG=""
 [[ "$mode" == "strict" ]] && STRICT_FLAG="--strict"
 
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-scripts}/judge.py" \
   ".claude/sdd/features/DESIGN_{FEATURE_NAME}.md" \
   --phase design \
   ${MODEL:+--model "$MODEL"} \

@@ -8,7 +8,7 @@
 
 **What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 74 agents (data engineering + frontend), 43 commands, 39 KB domains, and 10 distributed skills (14 in-repo; 4 are contributor-only).
 
-**Current Status:** v3.3.0 — Adds blackboard coordination (Build phase), the `/work` active-feature anchor, and portable file-based memory (project + global tiers, auto-recalled at SessionStart as a compact index). Builds on v3.2.0 (Judge Layer, local-first overrides, /status, agent-router, stack detection, CI). MemPalace MCP dependency dropped in favor of the file-based memory.
+**Current Status:** v3.6.0 — Living Memory: the feature BLACKBOARD is the trajectory memory from Brainstorm to Ship, read back by `memory-index.py` (≤15-line brief on phase entry, 🔴 gate, SessionStart tail, cross-feature index) and enforced by plugin hooks. Builds on v3.5.0 (LLM phase routing, `/eval` gate) and v3.3.0 (blackboard coordination, `/work`, file-based memory).
 
 ---
 
@@ -197,6 +197,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | File-based memory (2 tiers) | Done 2026-06-21 | Project + global MEMORY.md, recalled at SessionStart as index; dropped MemPalace MCP |
 | Post-build evals (/eval + JEV) | Shipped 2026-09-24 | New Phase 3.5 gate: `## Evals` TOML contract in DESIGN, frozen by digest, PRE-checked before /build, reexecuted by eval-agent via `eval_runner.py`; JEV grades `graded` evals, escalating to `/judge` or a human until calibrated; `/ship` requires a PASS receipt |
 | LLM phase routing | Done 2026-09-24 | `PHASE_MODEL_ROLES.toml` maps each SDD phase to an OMP model role (+ Claude alias, Codex effort); `/design` and `/ship` delegate to their phase agent; `make omp-roles` prints `task.agentModelOverrides`; `plugin/agents/` flattened so OMP discovers agents; **Gerado por** provenance row in SDD docs |
+| Living Memory (Blackboard Brainstorm → Ship) | Shipped 2026-09-25 | `memory-index.py` brief/gate/tail/index over BLACKBOARD, archive and MEMORY.md; plugin hooks (`memory-hook.py`) inject the brief, gate new DESIGNs on 🔴, rebuild the index; 🔴 closes only with the user's answer |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -296,14 +297,16 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | `build-plugin.sh` | Packages .claude/ into plugin/ with path rewriting |
 | `plugin/.claude-plugin/plugin.json` | Plugin manifest (name, version, metadata) |
 | `plugin-extras/skills/` | Plugin-only skills (sdd-workflow, data-engineering-guide) |
-| `plugin-extras/hooks/hooks.json` | SessionStart hook (creates SDD dirs) |
+| `plugin-extras/hooks/hooks.json` | SessionStart (SDD dirs, memory index, exports `AGENTSPEC_SCRIPTS`) + Living Memory hooks (UserPromptSubmit / PreToolUse / PostToolUse) |
+| `plugin-extras/scripts/memory-index.py` | Living Memory — `brief` / `gate` / `tail` / `build` over BLACKBOARD, archive and MEMORY.md |
+| `plugin-extras/scripts/memory-hook.py` | Hook adapter: injects the brief, gates new DESIGNs on 🔴, rebuilds MEMORY_INDEX.md |
 
 ---
 
 ## Version
 
-- **Version:** 3.5.0
-- **Status:** Release — LLM phase routing (`PHASE_MODEL_ROLES.toml`, `/design` and `/ship` delegate to their phase agent, **Gerado por** provenance), post-build `/eval` gate (phase 3.5), Grok Build plugin and DeepSeek Harness bundle. 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
+- **Version:** 3.6.0
+- **Status:** Release — Living Memory: the BLACKBOARD spans Brainstorm → Ship, `memory-index.py` (brief / gate / tail / index) and plugin hooks that make those calls deterministic; plugin script paths fixed (`AGENTSPEC_SCRIPTS`). Builds on 3.5.0 (LLM phase routing, `/eval` gate). 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
 - **Upstream Base:** luanmorenommaciel/agentspec @ d577ec5 (2026-07-15)
 - **Last Sync:** 2026-07-27 (wave 1 — additive only; thin-executor refactor deferred)
-- **Last Updated:** 2026-09-24
+- **Last Updated:** 2026-09-25

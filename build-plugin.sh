@@ -28,7 +28,7 @@ else
 fi
 
 echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}  AgentSpec Plugin Builder v3.5.0${NC}"
+echo -e "${BLUE}  AgentSpec Plugin Builder v3.6.0${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
@@ -198,6 +198,19 @@ done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name
 # .claude/ paths (it creates .claude/agents/{workflow,custom} there, not in the plugin).
 
 echo "  Rewrote ${REWRITE_COUNT} path references"
+
+# Script calls: the source form "${AGENTSPEC_SCRIPTS:-scripts}/x.py" falls back to the repo's
+# scripts/. In the plugin the fallback becomes the exact ${CLAUDE_PLUGIN_ROOT} form, which
+# Claude Code fills in when it loads a command (the Bash tool never sees the variable, and
+# ${CLAUDE_PLUGIN_ROOT:-.} is never filled in). AGENTSPEC_SCRIPTS itself comes from the
+# SessionStart hook (init-workspace.sh → CLAUDE_ENV_FILE).
+while IFS= read -r -d '' file; do
+    grep -q 'AGENTSPEC_SCRIPTS:-' "$file" || continue
+    sed_i \
+        -e 's|${AGENTSPEC_SCRIPTS:-scripts}|${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}|g' \
+        -e 's|${AGENTSPEC_SCRIPTS:-plugin-extras/scripts}|${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}|g' \
+        "$file"
+done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' \) -print0)
 
 # ── Step 4: Clean absolute paths ────────────────────────────────────────────
 echo -e "${YELLOW}[5/6] Cleaning absolute paths...${NC}"

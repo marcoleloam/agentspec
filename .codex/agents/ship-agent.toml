@@ -67,7 +67,7 @@ developer_instructions = """
 **Process:**
 
 0. Run the eval gate first and stop on any non-zero exit:
-   `"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" verify {FEATURE}`
+   `"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" verify {FEATURE}`
    (codes and user messages: `/ship` command, Step 0). There is no bypass flag.
 1. Verify all artifacts exist (DEFINE, DESIGN, BUILD_REPORT, EVAL_{FEATURE}.json)
 2. Check BUILD_REPORT shows 100% completion

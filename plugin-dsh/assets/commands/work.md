@@ -136,7 +136,7 @@ and build report. No server, no tokens spent rendering — a deterministic scrip
 
 ```bash
 # Resolves the feature from .active (or pass one explicitly), writes the HTML, prints its path
-DASH=$(python3 "${CLAUDE_PLUGIN_ROOT:-.}/scripts/status-dashboard.py" 2>/dev/null)
+DASH=$(python3 "${AGENTSPEC_SCRIPTS:-plugin-extras/scripts}/status-dashboard.py" 2>/dev/null)
 [ -n "$DASH" ] && open "$DASH" 2>/dev/null || echo "Dashboard: $DASH"
 ```
 

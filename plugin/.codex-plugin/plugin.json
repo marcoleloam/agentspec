@@ -1,6 +1,6 @@
 {
   "name": "agentspec",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "Spec-Driven Development framework for Data Engineering and Frontend",
   "author": {
     "name": "Marco Aurelio Almeida Monteiro",

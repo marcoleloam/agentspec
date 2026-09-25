@@ -125,7 +125,7 @@ Has @agent-name in manifest?
 Before generating any code, run the eval pre-check on the DESIGN's `## Evals` contract:
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" pre {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" pre {FEATURE}
 ```
 
 | Exit | Meaning | Action |

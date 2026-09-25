@@ -206,7 +206,7 @@ MODEL=""   # empty → judge.py picks phase default
 STRICT_FLAG=""
 [[ "$mode" == "strict" ]] && STRICT_FLAG="--strict"
 
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-scripts}/judge.py" \
   ".claude/sdd/features/DEFINE_{FEATURE_NAME}.md" \
   --phase define \
   ${MODEL:+--model "$MODEL"} \

@@ -221,8 +221,8 @@ def handler(request):
 4. Validate and freeze, fixing every error before saving:
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE}
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/eval_runner.py" validate {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/eval_runner.py" freeze {FEATURE}
 ```
 
 `freeze` writes the contract digest into the **Evals Digest** metadata row. Only the design-agent and the iterate-agent may run it; the build and eval phases must never touch the contract.

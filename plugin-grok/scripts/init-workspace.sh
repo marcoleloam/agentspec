@@ -395,15 +395,20 @@ active_feature_tail() {
     python3 "$mi" tail --n "${AGENTSPEC_MEMORY_TAIL:-5}" 2>/dev/null || true
 }
 
-# Commands locate memory-index.py through ${GROK_PLUGIN_ROOT}, which Claude Code fills in
-# only in that exact form and does not export to the Bash tool. Persist the resolved path
-# via CLAUDE_ENV_FILE (set for SessionStart hooks) so agent Bash calls can find the script.
-export_memory_index_path() {
-    local here mi
+# Commands locate the plugin scripts (memory-index.py, eval_runner.py, judge.py, …) through
+# ${GROK_PLUGIN_ROOT}, which Claude Code fills in only in that exact form and does not
+# export to the Bash tool. Persist the resolved paths via CLAUDE_ENV_FILE (set for
+# SessionStart hooks) so agent Bash calls can find them. Skipped inside the AgentSpec
+# source repo, whose commands must run the repo's own scripts, not an installed plugin's.
+export_script_paths() {
+    local here
     here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    mi="${here}/memory-index.py"
-    [[ -n "${CLAUDE_ENV_FILE:-}" && -f "$mi" ]] || return 0
-    printf 'export AGENTSPEC_MEMORY_INDEX=%q\n' "$mi" >> "$CLAUDE_ENV_FILE" 2>/dev/null || true
+    [[ -n "${CLAUDE_ENV_FILE:-}" ]] || return 0
+    [[ -f "plugin-extras/scripts/memory-index.py" && -f "build-plugin.sh" ]] && return 0
+    {
+        printf 'export AGENTSPEC_SCRIPTS=%q\n' "$here"
+        [[ -f "${here}/memory-index.py" ]] && printf 'export AGENTSPEC_MEMORY_INDEX=%q\n' "${here}/memory-index.py"
+    } >> "$CLAUDE_ENV_FILE" 2>/dev/null || true
 }
 
 surface_memory() {
@@ -468,5 +473,5 @@ EOF
 init_workspace
 init_agent_overrides
 generate_context_hint
-export_memory_index_path
+export_script_paths
 surface_memory

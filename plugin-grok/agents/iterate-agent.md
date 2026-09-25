@@ -165,8 +165,8 @@ BRAINSTORM ────► DEFINE ────► DESIGN ────► CODE
 **Eval contract cascade (mandatory whenever ATs or `## Evals` change):**
 
 ```bash
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" validate {FEATURE}
-"${AGENTSPEC_PYTHON:-python3}" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" freeze {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" validate {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${GROK_PLUGIN_ROOT}/scripts}/eval_runner.py" freeze {FEATURE}
 ```
 
 - Fix every `validate` error (exit 3) before freezing — an AT without an eval is `ORPHAN_AT`.

@@ -89,7 +89,7 @@ and never write the report or the receipt yourself.
 
 ```bash
 PY="${AGENTSPEC_PYTHON:-python3}"
-"$PY" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" run {FEATURE}
+"$PY" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" run {FEATURE}
 ```
 
 - `AGENTSPEC_PYTHON` must point to an interpreter ≥ 3.11 that has the project's test dependencies (the runner exports it to evals).
@@ -124,10 +124,10 @@ For each result with `status: pending`:
 3. Record exactly what they said:
 
 ```bash
-"$PY" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" attest {FEATURE} \
+"$PY" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" attest {FEATURE} \
   --eval {id} --verdict pass --owner "{name}" --evidence "{what they checked}" --recorded-via eval-agent
 
-"$PY" "${CLAUDE_PLUGIN_ROOT:-.}/scripts/eval_runner.py" waive {FEATURE} \
+"$PY" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" waive {FEATURE} \
   --eval {id} --supervisor "{name}" --reason "{why this is acceptable}"
 ```
 
