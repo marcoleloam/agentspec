@@ -11,7 +11,7 @@
 | **Autor** | build-agent |
 | **DEFINE** | [DEFINE_JEV_AGENT_SELECTION.md](../features/DEFINE_JEV_AGENT_SELECTION.md) |
 | **DESIGN** | [DESIGN_JEV_AGENT_SELECTION.md](../features/DESIGN_JEV_AGENT_SELECTION.md) |
-| **Status** | v1.1 construída (iterate) — **critérios de sucesso ainda NÃO atingidos** no holdout (ver Iterate v1.1) |
+| **Status** | v1.2 construída (iterate) — variante ainda abaixo de 0.85; especialistas passam só no critério relativo (ver Iterate v1.2) |
 
 ---
 
@@ -205,13 +205,13 @@ Isso confirma que `routing.json` é encontrado em `plugin/skills/agent-router/`.
 
 ## Status Final
 
-### Geral: ✅ COMPLETO (implementação v1.1) — ❌ critérios de sucesso não atingidos no holdout; não recomendado para /ship
+### Geral: ✅ COMPLETO (implementação v1.2) — ❌ critério de variante não atingido em nenhum conjunto; decisão do maintainer pendente
 
 **Checklist de Conclusão:**
 
 - [x] Todas as tarefas do manifesto concluídas (exceto #17, do maintainer)
 - [x] Todas as verificações passaram (`make check` exit 0, ruff limpo)
-- [x] Todos os testes passam (113/113 após a v1.1)
+- [x] Todos os testes passam (122/122 após a v1.2)
 - [ ] Sem bloqueadores — A-001/A-002 ✅; acurácia medida e **reprovada**
 - [ ] Testes de aceitação verificados — 10 ✅, 3 parciais (AT-001/002/009 dependem de rodar `/define`/`/design` de verdade)
 - [ ] Pronto para /ship — **não**: a pergunta de variante precisa ser refeita (`/iterate`) e revalidada
@@ -338,11 +338,65 @@ Erros de variante: H05 (build real classificado como single, p = 0.64); H07 e H0
 
 ---
 
+## Iterate v1.2 (2026-09-25)
+
+**O que mudou** (DESIGN v1.2, Decisões 14–15; formulação congelada no commit `226d5bb`, código em `e59b09a`):
+
+- os especialistas passam a ser escolhidos em duas etapas:
+  1. chamada 1: o Noul `single_area` + um Choice `rank` sobre o pool amplo (59 agentes fora de `workflow` e `domain`), do qual sai o top 8;
+  2. chamada 2: um Noul para cada agente da lista curta, com teto de 12;
+- `JEV_TIMEOUT_MS` passa a valer como orçamento total das duas chamadas.
+
+**Emenda antes da avaliação:** numa chamada de sanidade com uma spec inventada, só 4 das 59 opções vieram com p > 0, e o top 8 estava sendo completado por zeros em ordem alfabética. Correção: o ranking passa a considerar só p > 0. Registrado no DESIGN antes de abrir o terceiro conjunto.
+
+**Código:** 122/122 testes (+9 da v1.2: duas chamadas, falha só na segunda, orçamento esgotado, `rank` inválido, teto e prioridade da lista curta, zeros no ranking); `make check` com exit 0. Custo observado por fase: ~3.700 tokens de entrada, ~US$ 0,00015; latência de 1,1 s na chamada de sanidade.
+
+### Terceiro conjunto (PRDs) — rodada única
+
+**Conjunto:** 9 PRDs de fase `define`:
+- **P01–P03:** produtos que não aparecem em nenhum conjunto anterior;
+- **P04–P09:** produtos cujas DEFINE/BRAINSTORM já tinham sido rotulados. O documento é novo, mas o rotulador já conhecia o produto.
+
+Rotulagem às cegas; SHA-256 `4d38dec5…68310b3aa` (2026-09-25T09:14:03Z). Nenhum PRD tem a linha "Domínios KB". **Desbalanceado:** só o P03 é single.
+
+| Métrica | JEV v1.2 | Heurística | Meta | Status |
+|---------|----------|------------|------|--------|
+| Acurácia de variante (9) | **0.78** | 0.11 | ≥ 0.85 e ≥ heur. + 0.10 | ❌ (+67 p.p. ✅, absoluto ❌) |
+| F1 de especialistas (8 multiagent) | **0.22** | 0.00 | ≥ heur. + 0.10 | ✅ (critério relativo) |
+| Grupo independente P01–P03 | variante 0.67 × 0.33; F1 0.33 × 0.00 | | | sinal, não prova |
+| Grupo conhecido P04–P09 | variante 0.83 × 0.00; F1 0.18 × 0.00 | | | |
+
+**Erros de variante:** P03 (automação pequena num container, p = 0.29 → multiagent) e P09 (p = 0.42, que caiu na faixa de incerteza; a heurística decidiu single).
+
+### Leitura consolidada dos três conjuntos
+
+| Conjunto | Variante JEV × heurística | F1 JEV × heurística | Versão |
+|----------|---------------------------|---------------------|--------|
+| 22 specs (diagnóstico, contaminado) | 0.64 × 0.64 → 0.68 × 0.64 | 0.44 × 0.35 → 0.46 × 0.35 | v1.0 → v1.1 |
+| Holdout (15) | 0.73 × 0.40 | 0.08 × 0.10 | v1.1 |
+| PRDs (9) | 0.78 × 0.11 | 0.22 × 0.00 | v1.2 |
+
+1. **A variante via JEV supera a heurística em todo conjunto com documentos fora do template.** Nesses casos a heurística quebra (0 domínios → sempre single). Mas nenhum conjunto chegou a 0.85.
+2. **A v1.2 destravou os especialistas sem a linha de domínios.** O F1 saiu de 0 (sem candidatos) para 0.22, mas o valor absoluto é baixo. **Padrão observado:** os implementadores (`react-developer`, `python-developer`) entram na lista curta e quase nunca passam no Noul ≥ 0.5, nem em produtos com frontend pesado. O JEV favorece os especialistas mais nichados (`ux-designer`, `genai-architect`, `ai-data-engineer-cloud`). P07 e P09 ficaram sem nenhum especialista (`no_fit_above_threshold`).
+3. **Os conjuntos são pequenos e os rótulos são do build-agent.** Diferenças de 1 caso mudam as métricas em 7–11 p.p.
+
+### Recomendação
+
+Nenhum conjunto independente sobrou para mais um ajuste. As opções são decisão do maintainer:
+
+1. **Adotar com variante em modo recomendação:** o documento registra `p(single)`, e o comando só **sugere** o `-m` em vez de trocar sozinho. Os especialistas seguem via JEV, que é melhor que a heurística em todos os conjuntos sem domínios. É o uso que os dados sustentam hoje.
+2. **Revisar os critérios do DEFINE**, por exemplo aceitando "superar a heurística em ≥ 10 p.p. em documentos fora do template" em vez de 0.85 absoluto. Isso é decisão de produto, não técnica.
+3. **Coletar um quarto conjunto rotulado pelo maintainer** e só então ajustar a pergunta do Noul de especialista (os implementadores reprovam de forma sistemática).
+4. **Encerrar a frente** e manter a heurística.
+
+---
+
 ## Próximo Passo
 
 1. ~~Validar A-001/A-002~~ ✅ feito em 2026-09-24 (ver Validação com o JEV Real).
 2. ~~Rotular e rodar `--eval`~~ ✅ feito em 2026-09-24: **reprovado** (ver Avaliação Completa).
 3. ~~`/iterate` da pergunta de variante~~ ✅ v1.1 construída e medida no holdout: **reprovada** (ver Iterate v1.1).
-3b. Escolher entre as opções da Recomendação v1.1 (pool amplo, variante só recomendada, ou encerrar).
+3b. ~~Opção 1 da v1.1 (pool amplo)~~ ✅ v1.2 construída e medida em PRDs (ver Iterate v1.2).
+3c. Escolher entre as opções da Recomendação v1.2.
 4. Rodar `/define` e `/design` numa spec real para fechar AT-001, AT-002 e AT-009 (depois do `/iterate`).
 5. `/ship JEV_AGENT_SELECTION` só quando os critérios forem atingidos num conjunto novo.
