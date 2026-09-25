@@ -1,0 +1,25 @@
+{
+  "schema": "agentspec/eval-receipt/v1",
+  "feature": "LIVING_MEMORY",
+  "commit": "576c89ddbdaf00c421cf6c17b5d22a22e8fa73a3",
+  "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "contract_digest": null,
+  "extras_digest": null,
+  "evaluated_at": "2026-09-25T14:42:19Z",
+  "runner_version": "1.0.0",
+  "jev": {
+    "model": "typesafe/jev-1.13",
+    "calibrated": false
+  },
+  "results": [],
+  "required": [],
+  "structural_errors": [],
+  "warnings": [],
+  "waivers": [],
+  "verdict": "PASS",
+  "legacy_waiver": {
+    "supervisor": "Marco Monteiro",
+    "reason": "DESIGN de 2026-09-23 antecede o eval gate (3.5.0). ATs cobertos por tests/test_memory_index.py e tests/test_memory_hook.py (219 testes passando no merge) e AT-001/002/003/005 validados no E2E da Q-009 (BUILD_REPORT → Validação E2E). Ship autorizado pelo usuário em 2026-09-25.",
+    "waived_at": "2026-09-25T14:42:19Z"
+  }
+}

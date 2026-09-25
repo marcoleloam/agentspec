@@ -10,7 +10,7 @@
 | **Data** | 2026-09-23 |
 | **Autor** | design-agent |
 | **DEFINE** | [DEFINE_LIVING_MEMORY.md](./DEFINE_LIVING_MEMORY.md) (v1.1) |
-| **Status** | Pronto para Build |
+| **Status** | ✅ Shipped |
 
 ---
 
@@ -745,6 +745,7 @@ Tetos por faixa (Decisão 5) ficam como constantes no script — YAGNI para torn
 |--------|------|-------|----------|
 | 1.0 | 2026-09-23 | design-agent | Versão inicial; responde as 5 questões delegadas pelo DEFINE; corrige evidência do problema no DEFINE (v1.1) |
 | 1.1 | 2026-09-24 | iterate (pós-E2E) | Decisões 10–13 a partir do teste E2E da Q-009: hooks do plugin, parser tolerante e ruidoso, caminho do script em três níveis, 🔴 só fecha com o usuário |
+| 1.2 | 2026-09-25 | ship-agent | Shipped e archived — implementação completa, 93/93 testes passando, E2E validada. |
 
 ---
 

@@ -9,7 +9,7 @@
 | **Feature** | LIVING_MEMORY |
 | **Data** | 2026-09-23 |
 | **Autor** | define-agent |
-| **Status** | Pronto para Design |
+| **Status** | ✅ Shipped |
 | **Clarity Score** | 14/15 |
 | **Origem** | [BRAINSTORM_LIVING_MEMORY.md](BRAINSTORM_LIVING_MEMORY.md) |
 
@@ -171,6 +171,7 @@ Nenhuma bloqueia o Design. As decisões abaixo são **delegadas ao Design** (nã
 | 1.0 | 2026-09-23 | define-agent | Versão inicial a partir do BRAINSTORM; decisões do usuário: manter nome `BLACKBOARD`; bloqueio só em Define→Design e Design→Build |
 | 1.1 | 2026-09-23 | design-agent | Correção factual: o Step 8 do `/ship` (consolidação no `MEMORY.md`) entrou em 2026-06-21 (v3.3.0, commit `510aa81`), depois dos dois ships arquivados (2026-03-29 e 2026-04-23). A ausência de `MEMORY.md` não prova que a captura no fim do fluxo falha; removida da Declaração do Problema. Requisitos inalterados. |
 | 1.2 | 2026-09-24 | iterate (pós-E2E) | A-001 marcada como derrubada e mitigada, com o resultado do teste E2E da Q-009 (ver BUILD_REPORT → Validação E2E). Requisitos inalterados. |
+| 1.3 | 2026-09-25 | ship-agent | Shipped e archived — todos os CRs atingidos, 93/93 testes passando, compatibilidade retroativa validada. |
 
 ---
 

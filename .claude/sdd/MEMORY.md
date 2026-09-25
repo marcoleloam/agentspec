@@ -1,5 +1,24 @@
 # AgentSpec — Project Memory
 
+## 2026-09-25 — Shipped LIVING_MEMORY
+
+### Decisions
+| Decision | Rationale |
+| -------- | --------- |
+| Hooks do plugin (`memory-hook.py`) garantem chamadas determinísticas ao script | A-001 caiu no E2E: agentes gravam o Blackboard mas pulam `brief`/`gate`/`build`. Hooks em UserPromptSubmit, PreToolUse(Write de DESIGN novo) e PostToolUse(Write\|Edit do Blackboard). |
+| Parser header-driven, tolerante a `| ID |` e colunas fora de ordem | E2E: 8 entradas sumiram em silêncio quando agente escreveu `| ID |` em vez de `| # |`. D-025 adiciona validação com exit 2 e aviso ⚠. |
+| Caminho do script em 3 níveis: `${CLAUDE_PLUGIN_ROOT}` → `$AGENTSPEC_MEMORY_INDEX` → `plugin-extras/scripts/` | O Claude Code só substitui a forma exata `${CLAUDE_PLUGIN_ROOT}` ao carregar o comando, e o Bash do agente não recebe a variável. SessionStart grava o caminho em `$CLAUDE_ENV_FILE`. |
+| 🔴 só fecha com resposta do usuário; só Status/Resolução de Q e A mudam na linha | No E2E um design fechou a 🔴 por premissa para passar no gate (D-027). Hook bloqueia criar DESIGN com 🔴; o gate Design→Build segue só no prompt. |
+| `brief --domains` + cascata (Blackboard → DEFINE → varredura KB) cobre features arquivadas sem migração | AT-007 memória cruzada validado: decision boundaries entre features por domínio KB comum, sem reescrever `archive/`. |
+
+### Gotchas
+- Teste de prompt só vale com E2E real: `claude -p` num projeto de exemplo com o plugin via `--plugin-dir` e o `agentspec` instalado desligado (`--settings '{"enabledPlugins":{"agentspec@agentspec":false}}'`), stdin em `/dev/null`. Numa cópia em `/tmp` do próprio repo, os comandos locais não carregam (workspace não confiável) e roda o plugin antigo.
+- `eval_runner.py`, `judge.py` e `status-dashboard.py` ainda são chamados como `${CLAUDE_PLUGIN_ROOT:-.}/scripts/…`, forma que nunca é substituída. No E2E do `/eval` o agente se recuperou deduzindo a pasta do plugin pelo loader de skills (2/2), mas isso não é determinístico — follow-up aberto.
+
+### Reusable
+- `regex` header-driven + stateless parser resolve compatibilidade retroativa: teste contra archive com/sem acento, coluna `ID` acidental, formatos legados. Padrão para parsing robusto de Markdown.
+- Protocolo em contrato (`WORKFLOW_CONTRACTS.yaml` → `living_memory`) + blocos `## Phase Memory` curtos em agentes = rule uniqueness + code readability. Evita skill novo + duplicação entre 9 agentes.
+
 ## 2026-09-24 — Shipped LLM_PHASE_ROUTING
 
 ### Decisions
