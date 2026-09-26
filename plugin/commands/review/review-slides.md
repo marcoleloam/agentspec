@@ -278,6 +278,6 @@ VERDICT: ✓ PASS — Ready to present
 ## Related
 
 - `/build-slides` — Full pipeline: plan + build + review + fix
-- `aide-slide-reviewer` agent: `${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-reviewer.md`
-- `aide-slide-fixer` agent: `${CLAUDE_PLUGIN_ROOT}/agents/domain/aide-slide-fixer.md`
+- `aide-slide-reviewer` agent: `${CLAUDE_PLUGIN_ROOT}/agents/aide-slide-reviewer.md`
+- `aide-slide-fixer` agent: `${CLAUDE_PLUGIN_ROOT}/agents/aide-slide-fixer.md`
 - Quality rules KB: `${CLAUDE_PLUGIN_ROOT}/kb/aide-slides/quality-rules.md`

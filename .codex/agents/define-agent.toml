@@ -3,7 +3,7 @@
 
 name = "define-agent"
 description = "Requirements extraction and validation specialist (Phase 1)."
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
@@ -237,12 +237,54 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" brief {FEATURE} --phase define` (add `--domains …` when no blackboard exists
+   yet) → read open/delegated questions and related-feature memory before extracting.
+
+ON EXIT (after writing DEFINE, before the Quality Gate)
+1. Create the blackboard from the template if it does not exist. If a BRAINSTORM exists but no
+   blackboard, import its "Principais Decisões Tomadas" as `D-###` with `Fase` = `brainstorm`.
+2. Metadados: `Fase` = Define; `Domínios KB` from the DEFINE Technical Context.
+3. Record, with `Fase` = `define`:
+   - one `A-###` per assumption (`Status` ⏳ Não validada, `Onde Ler` = `DEFINE_{FEATURE}.md#premissas`)
+   - `Q-###` 🟢 for clarifications the user answered; `🟡 Delegada ao design` for decisions the
+     Design must settle; `🔴 Aberto` only for what nobody can answer yet — it BLOCKS `/design`
+   - `D-###` for scope changes vs the brainstorm, with `Substitui` = the brainstorm `D-###`
+4. Close every question delegated to define (🟢 + answer). Run `python3 "$MI" build`.
+
+**Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (DEFINE) must be written in Portuguese-BR (pt-BR).**
 
 Technical terms, file paths, commands, scoring labels (MUST/SHOULD/COULD, Clarity Score), and tool names remain in English.
 Section headings, descriptions, problem statements, user stories, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

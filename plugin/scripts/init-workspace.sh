@@ -18,7 +18,7 @@
 #   - No-ops unless the CWD looks like an AgentSpec-aware project
 #     (has .git/, CLAUDE.md, or .claude/)
 #   - Creates .claude/sdd/{features,reports,archive}/ if missing
-#   - Creates ${CLAUDE_PLUGIN_ROOT}/agents/{workflow,custom}/ with a README explaining
+#   - Creates .claude/agents/{workflow,custom}/ with a README explaining
 #     the local-first override pattern (only on first run)
 #   - Writes .claude/sdd/.detected-stack.md with inferred tech-stack hints
 # =============================================================================
@@ -46,7 +46,7 @@ init_workspace() {
 # ---------------------------------------------------------------------------
 # Phase 1.5: Local Agent Override Scaffolding
 # ---------------------------------------------------------------------------
-# Creates ${CLAUDE_PLUGIN_ROOT}/agents/{workflow,custom}/ so users have a discoverable
+# Creates .claude/agents/{workflow,custom}/ so users have a discoverable
 # place to drop local agents that override AgentSpec's plugin agents.
 # Claude Code's native precedence is: user-level/project-level agents win
 # over plugin agents when names collide. This function makes that pattern
@@ -59,9 +59,9 @@ init_agent_overrides() {
         return 0
     fi
 
-    mkdir -p ${CLAUDE_PLUGIN_ROOT}/agents/workflow ${CLAUDE_PLUGIN_ROOT}/agents/custom 2>/dev/null || true
+    mkdir -p .claude/agents/workflow .claude/agents/custom 2>/dev/null || true
 
-    local readme="${CLAUDE_PLUGIN_ROOT}/agents/README.md"
+    local readme=".claude/agents/README.md"
     if [[ -f "$readme" ]]; then
         return 0
     fi
@@ -83,15 +83,15 @@ conventions without forking the plugin.
 ## Override an AgentSpec agent
 
 1. Find the plugin agent at `${CLAUDE_PLUGIN_ROOT}/agents/<category>/<name>.md`
-2. Copy it to `${CLAUDE_PLUGIN_ROOT}/agents/<category>/<name>.md` — keep the `name:` field identical
+2. Copy it to `.claude/agents/<category>/<name>.md` — keep the `name:` field identical
 3. Edit freely; your version is now what runs
 
 Example: override `build-agent` so `/build` runs your team's review checklist:
 
 ```bash
 cp $CLAUDE_PLUGIN_ROOT/agents/workflow/build-agent.md \
-   ${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md
-# edit ${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md
+   .claude/agents/workflow/build-agent.md
+# edit .claude/agents/workflow/build-agent.md
 ```
 
 ## Add a custom agent
@@ -102,7 +102,7 @@ Drop a new `.md` file in `custom/` with valid frontmatter (`name`, `description`
 ## Resolution Order
 
 ```text
-${CLAUDE_PLUGIN_ROOT}/agents/<name>.md   (your local override — wins)
+.claude/agents/<name>.md   (your local override — wins)
         ↓ if absent
 ${CLAUDE_PLUGIN_ROOT}/agents/<name>.md   (AgentSpec plugin)
 ```
@@ -368,6 +368,7 @@ generate_context_hint() {
 # Tuning env vars:
 #   AGENTSPEC_MEMORY_SILENT=1      → disable index injection (read on demand only)
 #   AGENTSPEC_MEMORY_MAX_LINES=N   → cap index entries per tier (default 30)
+#   AGENTSPEC_MEMORY_TAIL=N        → latest blackboard entries of the .active feature (default 5)
 
 # Extract a compact index from a MEMORY.md file: prefer "## " headings; if none,
 # fall back to top-level bullets. Echoes nothing when the file has no real content.
@@ -381,6 +382,33 @@ memory_index() {
     fi
     [[ -z "${idx//[$'\n\t ']/}" ]] && return 0
     printf '%s\n' "$idx" | head -n "$cap"
+}
+
+# Latest blackboard entries of the .active feature (Living Memory). Silent when
+# there is no active feature, no python3, or the script is missing — never fails.
+active_feature_tail() {
+    local here mi
+    here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    mi="${here}/memory-index.py"
+    [[ -f ".claude/sdd/.active" && -f "$mi" ]] || return 0
+    command -v python3 >/dev/null 2>&1 || return 0
+    python3 "$mi" tail --n "${AGENTSPEC_MEMORY_TAIL:-5}" 2>/dev/null || true
+}
+
+# Commands locate the plugin scripts (memory-index.py, eval_runner.py, judge.py, …) through
+# ${CLAUDE_PLUGIN_ROOT}, which Claude Code fills in only in that exact form and does not
+# export to the Bash tool. Persist the resolved paths via CLAUDE_ENV_FILE (set for
+# SessionStart hooks) so agent Bash calls can find them. Skipped inside the AgentSpec
+# source repo, whose commands must run the repo's own scripts, not an installed plugin's.
+export_script_paths() {
+    local here
+    here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    [[ -n "${CLAUDE_ENV_FILE:-}" ]] || return 0
+    [[ -f "plugin-extras/scripts/memory-index.py" && -f "build-plugin.sh" ]] && return 0
+    {
+        printf 'export AGENTSPEC_SCRIPTS=%q\n' "$here"
+        [[ -f "${here}/memory-index.py" ]] && printf 'export AGENTSPEC_MEMORY_INDEX=%q\n' "${here}/memory-index.py"
+    } >> "$CLAUDE_ENV_FILE" 2>/dev/null || true
 }
 
 surface_memory() {
@@ -412,11 +440,12 @@ EOF
 
     [[ "${AGENTSPEC_MEMORY_SILENT:-0}" == "1" ]] && return 0
 
-    local project_idx="" global_idx=""
+    local project_idx="" global_idx="" active_tail=""
     [[ -f "$project_file" ]] && project_idx="$(memory_index "$project_file" "$cap")"
     [[ -f "$global_file" ]] && global_idx="$(memory_index "$global_file" "$cap")"
+    active_tail="$(active_feature_tail)"
 
-    [[ -z "$project_idx" && -z "$global_idx" ]] && return 0
+    [[ -z "$project_idx" && -z "$global_idx" && -z "$active_tail" ]] && return 0
 
     echo "=== AgentSpec Memory index — read the file for full detail when relevant ==="
     echo ""
@@ -430,6 +459,10 @@ EOF
         printf '%s\n' "$global_idx"
         echo ""
     fi
+    if [[ -n "$active_tail" ]]; then
+        printf '%s\n' "$active_tail"
+        echo ""
+    fi
     echo "=== end memory index (update with /memory or /memory --global) ==="
 }
 
@@ -440,4 +473,5 @@ EOF
 init_workspace
 init_agent_overrides
 generate_context_hint
+export_script_paths
 surface_memory

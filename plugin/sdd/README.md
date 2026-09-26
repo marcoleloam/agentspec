@@ -590,7 +590,7 @@ You're about to make a mistake if:
 
 ```bash
 # Location: ${CLAUDE_PLUGIN_ROOT}/agents/{category}/{agent-name}.md
-touch ${CLAUDE_PLUGIN_ROOT}/agents/data-engineering/iceberg-specialist.md
+touch ${CLAUDE_PLUGIN_ROOT}/agents/iceberg-specialist.md
 ```
 
 2. **Follow the standard structure:**

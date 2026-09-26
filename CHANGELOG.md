@@ -20,6 +20,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `scripts/eval_llm_baseline.py` measures an LLM (Codex or Grok headless, via subscription)
   applying the shipped rubric; `jev_select.py --eval` measures JEV. See
   `docs/concepts/jev-agent-selection.md`.
+
+### Changed
+
+- `/define-m` and `/design-m` no longer downgrade to the single variant when a spec has
+  fewer than 3 KB domains: an explicit `-m` always runs multiagent, and the selector only
+  picks its specialists.
+- The "3+ KB domains" rule no longer picks the variant or the specialists; it survives only
+  as `jev_select.py`'s fallback.
+- `build-plugin.sh` ships `scripts/jev_select.py` through `RUNTIME_SCRIPTS`; the Grok generator copies it.
+
+## [3.6.0] - 2026-09-25
+
+### Added
+
+- **Living Memory (second brain across phases)** — the feature `BLACKBOARD_{FEATURE}.md`
+  now spans Brainstorm → Ship. Every phase agent appends its trajectory (decisions with the
+  rejected alternative, assumptions, questions, course changes via `Substitui`) on exit.
+  New `plugin-extras/scripts/memory-index.py` (stdlib only) serves a ≤15-line `brief` on
+  phase entry, a `gate` where a 🔴 open question blocks Define→Design and Design→Build, a
+  `tail` of the `.active` feature at SessionStart, and a derived, gitignored
+  `.claude/sdd/MEMORY_INDEX.md` spanning active features, `archive/` and `MEMORY.md`.
+  Contract: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Docs: `docs/concepts/living-memory.md`.
+  Plugin hooks (`scripts/memory-hook.py`) make the script calls deterministic: the brief is
+  injected on phase commands, creating a `DESIGN_*.md` is blocked while a 🔴 question is open,
+  and every blackboard write rebuilds the index. `gate`/`build` exit 2 on blackboard rows they
+  cannot read instead of dropping them silently; the ID column may be `#` or `ID`. The
+  SessionStart hook exports `AGENTSPEC_MEMORY_INDEX` via `CLAUDE_ENV_FILE`, because the Bash
+  tool does not see `CLAUDE_PLUGIN_ROOT`.
+
+### Changed
+
+- **Build no longer overwrites the blackboard** — `build-agent` / `/build` now create
+  `BLACKBOARD_{FEATURE}.md` only if missing and otherwise extend it; deviations from the
+  DESIGN are recorded as decisions that supersede the design decision.
+- `/ship` now also archives `BRAINSTORM_{FEATURE}.md` and rebuilds the memory index.
+
+### Fixed
+
+- **Plugin script paths.** Commands and agents called `eval_runner.py`, `judge.py` and
+  `status-dashboard.py` as `${CLAUDE_PLUGIN_ROOT:-.}/scripts/…`. Claude Code never fills in
+  that form and the Bash tool does not see `CLAUDE_PLUGIN_ROOT`, so in a user project the
+  path was `./scripts/…`; agents only got there by searching for the script. Sources now call
+  `"${AGENTSPEC_SCRIPTS:-scripts}/x.py"`: the SessionStart hook exports `AGENTSPEC_SCRIPTS`
+  through `CLAUDE_ENV_FILE`, and `build-plugin.sh` (and the Grok generator) rewrite the
+  fallback to the exact `${CLAUDE_PLUGIN_ROOT}` form, which the loader fills in. The hook
+  exports nothing inside the AgentSpec source repo, so its commands run the repo's own
+  scripts. Guarded by `tests/test_plugin_script_paths.py`.
+
+## [3.5.0] - 2026-09-24
+
+### Added
+
+- **LLM phase routing:** `.claude/sdd/architecture/PHASE_MODEL_ROLES.toml` is the single
+  source of truth for which model role serves each SDD phase — an OMP `modelRoles` name,
+  a Claude Code alias, and a Codex effort per workflow agent, plus `session`/`delegated`
+  mode per workflow command. No concrete model ID lives in the repo.
+- `scripts/phase_routing.py` (`--check`, `--apply`, `--print-omp-overrides`), wired into
+  `make check`, plus `make omp-roles` (prints `task.agentModelOverrides` for
+  `~/.omp/agent/config.yml`, stdout only) and `make phase-routing-apply`.
+- `/design` and `/ship` now delegate their phase to `design-agent` / `ship-agent`, so the
+  routed model applies automatically (OMP via `agentModelOverrides`, Claude Code via the
+  agent's `model:`). `/ship` keeps its Step 0 eval gate in the main session. Session
+  phases carry a routing marker recommending the role to start with.
+- **Gerado por** provenance row (harness · role · model) in the BRAINSTORM, DEFINE,
+  DESIGN, BUILD_REPORT, and SHIPPED templates; workflow agents fill it.
+- `docs/concepts/phase-model-routing.md`, `tests/test_phase_routing.py`.
+- **Project Python environment:** `make venv` creates a gitignored `.venv/` (first Python ≥ 3.11
+  found) from the new `requirements-dev.txt`; `make test`/`check`/generators use it automatically
+  (`PYTHON` override available). `make install-deps` now builds the venv instead of
+  `pip install --user`, which PEP 668 blocks on Homebrew Python. Adds the `make test` target the
+  help already advertised. CI installs from `requirements-dev.txt`.
 - **Grok Build distribution** — `plugin-grok/` is a Grok-native plugin generated from
   `.claude/`: flattened slash commands (`/brainstorm`, `/define`, `/design`, `/build`,
   `/ship`, …), 73 flattened specialist agents with Claude→Grok tool remapping, vendored
@@ -30,15 +101,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Code keeps using `.claude-plugin/` → `plugin/`).
 - `scripts/generate-grok-plugin.py`, `make grok`, `make grok-verify`, and a `--check`
   drift gate wired into `make check` and CI.
+- **Post-build evals (`/eval`, Phase 3.5):** a `## Evals` TOML contract block in the
+  DESIGN — one eval per Acceptance Test at minimum, frozen by digest — closes the gap
+  where `archive/KB_EVOLUTION/` shipped with all 6 ATs still marked `⏳ Runtime`. New
+  `eval-agent` (no `Edit` tool) and `/eval [feature]` command reexecute the contract
+  after `/build` and write a receipt (`agentspec/eval-receipt/v1`) that `/ship` requires.
+- `scripts/eval_runner.py` — the deterministic CLI behind the gate:
+  `validate/freeze/pre/run/attest/waive/verify/calibrate`. Runs `deterministic` evals
+  in isolated bash, dispatches `graded` evals to JEV, and never turns an infrastructure
+  failure (missing key, exhausted budget, network error) into a `pass`.
+- `scripts/jev_client.py` — stdlib client for TypeSafe's Jev model
+  (`typesafe/jev-1.13`) over OpenRouter's decisions endpoint (`/api/v1/systemone`,
+  fallback `/api/alpha/decisions`), with a three-way `pass|fail|escalated`
+  classification and a calibration gate (`eval_runner.py calibrate`) before Jev's
+  verdict becomes authoritative.
+- `.claude/sdd/templates/EVAL_REPORT_TEMPLATE.md` — the pt-BR report template rendered
+  by `eval_runner.py run` from the receipt (the runner writes the report, not the agent).
+- `docs/concepts/post-build-evals.md` and a new JEV section in
+  `docs/getting-started/judge-setup.md`.
+- `tests/test_eval_runner.py`, `tests/test_jev_client.py`, and fixtures under
+  `tests/fixtures/evals/` (including a retroconversion of `KB_EVOLUTION` and
+  `FRONTEND_ECOSYSTEM`'s Acceptance Tests into `## Evals` blocks) — the whole suite
+  runs offline.
 
 ### Changed
 
-- `/define-m` and `/design-m` no longer downgrade to the single variant when a spec has
-  fewer than 3 KB domains: an explicit `-m` always runs multiagent, and the selector only
-  picks its specialists.
-- `build-plugin.sh` and `scripts/generate-grok-plugin.py` ship `scripts/jev_select.py`.
-- The "3+ KB domains" rule no longer picks the variant or the specialists; it survives only
-  as `jev_select.py`'s fallback.
+- **Breaking (plugin agent names):** `build-plugin.sh` flattens `plugin/agents/` to
+  `agents/*.md` because OMP only discovers flat agent files. Claude Code plugin agent
+  names drop the category (`agentspec:workflow:design-agent` → `agentspec:design-agent`);
+  `README.md`/`_template.md` are no longer shipped as pseudo-agents. The
+  `.claude/agents/<category>/` source layout is unchanged.
+- Workflow agent models follow the manifest: `brainstorm-agent`, `define-agent`, and
+  `iterate-agent` → `opus`; `build-agent` → `inherit`; `ship-agent` → `haiku`.
+- `WORKFLOW_CONTRACTS.yaml` no longer carries per-phase `model:` lines (they disagreed
+  with the agents on 4 of 6 phases); it points to the manifest instead.
+- `generate-codex-plugin.py` takes workflow-agent `model_reasoning_effort` from the
+  manifest.
+- `build-agent` runs `eval_runner.py pre` before the first build task: a bash error in
+  a `deterministic` eval blocks the build, and an eval that already passes only warns.
+  Its Acceptance Test table in the BUILD_REPORT is now a self-check, not a substitute
+  for `/eval`.
+- `ship-agent` requires `eval_runner.py verify` to pass before archiving, refusing with
+  a specific code (`NO_RECEIPT`, `VERDICT_FAIL`, `STALE_COMMIT`, `STALE_WORKTREE`,
+  `STALE_CONTRACT`, `CONTRACT_TAMPERED`, `LEGACY_NO_EVALS`, ...) when it doesn't; the
+  archive now includes the eval receipt, report, attestations, and complementary evals.
+- `iterate-agent` reruns `eval_runner.py validate` + `freeze` whenever an Acceptance
+  Test or the `## Evals` block changes, and warns that the existing receipt is invalidated.
+- `/continuar` reads `EVAL_{F}.json` and treats `fail`/`pending` evals as priority gaps.
+- `build-plugin.sh` now copies `judge.py`, `eval_runner.py`, and `jev_client.py` into
+  `plugin/scripts/` — fixing `/judge`, which was previously undistributed in plugin
+  installs.
+- Command count 42 → 43 (`/eval`); agent count 73 → 74 (`eval-agent`).
+
+### Changed
+
 
 ## [3.4.1] - 2026-08-02
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "agent_count": 73,
+  "agent_count": 74,
   "agents": [
     {
       "name": "a11y-specialist",
@@ -219,7 +219,7 @@
       "category": "workflow",
       "path": "${GROK_PLUGIN_ROOT}/agents/brainstorm-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Collaborative exploration specialist for clarifying intent and approach (Phase 0).",
       "kb_domains": [],
       "escalates_to": [
@@ -244,7 +244,7 @@
       "category": "workflow",
       "path": "${GROK_PLUGIN_ROOT}/agents/build-agent.md",
       "tier": "T2",
-      "model": "opus",
+      "model": "inherit",
       "description": "Implementation executor with agent delegation (Phase 3).",
       "kb_domains": [],
       "escalates_to": [
@@ -415,7 +415,7 @@
       "category": "workflow",
       "path": "${GROK_PLUGIN_ROOT}/agents/define-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Requirements extraction and validation specialist (Phase 1).",
       "kb_domains": [],
       "escalates_to": [
@@ -458,6 +458,21 @@
       "escalates_to": [
         "build-agent",
         "design-agent"
+      ]
+    },
+    {
+      "name": "eval-agent",
+      "category": "workflow",
+      "path": "${GROK_PLUGIN_ROOT}/agents/eval-agent.md",
+      "tier": "T2",
+      "model": "sonnet",
+      "description": "Independent post-build acceptance specialist (Phase 3.5).",
+      "kb_domains": [
+        "testing"
+      ],
+      "escalates_to": [
+        "build-agent",
+        "iterate-agent"
       ]
     },
     {
@@ -603,7 +618,7 @@
       "category": "workflow",
       "path": "${GROK_PLUGIN_ROOT}/agents/iterate-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "opus",
       "description": "Cross-phase document updater with cascade awareness (All Phases).",
       "kb_domains": [],
       "escalates_to": [
@@ -926,11 +941,12 @@
       "category": "workflow",
       "path": "${GROK_PLUGIN_ROOT}/agents/ship-agent.md",
       "tier": "T2",
-      "model": "sonnet",
+      "model": "haiku",
       "description": "Feature archival and lessons learned specialist (Phase 4).",
       "kb_domains": [],
       "escalates_to": [
-        "build-agent"
+        "build-agent",
+        "eval-agent"
       ]
     },
     {

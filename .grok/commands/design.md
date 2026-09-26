@@ -58,6 +58,26 @@ The `/design` command combines what used to be Plan + Spec + ADRs into a single 
 
 ---
 
+## Phase Routing (delegated)
+
+<!-- phase-routing: mode=delegated agent=design-agent -->
+
+This phase runs in the **`design-agent` subagent**, so it uses the model routed to the
+design phase (OMP: `task.agentModelOverrides` → `@slow`; Claude Code: `model: opus`).
+Do not do the design work in the main session.
+
+1. Delegate exactly once — Claude Code: spawn_subagent tool, `subagent_type: design-agent`
+   (plugin name `agentspec:design-agent`); OMP: `task` tool, agent `design-agent`.
+2. Pass: the DEFINE path, the FEATURE name, and this instruction: "Fill the
+   **Gerado por** metadata row with your harness, the routed role, and your model id
+   (or `desconhecido`)."
+3. When the subagent returns the DESIGN path, run Step 8 (`--judge`) here in the main
+   session if the flag was given.
+4. If the subagent is unavailable, say so, run Steps 1–7 inline as a fallback, and
+   record the session model in **Gerado por**.
+
+---
+
 ## Process
 
 ### Step 1: Load Context
@@ -65,11 +85,24 @@ The `/design` command combines what used to be Plan + Spec + ADRs into a single 
 ```markdown
 read_file(.claude/sdd/features/DEFINE_{FEATURE}.md)
 read_file(.claude/sdd/templates/DESIGN_TEMPLATE.md)
+read_file(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)   # Living Memory: exact sections/columns
 read_file(CLAUDE.md)
 
 # Explore codebase for patterns:
 list_dir(**/*.py) | head -20
 grep("class |def ") | sample
+```
+
+Gate and memory brief — a 🔴 open question on the blackboard **blocks** this phase.
+A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
+with your own assumption, not even in a non-interactive run: if you cannot ask, stop and report.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" gate {FEATURE} --to design || exit 1   # 1 → list the 🔴, ask the user, stop · 2 → fix unreadable rows, re-run
+python3 "$MI" brief {FEATURE} --phase design
 ```
 
 ### Step 1b: Agent Selection
@@ -88,7 +121,7 @@ Decide the variant for this phase and the specialists to consult by applying the
    `JEV_SECOND_OPINION=1` is set, so you do not need to check the environment yourself:
 
    ```bash
-   [ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON' || echo "JEV second opinion: not run"
+   [ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 "${AGENTSPEC_SCRIPTS:-scripts}/jev_select.py" <<'JSON' || echo "JEV second opinion: not run"
    {"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": null}
    JSON
    ```
@@ -158,11 +191,45 @@ Provide copy-paste ready code snippets for key patterns.
 | Integration | API | pytest + requests |
 | E2E | Full flow | Manual/automated |
 
-### Step 7: Save
+### Step 6b: Author the Eval Contract
+
+Turn every acceptance test of the DEFINE into at least one eval in the DESIGN's `## Evals` section
+(marker `<!-- agentspec:evals:contract -->` + one ```` ```toml ```` block — skeleton in the template).
+Deterministic first; `graded` only for subjective criteria (≤ 50%); `human` for runtime-agent or external-service ATs.
+
+### Step 7: Save — Document + Blackboard, Validate, Freeze
+
+Both files are written in this step; the phase ends only after both are updated
+and the eval contract is frozen.
 
 ```markdown
 write(.claude/sdd/features/DESIGN_{FEATURE_NAME}.md)
 ```
+
+Then append to `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` (create it from
+`BLACKBOARD_TEMPLATE.md` if it is still missing), with `Fase` = `design`:
+
+- one `D-###` per inline decision — one-sentence why, rejected alternative,
+  `Onde Ler` = `DESIGN_{FEATURE}.md#<decision anchor>` (never copy the body)
+- close every `🟡 Delegada ao design` as 🟢 citing its `D-###`
+- mark assumptions ✅ Validada / ❌ Derrubada
+
+Copy the table headers from `BLACKBOARD_TEMPLATE.md` as they are (ID column `#`, sections
+`## Log de Decisões` / `## Premissas` / `## Perguntas Abertas e Bloqueadores`) — the index reads
+only those. Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status /
+Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+```
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" validate {FEATURE_NAME}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" freeze {FEATURE_NAME}
+```
+
+Fix every `validate` error (exit 3) before freezing. `freeze` writes the **Evals Digest** metadata row.
 
 ### Step 8: Optional Judge Pass (`--judge`)
 
@@ -187,7 +254,7 @@ MODEL=""   # empty → judge.py picks phase default
 STRICT_FLAG=""
 [[ "$mode" == "strict" ]] && STRICT_FLAG="--strict"
 
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-scripts}/judge.py" \
   ".claude/sdd/features/DESIGN_{FEATURE_NAME}.md" \
   --phase design \
   ${MODEL:+--model "$MODEL"} \
@@ -221,6 +288,10 @@ python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
 | Artifact | Location |
 |----------|----------|
 | **DESIGN** | `.claude/sdd/features/DESIGN_{FEATURE_NAME}.md` |
+| **Blackboard** | `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — list the IDs this phase added |
+
+Report the Blackboard row in your final message. If you cannot name the IDs design added,
+the phase is not complete — go back to the save step.
 
 **Next Step:** `/build .claude/sdd/features/DESIGN_{FEATURE_NAME}.md`
 
@@ -236,7 +307,10 @@ Before saving, verify:
 [ ] File manifest is complete (all files listed)
 [ ] Code patterns are copy-paste ready
 [ ] Testing strategy covers requirements
+[ ] Every AT has a contract eval (eval_runner.py validate exit 0)
+[ ] Evals Digest frozen (eval_runner.py freeze exit 0)
 [ ] No circular dependencies in architecture
+[ ] Gate passed (no 🔴 on the blackboard) and one D-### per inline decision recorded
 [ ] Seleção de Agentes section written (Step 1b)
 ```
 

@@ -1,0 +1,311 @@
+{
+  "schema": "agentspec/eval-receipt/v1",
+  "feature": "POST_BUILD_EVALS",
+  "commit": "2d8bb0b3cce8df967d09300e898505699f757e64",
+  "worktree_digest": "sha256:6b59c9a3fb8a22435cd79cbfd8a5332be69bd77facf52428813cbfbb569a5d22",
+  "contract_digest": "sha256:89a9e4ff6d5f878856ae5466b23b42f6829d9a0c22f962d80738e6c0df8d861b",
+  "extras_digest": null,
+  "evaluated_at": "2026-09-24T12:21:39Z",
+  "runner_version": "1.0.0",
+  "jev": {
+    "model": "typesafe/jev-1.13",
+    "calibrated": false
+  },
+  "results": [
+    {
+      "eval_id": "eval_at001",
+      "origin": "contract",
+      "verifies": [
+        "AT-001"
+      ],
+      "check_type": "deterministic",
+      "description": "Caminho feliz: run PASS e verify OK",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.597,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.41s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at002",
+      "origin": "contract",
+      "verifies": [
+        "AT-002"
+      ],
+      "check_type": "deterministic",
+      "description": "Eval reprovado gera FAIL e aponta /continuar",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.569,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.42s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at003",
+      "origin": "contract",
+      "verifies": [
+        "AT-003"
+      ],
+      "check_type": "deterministic",
+      "description": "Ship sem recibo é recusado",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.446,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.30s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at004",
+      "origin": "contract",
+      "verifies": [
+        "AT-004"
+      ],
+      "check_type": "deterministic",
+      "description": "Recibo obsoleto por commit ou worktree",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.89,
+      "evidence": {
+        "stdout": "..                                                                       [100%]\n2 passed, 35 deselected in 0.74s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at005",
+      "origin": "contract",
+      "verifies": [
+        "AT-005"
+      ],
+      "check_type": "deterministic",
+      "description": "Recibo obsoleto por contrato",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.519,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.37s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at006",
+      "origin": "contract",
+      "verifies": [
+        "AT-006"
+      ],
+      "check_type": "deterministic",
+      "description": "PRE bloqueia erro de bash",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.688,
+      "evidence": {
+        "stdout": "...                                                                      [100%]\n3 passed, 34 deselected in 0.54s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at007",
+      "origin": "contract",
+      "verifies": [
+        "AT-007"
+      ],
+      "check_type": "deterministic",
+      "description": "PRE avisa eval que já passa",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.343,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.18s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at008",
+      "origin": "contract",
+      "verifies": [
+        "AT-008"
+      ],
+      "check_type": "deterministic",
+      "description": "AT órfão é detectado",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.303,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.16s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at009",
+      "origin": "contract",
+      "verifies": [
+        "AT-009"
+      ],
+      "check_type": "deterministic",
+      "description": "Contrato adulterado reprova; complementares são aceitos",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.805,
+      "evidence": {
+        "stdout": "..                                                                       [100%]\n2 passed, 35 deselected in 0.65s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at010",
+      "origin": "contract",
+      "verifies": [
+        "AT-010"
+      ],
+      "check_type": "deterministic",
+      "description": "Eval human sem atestação fica pendente e reprova",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.556,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.41s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at011",
+      "origin": "contract",
+      "verifies": [
+        "AT-011"
+      ],
+      "check_type": "deterministic",
+      "description": "Waiver nomeado libera o gate e aparece no recibo",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.499,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.34s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at012",
+      "origin": "contract",
+      "verifies": [
+        "AT-012"
+      ],
+      "check_type": "deterministic",
+      "description": "Graded confiante com calibração aprovada passa pelo JEV",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.424,
+      "evidence": {
+        "stdout": "..                                                                       [100%]\n2 passed, 71 deselected in 0.28s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at013",
+      "origin": "contract",
+      "verifies": [
+        "AT-013"
+      ],
+      "check_type": "deterministic",
+      "description": "Graded de baixa confiança escala para judge ou humano",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.5,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.35s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at014",
+      "origin": "contract",
+      "verifies": [
+        "AT-014"
+      ],
+      "check_type": "deterministic",
+      "description": "JEV indisponível nunca gera PASS",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.514,
+      "evidence": {
+        "stdout": "...                                                                      [100%]\n3 passed, 70 deselected in 0.37s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at015",
+      "origin": "contract",
+      "verifies": [
+        "AT-015"
+      ],
+      "check_type": "deterministic",
+      "description": "JEV sem calibração é apenas consultivo",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.405,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.25s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at016",
+      "origin": "contract",
+      "verifies": [
+        "AT-016"
+      ],
+      "check_type": "deterministic",
+      "description": "Feature legada exige waiver global",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.556,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.40s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_at017",
+      "origin": "contract",
+      "verifies": [
+        "AT-017"
+      ],
+      "check_type": "deterministic",
+      "description": "Excesso de graded gera aviso",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.357,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 36 deselected in 0.20s\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "required": [
+    "eval_at001",
+    "eval_at002",
+    "eval_at003",
+    "eval_at004",
+    "eval_at005",
+    "eval_at006",
+    "eval_at007",
+    "eval_at008",
+    "eval_at009",
+    "eval_at010",
+    "eval_at011",
+    "eval_at012",
+    "eval_at013",
+    "eval_at014",
+    "eval_at015",
+    "eval_at016",
+    "eval_at017"
+  ],
+  "structural_errors": [],
+  "warnings": [],
+  "waivers": [],
+  "verdict": "PASS"
+}

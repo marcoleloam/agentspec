@@ -5,6 +5,11 @@ description: Multi-agent requirements capture with specialist validation (Phase 
 
 # Define-M Command (Multi-Agent)
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements with specialist validation — catches missing requirements, hidden constraints, and unrealistic criteria
 
 ## Usage
@@ -63,7 +68,7 @@ Pick the specialists by applying the SPECIALISTS part of `.claude/sdd/architectu
 does nothing unless `JEV_SECOND_OPINION=1` is set:
 
 ```bash
-[ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON' || echo "JEV second opinion: not run"
+[ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 "${AGENTSPEC_SCRIPTS:-scripts}/jev_select.py" <<'JSON' || echo "JEV second opinion: not run"
 {"phase": "define", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": "multiagent"}
 JSON
 ```
@@ -103,6 +108,32 @@ generated document using the template's table.
 The document includes a **Validacao Multi-Agente** section with specialist attribution for every added requirement, constraint, and adjusted criterion.
 
 **Next Step:** `/design-m .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
+
+---
+
+## Living Memory
+
+Same protocol as `/define` (see its "Step 6: Save — Document + Blackboard" and the agent's
+`## Phase Memory` section). On entry:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase define
+```
+
+On exit — in the same step that writes the DEFINE document, not after the summary —
+record the phase entries on `BLACKBOARD_{FEATURE}.md`, created from
+`Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` with its headers copied as they are
+(specialist-sourced entries carry the specialist as `Agente` / `Levantado por`), then:
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — define is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+```
+
+The final message lists the Blackboard IDs this phase added, next to the DEFINE path.
 
 ---
 

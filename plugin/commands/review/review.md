@@ -390,6 +390,6 @@ Comparing: HEAD vs develop
 
 ## Related
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/python/code-reviewer.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/code-reviewer.md`
 - Config: `.coderabbit.yaml` (optional, create if needed)
 - Create PR: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/create-pr.md`

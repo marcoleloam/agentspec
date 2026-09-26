@@ -184,6 +184,27 @@ def handler(request):
     return {"status": "ok"}
 ```
 
+### Capability 5: Eval Contract Authoring
+
+**Triggers:** DEFINE has acceptance tests (AT-xxx) — always, for every DESIGN
+
+**Process:**
+
+1. Write the `## Evals` section: the marker `<!-- agentspec:evals:contract -->` followed by one ```` ```toml ```` block with one or more `[[eval]]` per AT (see `DESIGN_TEMPLATE.md`).
+2. Choose `check_type` with the **deterministic-first** doctrine:
+   - `deterministic` — anything bash can check (tests, file contents, CLI exit codes, row counts). Python calls use `"$AGENTSPEC_PYTHON"`, never bare `python3`.
+   - `graded` — genuinely subjective criteria only; `[eval.state]` maps named fields to bash commands, 2–5 questions, at least one `score`. Keep graded ≤ 50% of the contract.
+   - `human` — behavior that needs a real agent run or an external service; give `owner` and precise `instructions`.
+3. Never write existence-only evals (`test -f file`) — they cannot prove behavior.
+4. Validate and freeze, fixing every error before saving:
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" validate {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" freeze {FEATURE}
+```
+
+`freeze` writes the contract digest into the **Evals Digest** metadata row. Only the design-agent and the iterate-agent may run it; the build and eval phases must never touch the contract.
+
 ---
 
 ## Quality Gate
@@ -199,6 +220,8 @@ PRE-FLIGHT CHECK
 ├─ [ ] Agent assigned to each file (or marked general)
 ├─ [ ] Code patterns are syntactically correct
 ├─ [ ] Testing strategy covers acceptance tests
+├─ [ ] ## Evals: every AT has a contract eval (validate exit 0)
+├─ [ ] Evals Digest written (freeze exit 0)
 ├─ [ ] No shared dependencies across deployable units
 ├─ [ ] Seleção de Agentes section filled from the command's rubric decision
 └─ [ ] DEFINE status updated to "Designed"
@@ -213,6 +236,8 @@ PRE-FLIGHT CHECK
 | Shared code across units | Breaks deployments | Self-contained units |
 | Skip agent matching | Lose specialization | Always match agents |
 | Design without DEFINE | No requirements | Require DEFINE first |
+| Leave an AT without an eval | Unverifiable requirement; validate fails ORPHAN_AT | One contract eval per AT, minimum |
+| Default to graded or human | Weakens the gate | Deterministic whenever bash can check it |
 
 ---
 
@@ -228,12 +253,53 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" gate {FEATURE} --to design` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP. List the 🔴 questions, ask the
+   user to resolve them (answer now or `/iterate`). Do not write the DESIGN. Never close a 🔴
+   with your own assumption — not even in a non-interactive run; if you cannot ask, stop and report.
+2. `python3 "$MI" brief {FEATURE} --phase design` → honor current decisions and pending
+   assumptions; check related-feature decisions before re-deciding the same thing.
+
+ON EXIT (after writing DESIGN, before the Quality Gate)
+1. One `D-###` per inline decision, `Fase` = `design`: one-sentence why, rejected alternative,
+   `Onde Ler` = `DESIGN_{FEATURE}.md#<decision anchor>`. Never copy the decision body.
+2. Close every `🟡 Delegada ao design` as 🟢, citing the `D-###` that answers it.
+3. Mark assumptions ✅ Validada / ❌ Derrubada when the design settles them.
+4. Metadados: `Fase` = Design. Run `python3 "$MI" build`.
+
+**Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (DESIGN) must be written in Portuguese-BR (pt-BR).**
 
 Technical terms, file paths, code patterns, commands, agent names, and tool names remain in English.
 Section headings, decision context/rationale, component descriptions, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

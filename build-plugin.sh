@@ -28,7 +28,7 @@ else
 fi
 
 echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}  AgentSpec Plugin Builder v3.4.1${NC}"
+echo -e "${BLUE}  AgentSpec Plugin Builder v3.6.0${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
@@ -77,6 +77,30 @@ for dir in agents commands skills kb; do
     fi
 done
 
+# Flatten plugin/agents: OMP (like Grok) only discovers agents/*.md, not
+# agents/<category>/*.md. The .claude/agents/<category>/ source layout stays.
+# README.md and _template.md are docs, not agents, so they are not shipped.
+AGENT_CATEGORIES=()
+flatten_agents() {
+    local dir="${PLUGIN_DIR}/agents" sub f base
+    rm -f "${dir}/README.md" "${dir}/_template.md"
+    for sub in "${dir}"/*/; do
+        [ -d "${sub}" ] || continue
+        AGENT_CATEGORIES+=("$(basename "${sub}")")
+        while IFS= read -r -d '' f; do
+            base="$(basename "${f}")"
+            if [ -e "${dir}/${base}" ]; then
+                echo -e "${RED}  ERROR: duplicate agent filename after flatten: ${base}${NC}" >&2
+                exit 1
+            fi
+            mv "${f}" "${dir}/${base}"
+        done < <(find "${sub}" -name '*.md' ! -name 'README.md' ! -name '_*' -print0)
+        rm -rf "${sub}"
+    done
+}
+flatten_agents
+echo "  Flattened agents/ (${#AGENT_CATEGORIES[@]} categories → agents/*.md)"
+
 # Codex-native command skills. Their names deliberately match Codex's automatic
 # command migration; native skills win on collision and also cover commands that
 # the migration skips for exceeding 4 KiB.
@@ -119,13 +143,6 @@ if [ -d "${EXTRAS_DIR}" ]; then
     done
 fi
 
-# ── Step 2b': Ship runtime scripts the phase commands call ───────────────────
-# jev_select.py lives in scripts/ (next to its tests) and is invoked by /define,
-# /design and their -m variants via ${CLAUDE_PLUGIN_ROOT}/scripts/jev_select.py.
-mkdir -p "${PLUGIN_DIR}/scripts"
-cp "${SCRIPT_DIR}/scripts/jev_select.py" "${PLUGIN_DIR}/scripts/jev_select.py"
-echo "    Copied scripts/jev_select.py"
-
 # ── Step 2c: Exclude repo-local skills ──────────────────────────────────────
 # Contributor-facing skills that support working *in this repository*. They live
 # in .claude/skills/ so they load for contributors, and are excluded from the
@@ -136,6 +153,22 @@ for skill in "${REPO_LOCAL_SKILLS[@]}"; do
         rm -rf "${PLUGIN_DIR:?}/skills/${skill}"
         echo "  Excluded repo-local skill: ${skill}/"
     fi
+done
+
+# ── Step 2d: Runtime scripts ────────────────────────────────────────────────
+# Python helpers that commands invoke as ${CLAUDE_PLUGIN_ROOT}/scripts/<name>.
+# They live in scripts/ (next to the generators, covered by tests/) and are
+# copied individually; generators stay out of the distributed plugin.
+RUNTIME_SCRIPTS=(judge.py eval_runner.py jev_client.py jev_select.py)
+mkdir -p "${PLUGIN_DIR}/scripts"
+for script in "${RUNTIME_SCRIPTS[@]}"; do
+    if [ ! -f "${SCRIPT_DIR}/scripts/${script}" ]; then
+        echo -e "${RED}  ERROR: runtime script missing: scripts/${script}${NC}" >&2
+        exit 1
+    fi
+    cp "${SCRIPT_DIR}/scripts/${script}" "${PLUGIN_DIR}/scripts/${script}"
+    chmod +x "${PLUGIN_DIR}/scripts/${script}"
+    echo "  Copied runtime script: scripts/${script}"
 done
 
 # ── Step 3: Path rewriting ──────────────────────────────────────────────────
@@ -159,9 +192,25 @@ while IFS= read -r -d '' file; do
             "$file"
         REWRITE_COUNT=$((REWRITE_COUNT + count))
     fi
-done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' -o -name '*.py' -o -name '*.sh' \) -print0)
+done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' -o -name '*.py' -o -name '*.sh' \) \
+    ! -path "${PLUGIN_DIR}/scripts/init-workspace.sh" -print0)
+# init-workspace.sh runs in the user's project and must keep its workspace
+# .claude/ paths (it creates .claude/agents/{workflow,custom} there, not in the plugin).
 
 echo "  Rewrote ${REWRITE_COUNT} path references"
+
+# Script calls: the source form "${AGENTSPEC_SCRIPTS:-scripts}/x.py" falls back to the repo's
+# scripts/. In the plugin the fallback becomes the exact ${CLAUDE_PLUGIN_ROOT} form, which
+# Claude Code fills in when it loads a command (the Bash tool never sees the variable, and
+# ${CLAUDE_PLUGIN_ROOT:-.} is never filled in). AGENTSPEC_SCRIPTS itself comes from the
+# SessionStart hook (init-workspace.sh → CLAUDE_ENV_FILE).
+while IFS= read -r -d '' file; do
+    grep -q 'AGENTSPEC_SCRIPTS:-' "$file" || continue
+    sed_i \
+        -e 's|${AGENTSPEC_SCRIPTS:-scripts}|${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}|g' \
+        -e 's|${AGENTSPEC_SCRIPTS:-plugin-extras/scripts}|${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}|g' \
+        "$file"
+done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' \) -print0)
 
 # ── Step 4: Clean absolute paths ────────────────────────────────────────────
 echo -e "${YELLOW}[5/6] Cleaning absolute paths...${NC}"
@@ -171,9 +220,17 @@ while IFS= read -r -d '' file; do
     sed_i -E 's|/[^ ]*/(agents/|kb/|commands/|skills/|sdd/)|\${CLAUDE_PLUGIN_ROOT}/\1|g' "$file" 2>/dev/null || true
 done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' \) -print0)
 
+# Agents were flattened: ${CLAUDE_PLUGIN_ROOT}/agents/<category>/x.md → agents/x.md.
+# Globs like agents/**/*.md keep matching the flat layout.
+if [ "${#AGENT_CATEGORIES[@]}" -gt 0 ]; then
+    CATEGORY_ALT="$(IFS='|'; echo "${AGENT_CATEGORIES[*]}")"
+    while IFS= read -r -d '' file; do
+        sed_i -E "s#(\\\$\\{CLAUDE_PLUGIN_ROOT\\}/agents/)(${CATEGORY_ALT})/#\\1#g" "$file"
+    done < <(find "${PLUGIN_DIR}" -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) -print0)
+fi
+
 # Restore executable permissions on scripts
 find "${PLUGIN_DIR}" -type f -name '*.sh' -exec chmod +x {} +
-chmod +x "${PLUGIN_DIR}/scripts/jev_select.py"
 
 # ── Step 5: Verification ────────────────────────────────────────────────────
 echo -e "${YELLOW}[6/6] Verifying build...${NC}"

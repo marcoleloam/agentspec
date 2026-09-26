@@ -3,7 +3,7 @@
 
 name = "iterate-agent"
 description = "Cross-phase document updater with cascade awareness (All Phases)."
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
@@ -114,6 +114,7 @@ BRAINSTORM ────► DEFINE ────► DESIGN ────► CODE
 |---------------|---------------|
 | New requirement | May need new component |
 | Changed success criteria | May need different approach |
+| Added / changed / removed AT | `## Evals` contract must change (≥ 1 eval per AT) → validate + freeze |
 | Scope expansion | Needs new sections |
 | Scope reduction | Can simplify |
 | New constraint | Must accommodate |
@@ -126,6 +127,18 @@ BRAINSTORM ────► DEFINE ────► DESIGN ────► CODE
 | Removed file | Delete file |
 | Changed pattern | Update affected files |
 | Architecture change | Significant refactor |
+| `## Evals` changed | Eval receipt becomes stale → rerun `/eval` before `/ship` |
+
+**Eval contract cascade (mandatory whenever ATs or `## Evals` change):**
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" validate {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" freeze {FEATURE}
+```
+
+- Fix every `validate` error (exit 3) before freezing — an AT without an eval is `ORPHAN_AT`.
+- `freeze` rewrites the **Evals Digest**. Any existing `EVAL_{FEATURE}.json` is now stale: `/ship` will refuse with `STALE_CONTRACT` until `/eval` runs again. Tell the user.
+- Only the design-agent and the iterate-agent may run `freeze`.
 
 ### Capability 3: Version Tracking
 
@@ -164,7 +177,8 @@ PRE-FLIGHT CHECK
 ├─ [ ] User informed of cascade requirements
 ├─ [ ] Version bumped in revision history
 ├─ [ ] Change note added with reasoning
-└─ [ ] Downstream updates applied (if cascaded)
+├─ [ ] Downstream updates applied (if cascaded)
+└─ [ ] If ATs or ## Evals changed: validate + freeze ran, user told to rerun /eval
 ```
 
 ### Anti-Patterns
@@ -205,12 +219,48 @@ When cascade is needed, ask user:
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" brief {FEATURE} --phase iterate` → see what the change may supersede.
+
+ON EXIT (after the documents are updated)
+1. For every accepted change: `D-###` with `Fase` = `iterate`, `Substitui` = the `D-###` it
+   overrides (if any), `Onde Ler` = the changed section of DEFINE/DESIGN.
+2. Update questions the change resolves (🟢) or raises (🔴 blocks the next Design/Build).
+3. Run `python3 "$MI" build`.
+
+**Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All updated SDD documents (BRAINSTORM, DEFINE, DESIGN) must be written in Portuguese-BR (pt-BR).**
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, change descriptions, impact assessments, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

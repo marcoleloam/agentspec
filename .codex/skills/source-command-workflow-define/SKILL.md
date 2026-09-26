@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 # Define Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements and validate them in one pass (Phase 1)
 
 ## Usage
@@ -70,10 +75,20 @@ The `/define` command combines what used to be Intake + PRD + Refine into a sing
 
 ```markdown
 Read(.claude/sdd/templates/DEFINE_TEMPLATE.md)
+Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)   # Living Memory: exact sections/columns
 Read(CLAUDE.md)
 
 # If file provided:
 Read(<input-file>)
+```
+
+Load the living memory (open/delegated questions + related features, ≤15 lines):
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase define   # add --domains a,b when no blackboard exists yet
 ```
 
 ### Step 1b: Agent Selection
@@ -92,7 +107,7 @@ Decide the variant for this phase and the specialists to consult by applying the
    `JEV_SECOND_OPINION=1` is set, so you do not need to check the environment yourself:
 
    ```bash
-   [ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON' || echo "JEV second opinion: not run"
+   [ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 "${AGENTSPEC_SCRIPTS:-scripts}/jev_select.py" <<'JSON' || echo "JEV second opinion: not run"
    {"phase": "define", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": null}
    JSON
    ```
@@ -165,12 +180,33 @@ Example questions:
 - "What's the timeline: (a) this sprint, (b) this quarter, (c) no deadline?"
 ```
 
-### Step 6: Generate Document
+### Step 6: Save — Document + Blackboard
 
-Write the structured document following the template, then save:
+Both files are written in this step; the phase ends only after both exist. Write the structured
+document following the template:
 
 ```markdown
 Write(.claude/sdd/features/DEFINE_{FEATURE_NAME}.md)
+```
+
+Then update `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — **create it from
+`BLACKBOARD_TEMPLATE.md` when missing** (the brainstorm may have been skipped; import BRAINSTORM
+"Principais Decisões Tomadas" as `Fase` = `brainstorm` when it exists) — fill `Domínios KB`,
+then record with `Fase` = `define`:
+
+- `A-###` — one per assumption (⏳ Não validada)
+- `Q-###` — 🟢 answered · `🟡 Delegada ao design` for decisions Design must settle ·
+  `🔴 Aberto` only for what nobody can answer yet (**blocks `/design`**)
+- `D-###` — scope changes vs the brainstorm, `Substitui` = the brainstorm decision
+
+Copy the table headers from `BLACKBOARD_TEMPLATE.md` as they are (ID column `#`, sections
+`## Log de Decisões` / `## Premissas` / `## Perguntas Abertas e Bloqueadores`) — the index reads
+only those. Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status /
+Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — define is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
 ```
 
 ### Step 7: Optional Judge Pass (`--judge`)
@@ -196,7 +232,7 @@ MODEL=""   # empty → judge.py picks phase default
 STRICT_FLAG=""
 [[ "$mode" == "strict" ]] && STRICT_FLAG="--strict"
 
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-scripts}/judge.py" \
   ".claude/sdd/features/DEFINE_{FEATURE_NAME}.md" \
   --phase define \
   ${MODEL:+--model "$MODEL"} \
@@ -237,6 +273,10 @@ budget exhaustion.
 | Artifact | Location |
 |----------|----------|
 | **DEFINE** | `.claude/sdd/features/DEFINE_{FEATURE_NAME}.md` |
+| **Blackboard** | `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — list the IDs this phase added |
+
+Report the Blackboard row in your final message. If you cannot name the IDs define added,
+the phase is not complete — go back to the save step.
 
 **Next Step:** `/design .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
 
@@ -253,6 +293,7 @@ Before saving, verify:
 [ ] Acceptance tests are testable
 [ ] Out of scope is explicit
 [ ] Clarity Score >= 12/15
+[ ] Blackboard has define entries (A / Q) and Domínios KB
 [ ] Seleção de Agentes section written (Step 1b)
 ```
 

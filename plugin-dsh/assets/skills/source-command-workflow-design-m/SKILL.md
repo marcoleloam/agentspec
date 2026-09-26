@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 # Design-M Command (Multi-Agent)
 
+<!-- phase-routing: mode=session role=slow -->
+> **Model routing:** this phase runs in the main session (it consults specialists in parallel, and a subagent cannot spawn subagents).
+> Recommended: start it with `omp --model @slow` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Create architecture with specialist validation — catches cross-domain risks, incompatibilities, and version issues
 
 ## Usage
@@ -69,7 +74,7 @@ Pick the specialists by applying the SPECIALISTS part of `${CLAUDE_PLUGIN_ROOT}/
 does nothing unless `JEV_SECOND_OPINION=1` is set:
 
 ```bash
-[ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py <<'JSON' || echo "JEV second opinion: not run"
+[ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/jev_select.py" <<'JSON' || echo "JEV second opinion: not run"
 {"phase": "design", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": "multiagent"}
 JSON
 ```
@@ -117,9 +122,39 @@ The document includes a **Consulta Multi-Agente** section with:
 
 ---
 
+## Living Memory
+
+Same protocol as `/design` (see its "Step 7: Save — Document + Blackboard" and the agent's
+`## Phase Memory` section). On entry:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" gate {FEATURE} --to design || exit 1   # 1 → 🔴 blocks · 2 → fix unreadable rows, re-run
+python3 "$MI" brief {FEATURE} --phase design
+```
+
+A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
+with your own assumption, not even in a non-interactive run: if you cannot ask, stop and report.
+
+On exit — in the same step that writes the DESIGN document, not after the summary —
+record the phase entries on `BLACKBOARD_{FEATURE}.md`, created from
+`Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)` with its headers copied as they are
+(specialist-sourced entries carry the specialist as `Agente` / `Levantado por`), then:
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+```
+
+The final message lists the Blackboard IDs this phase added, next to the DESIGN path.
+
+---
+
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/design-multiagent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/design-multiagent.md`
 - Single-agent variant: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/design.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/DESIGN_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`

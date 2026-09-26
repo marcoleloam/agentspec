@@ -134,9 +134,29 @@ Appends a dated block to the target `MEMORY.md` (project or global):
 
 ---
 
+## Relation to the Feature Blackboard (Living Memory)
+
+`MEMORY.md` holds **durable, curated** insights. The per-feature trajectory — decisions,
+rejected alternatives, assumptions, questions — lives on `BLACKBOARD_{FEATURE}.md` from
+Brainstorm to Ship and is written automatically by the phase agents. You don't need
+`/memory` to preserve a phase's decisions.
+
+| Need | Use |
+|------|-----|
+| What did this feature decide / leave open? | `memory-index.py brief {FEATURE} --phase {phase}` |
+| What did past features decide in this domain? | the same brief (cross-feature band) or `.claude/sdd/MEMORY_INDEX.md` |
+| Where was I? | SessionStart shows the last 5 entries of the `.active` feature |
+| A lesson worth keeping beyond this feature | `/memory` (project) or `/memory --global` |
+
+`MEMORY_INDEX.md` is derived (gitignored) — rebuild it with `memory-index.py build`. See
+`docs/concepts/living-memory.md`.
+
+---
+
 ## References
 
 - Recall mechanism: `plugin-extras/scripts/init-workspace.sh` (`surface_memory`)
+- Living memory: `plugin-extras/scripts/memory-index.py`, `WORKFLOW_CONTRACTS.yaml` → `living_memory`
 - Project memory: `.claude/sdd/MEMORY.md`
 - Global memory: `${AGENTSPEC_MEMORY_DIR:-~/.agentspec}/MEMORY.md`
 - Related: `/ship` appends shipped-feature lessons to project memory automatically

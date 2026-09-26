@@ -41,6 +41,8 @@ entities.json
 # AgentSpec status dashboard (generated)
 .claude/sdd/.status/
 
+# AgentSpec Living Memory index (derived; rebuild with memory-index.py build)
+.claude/sdd/MEMORY_INDEX.md
 # JEV agent selection — full labeled eval set (may contain client specs)
 .claude/sdd/evals/agent_selection_labels.json
 .claude/sdd/evals/agent_selection_holdout.json
