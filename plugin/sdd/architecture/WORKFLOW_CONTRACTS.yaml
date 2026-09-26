@@ -106,7 +106,7 @@ agent_resolution:
       customizations.
     paths:
       - "${CLAUDE_PLUGIN_ROOT}/agents/"   # SDD phase agent overrides
-      - "${CLAUDE_PLUGIN_ROOT}/agents/"     # New project-specific agents
+      - "${CLAUDE_PLUGIN_ROOT}/agents/custom/"     # New project-specific agents
     readme: "${CLAUDE_PLUGIN_ROOT}/agents/README.md"
 
   rules:

@@ -86,6 +86,9 @@ flatten_agents() {
     rm -f "${dir}/README.md" "${dir}/_template.md"
     for sub in "${dir}"/*/; do
         [ -d "${sub}" ] || continue
+        # Only real categories: an empty dir (e.g. agents/custom/ created locally by the
+        # SessionStart hook) would otherwise make the path rewrite depend on the machine.
+        [ -n "$(find "${sub}" -name '*.md' -print -quit)" ] || { rm -rf "${sub}"; continue; }
         AGENT_CATEGORIES+=("$(basename "${sub}")")
         while IFS= read -r -d '' f; do
             base="$(basename "${f}")"
