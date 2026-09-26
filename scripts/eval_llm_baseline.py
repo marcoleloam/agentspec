@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -73,13 +74,16 @@ SPEC SUMMARY:
 
 def ask_codex(prompt: str, scratch: Path) -> dict[str, Any]:
     out = scratch / f"codex-{time.monotonic_ns()}.json"
-    subprocess.run(
+    proc = subprocess.run(
         ["codex", "exec", "--ephemeral", "--skip-git-repo-check", "-s", "read-only",
          "--output-schema", str(scratch / "schema.json"), "-o", str(out), prompt],
         cwd=scratch, stdin=subprocess.DEVNULL, capture_output=True, timeout=TIMEOUT_S, check=True,
     )
     try:
-        return json.loads(out.read_text())
+        answer = json.loads(out.read_text())
+        model = re.search(r"^model:\s*(\S+)", proc.stderr.decode(errors="replace"), re.MULTILINE)
+        answer["_provider_model"] = model.group(1) if model else "unknown"
+        return answer
     finally:
         out.unlink(missing_ok=True)
 
@@ -115,6 +119,7 @@ def run_case(provider: str, case: dict[str, Any], pool: list[js.Candidate], scra
         "variant": answer.get("variant"),
         "specialists": [n for n in picked if n in names][: js.MAX_SPECIALISTS],
         "unknown_names": [n for n in picked if n not in names],
+        "provider_model": answer.get("_provider_model", "unknown"),
         "latency_s": round(time.monotonic() - started, 1),
     }
 

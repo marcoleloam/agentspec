@@ -1,6 +1,6 @@
-# DESIGN: Seleção de Agentes via JEV
+# DESIGN: Seleção de Agentes por Rubrica
 
-> **Estado final (v1.3):** a LLM da fase decide pela rubrica `AGENT_SELECTION_RUBRIC.md`; o JEV é segunda opinião opcional (Decisão 16). As seções anteriores documentam o caminho até aqui.
+> **Escopo vigente (v1.4):** a LLM da fase decide pela rubrica `AGENT_SELECTION_RUBRIC.md`; o JEV é segunda opinião opcional (Decisão 16). A Decisão 17 e o contrato de evals abaixo formalizam o aceite da solução v1.3. As seções de arquitetura anteriores documentam o caminho histórico do JEV, não o fluxo vigente.
 >
 > Design técnico para que `/define` e `/design` escolham a variante (single ou `-multiagent`) e os especialistas consultados a partir da especificação, via JEV (TypeSafe, pelo OpenRouter), com fallback determinístico e registro auditável.
 
@@ -12,11 +12,15 @@
 | **Data** | 2026-09-23 |
 | **Autor** | design-agent |
 | **DEFINE** | [DEFINE_JEV_AGENT_SELECTION.md](./DEFINE_JEV_AGENT_SELECTION.md) |
-| **Status** | Pronto para Build |
+| **Status** | ✅ Shipped e arquivado em 2026-09-26 |
+| **Evals Digest** | `sha256:62bb43f3931ff55c745f5667b19e967a62dacf59f288383caea28b6ebcbac3cc` |
+| **Gerado por** | Codex · sessão · gpt-6 |
 
 ---
 
 ## Visão Geral da Arquitetura
+
+**Fluxo vigente:** a LLM da fase lê a spec e a rubrica, escolhe variante e até quatro especialistas, segue o processo single ou multiagent e registra motivos no documento. `/-m` fixa `multiagent`. Somente com `JEV_SECOND_OPINION=1` o script abaixo é chamado; sua resposta é registrada e nunca substitui a escolha da LLM. O diagrama a seguir representa a arquitetura histórica do script de segunda opinião.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -464,6 +468,23 @@ A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b
 
 ---
 
+### Decisão 17 (v1.4): aceite da rubrica com medição retrospectiva e execução real
+
+| Atributo | Valor |
+|----------|-------|
+| **Status** | Aceita para esta revisão de aceite; substitui as metas do JEV como decisor |
+| **Data** | 2026-09-26 |
+
+**Contexto:** o DEFINE v1.3 descrevia a solução nova no cabeçalho, mas ainda exigia acurácia e F1 do JEV como decisor; o BUILD_REPORT registrava esses critérios como reprovados. O waiver legado permitiu um recibo PASS sem executar eval algum.
+
+**Escolha:** o DEFINE v1.4 torna a LLM com rubrica o comportamento exigido. O aceite exige uma medição nova de LLM não Claude no corpus existente de 46 casos, execução real dos caminhos single, multiagent, `-m` e segunda opinião, regressão de fallback do JEV e `make check`. Os 46 rótulos foram produzidos pelo build-agent Claude; a medição é retrospectiva, não validação humana ou estimativa de produção. O conjunto não versionado precisa estar disponível para o eval de qualidade, e sua ausência reprova o gate. O contrato de evals foi criado **após** a implementação v1.3; não se deve alegar que passou no `pre` antes do build histórico.
+
+**Justificativa:** mede o comportamento realmente entregue e faz o `/eval` reexecutar provas no código atual. Mantém a limitação metodológica visível, sem converter o resultado reprovado do JEV em sucesso.
+
+**Consequências:** o aceite fica vinculado ao corpus local e ao CLI da LLM para os testes de ponta a ponta. Uma amostra rotulada pelo maintainer continua recomendada para medir generalização futura.
+
+---
+
 ## Manifesto de Arquivos
 
 | # | Arquivo | Ação | Propósito | Agente | Dependências |
@@ -487,6 +508,19 @@ A saída registra `kb_domains` (normalizados) e `kb_domains_dropped`. O passo 1b
 | 17 | `.claude/sdd/evals/agent_selection_labels.json` | Criar (não versionado) | 20 specs rotuladas pelo maintainer (≥ 5 single, ≥ 5 multiagent) | (maintainer) | 1 |
 
 **Total de Arquivos:** 17 entradas (≈ 26 arquivos físicos contando os fixtures e os pares). Os artefatos gerados (`plugin/`, `plugin-grok/`, `plugin-dsh/`, `.codex/`) são regenerados por `make build`, não editados à mão.
+
+---
+
+### Manifesto v1.4 (aceite da solução v1.3)
+
+| # | Arquivo | Ação | Propósito |
+|---|---------|------|-----------|
+| 27 | `DEFINE_JEV_AGENT_SELECTION.md`, `DESIGN_JEV_AGENT_SELECTION.md` | Modificar | Alinhar critérios, ATs e contrato executável à Decisão 16 |
+| 28 | `scripts/eval_agent_selection_e2e.py` | Criar | Exercitar comandos reais em diretórios descartáveis e verificar os documentos produzidos |
+| 29 | `scripts/check_agent_selection_quality.py` | Criar | Reexecutar e pontuar a LLM em 46 rótulos com proveniência e limiares explícitos |
+| 29a | `scripts/eval_llm_baseline.py` | Modificar | Registrar o modelo efetivo do Codex CLI em cada resposta do benchmark |
+| 30 | `BUILD_REPORT_JEV_AGENT_SELECTION.md` | Modificar | Registrar resultados novos, limitações e estado de ship sem apagar falhas históricas |
+| 31 | `BLACKBOARD_JEV_AGENT_SELECTION.md` | Criar | Registrar a decisão de iterate e sua rastreabilidade no índice de memória |
 
 ---
 
@@ -808,12 +842,92 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 
 | Tipo de Teste | Escopo | Arquivos | Ferramentas | Meta de Cobertura |
 |---------------|--------|----------|-------------|-------------------|
-| Unitário | `prefilter_candidates`, `heuristic`, `build_request`, `choice_confidence`, `gate_*`, `parse_answers`, métricas de eval (acurácia, F1) | `tests/test_jev_select.py` | pytest | ≥ 90% das funções puras |
+| Unitário | `prefilter_candidates`, `heuristic`, `build_request`, `gate_*`, `parse_answers`, métricas de eval (acurácia, F1) | `tests/test_jev_select.py` | pytest | Caminhos de decisão e fallback do script opcional |
 | Integração (sem rede) | `select()` com transporte injetado: caminho feliz multi/single, cada `fallback_reason`, variante travada, top 4 | `tests/test_jev_select.py` + `tests/fixtures/jev/` | pytest + `monkeypatch` em `post_decisions` | Todos os AT do script (003–008, 010, 011, 013) |
 | Timeout real | `post_decisions` contra um servidor local que dorme 3 s, com `JEV_TIMEOUT_MS=500` | `tests/test_jev_select.py` | `http.server` em thread | AT-004 (≤ timeout + 1 s) |
 | Drift de empacotamento | `plugin/scripts/jev_select.py == scripts/jev_select.py` | `tests/test_plugin_scripts_sync.py` | pytest | AT-012 |
-| E2E manual | `/define` e `/design` em uma spec real, com e sem chave | — | Claude Code | AT-001, AT-002, AT-009 |
-| Avaliação offline | `--eval` nos 20 rótulos (precisa de chave) | `.claude/sdd/evals/agent_selection_labels.json` | CLI | Critérios de sucesso do DEFINE |
+| E2E do aceite v1.4 | `/define`, `/design`, `/design-m` e `/design` com segunda opinião em specs controladas | `scripts/eval_agent_selection_e2e.py` | Codex CLI em diretórios descartáveis | AT-001, AT-002, AT-009, AT-014; seleção e auditoria, com indisponibilidade de consulta identificada |
+| Avaliação retrospectiva v1.4 | LLM não Claude nos 46 rótulos locais, comparada à regra antiga | `scripts/check_agent_selection_quality.py` + corpus `.claude/sdd/evals/` não versionado | Codex CLI + Python | Critérios vigentes do DEFINE, com proveniência e limitação dos rótulos explícitas |
+| Gate pós-build v1.4 | Sete evals reexecutados contra código e comandos atuais | `## Evals` deste DESIGN | `eval_runner.py run` | Todos os evals requeridos em PASS antes de `/ship` |
+
+---
+
+## Evals
+
+> Contrato de aceite v1.4, criado por `/iterate` após a implementação v1.3. Os evals de ponta a ponta executam comandos reais em diretórios temporários; o corpus retrospectivo não é versionado. `freeze` fixa o digest do contrato antes desta nova rodada de verificação, sem reescrever a cronologia do build original.
+
+<!-- agentspec:evals:contract -->
+```toml
+[[eval]]
+id = "phase_single"
+verifies = ["AT-002"]
+check_type = "deterministic"
+description = "/define numa spec de uma área produz decisão single auditável"
+timeout_sec = 600
+run = '''
+"$AGENTSPEC_PYTHON" scripts/eval_agent_selection_e2e.py --scenario define_single
+'''
+
+[[eval]]
+id = "phase_multi"
+verifies = ["AT-001"]
+check_type = "deterministic"
+description = "/design numa spec com duas áreas reais produz decisão multiagent auditável"
+timeout_sec = 900
+run = '''
+"$AGENTSPEC_PYTHON" scripts/eval_agent_selection_e2e.py --scenario design_multi
+'''
+
+[[eval]]
+id = "phase_locked"
+verifies = ["AT-009"]
+check_type = "deterministic"
+description = "/design-m preserva multiagent e registra segunda opinião sem lhe dar controle"
+timeout_sec = 900
+run = '''
+"$AGENTSPEC_PYTHON" scripts/eval_agent_selection_e2e.py --scenario design_locked
+'''
+
+[[eval]]
+id = "phase_second_opinion"
+verifies = ["AT-014"]
+check_type = "deterministic"
+description = "/design automático registra a segunda opinião após a correção do snippet"
+timeout_sec = 900
+run = '''
+"$AGENTSPEC_PYTHON" scripts/eval_agent_selection_e2e.py --scenario design_second_opinion
+'''
+
+[[eval]]
+id = "selector_regression"
+verifies = ["AT-003", "AT-004", "AT-005", "AT-006", "AT-007", "AT-008", "AT-010", "AT-013"]
+check_type = "deterministic"
+description = "Fallbacks, timeout, normalização, limite de especialistas e kill switch do JEV opcional"
+timeout_sec = 180
+run = '''
+"$AGENTSPEC_PYTHON" -m pytest tests/test_jev_select.py -q
+'''
+
+[[eval]]
+id = "rubric_quality"
+verifies = ["AT-011"]
+check_type = "deterministic"
+description = "Mede novamente Codex no corpus retrospectivo e compara com a regra antiga"
+timeout_sec = 1800
+run = '''
+"$AGENTSPEC_PYTHON" scripts/check_agent_selection_quality.py --provider codex
+'''
+
+[[eval]]
+id = "distribution"
+verifies = ["AT-012"]
+check_type = "deterministic"
+description = "Testes e drift checks dos bundles no código atual"
+timeout_sec = 300
+run = '''
+make check
+'''
+```
 
 ---
 
@@ -894,6 +1008,9 @@ def gate_specialists(nouls: dict[str, float], fallback: tuple[str, ...]) -> Deci
 | 1.1 | 2026-09-24 | iterate-agent | Após o eval real reprovar (variante 0.64 = heurística): Decisões 9–13, ou seja, Noul `single_area` sem domínios no state, portão por `p(single)` com faixa de incerteza, implementadores sempre candidatos, normalização de domínios em texto livre e revalidação em holdout congelado |
 | 1.2 | 2026-09-25 | iterate-agent | Após o holdout reprovar os especialistas (F1 0.08, pré-filtro vazio sem "Domínios KB"): Decisão 14 (duas etapas: Choice `rank` sobre o pool amplo + Noul na lista curta; orçamento de tempo total) e Decisão 15 (terceiro conjunto a partir de PRDs, com limitação declarada) |
 | 1.3 | 2026-09-25 | iterate-agent | Decisão 16 após o baseline LLM (LLM > JEV > regra antiga): a LLM da fase decide pela rubrica compartilhada; o JEV vira segunda opinião opcional (`JEV_SECOND_OPINION=1`) |
+| 1.4 | 2026-09-26 | Codex (iterate) | DEFINE v1.4, Decisão 17, contrato de evals retrospectivo e scripts de verificação real; falhas históricas permanecem explícitas |
+| 1.5 | 2026-09-26 | Codex (ship-agent) | Shipped e arquivado após sete evals PASS; ressalvas retrospectivas preservadas |
+
 
 ---
 

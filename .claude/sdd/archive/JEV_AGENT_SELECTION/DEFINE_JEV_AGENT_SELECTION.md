@@ -1,8 +1,6 @@
-# DEFINE: Seleção de Agentes via JEV
+# DEFINE: Seleção de Agentes por Rubrica
 
-> **Estado final (v1.3):** o JEV não decide. Os testes mostraram LLM + rubrica (0.85–0.89) > JEV (0.72) > regra antiga (0.46), e a decisão passou para a LLM da fase com a rubrica compartilhada. O JEV ficou como segunda opinião opcional. Os objetivos abaixo registram o escopo original, medido no BUILD_REPORT.
->
-> O JEV (TypeSafe, via OpenRouter) decide, a partir da especificação da fase anterior, qual variante de `/define` e `/design` usar (single ou `-multiagent`) e quais especialistas consultar. Quando ele não decide, vale a heurística atual, e a decisão fica registrada no documento.
+> **Escopo vigente (v1.4):** a LLM da fase decide pela rubrica compartilhada. O JEV permanece como segunda opinião opcional e não altera a decisão. As tentativas anteriores e seus resultados reprovados continuam documentados no DESIGN e no BUILD_REPORT; esta revisão explicita o aceite da solução v1.3 já implementada. As métricas retrospectivas usam rótulos do build-agent, não de um avaliador humano independente.
 
 ## Metadados
 
@@ -11,7 +9,7 @@
 | **Feature** | JEV_AGENT_SELECTION |
 | **Data** | 2026-09-23 |
 | **Autor** | define-agent |
-| **Status** | Pronto para Design |
+| **Status** | ✅ Shipped e arquivado em 2026-09-26 |
 | **Clarity Score** | 14/15 |
 | **Origem** | `.claude/sdd/features/BRAINSTORM_JEV_AGENT_SELECTION.md` |
 
@@ -19,7 +17,7 @@
 
 ## Declaração do Problema
 
-A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas consultados são escolhidos hoje em dois passos. Primeiro, o usuário digita o comando certo. Depois, o LLM conta domínios de KB ("3+ KB domains") e escolhe "top 3-4 por overlap de `kb_domains`". O resultado é agente errado para a spec, sem nenhum registro auditável de por que aquela escolha foi feita.
+A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas consultados precisam refletir o trabalho real da spec e deixar uma justificativa auditável. A regra antiga de contar domínios KB atingiu 0.46 de acurácia de variante e 0.19 de F1 de especialistas nos 46 casos retrospectivos. As versões v1.0–v1.2 do JEV melhoraram parte do resultado, mas não atingiram as metas originais; a v1.3 passou a usar a LLM da fase com uma rubrica única.
 
 ---
 
@@ -36,29 +34,24 @@ A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas
 
 | Prioridade | Objetivo |
 |------------|----------|
-| **MUST** | `scripts/jev_select.py` (Python stdlib) recebe o resumo da spec e os candidatos e faz **uma** chamada a `https://openrouter.ai/api/alpha/decisions` (modelo `typesafe/jev-1.13`, `Authorization: Bearer $OPENROUTER_API_KEY`). A chamada leva um `Noul` de variante ("o trabalho fica confinado a uma área técnica?", v1.1) e um `Noul` por especialista candidato. A saída é JSON em stdout. |
-| **MUST** | A mesma saída JSON é produzida pelo **fallback determinístico em Python**, que reproduz a heurística atual (≥ 3 domínios de KB → multiagent; top-4 por overlap de `kb_domains`). Formato idêntico, campo `source: "jev" \| "fallback"` e campo `fallback_reason`. |
-| **MUST** | Portão (v1.1): a variante é decidida pelo JEV quando `p(single)` sai da faixa de incerteza (padrão 0.4–0.6); `p ≥ 0.5` → single. Dentro da faixa, vale o fallback `uncertain`. Um especialista entra se `Noul ≥ limiar` (padrão configurável, inicial 0.5). Entram no máximo 4, ordenados por probabilidade. Em qualquer outro caso vale o fallback. |
-| **MUST** | Fallback nos casos: chave ausente, erro HTTP, timeout (padrão 4 s), resposta inválida, confiança abaixo do limiar, e zero especialistas acima do limiar quando a variante é multiagent. O script **nunca** retorna código de erro que bloqueie a fase. |
-| **MUST** | Candidatos pré-filtrados de forma determinística a partir de `.claude/skills/agent-router/routing.json`: agentes cujos `kb_domains` intersectam os domínios da spec, excluindo a categoria `workflow`, e sempre com `python-developer` e `react-developer` (v1.1). Domínios em texto livre são normalizados pelo script (v1.1). A partir da v1.2 os candidatos vêm de um ranking amplo (Choice sobre todos os agentes fora de `workflow`/`domain`) somado ao overlap, sem depender da linha "Domínios KB". |
-| **MUST** | `/define` e `/design` chamam o script antes de gerar o documento e **seguem na variante decidida**, podendo subir para a `-multiagent`. `/define-m` e `/design-m` respeitam a variante explícita e usam o script só para os especialistas. |
-| **MUST** | DEFINE e DESIGN gerados contêm a seção "Seleção de Agentes" com fonte, variante, probabilidades, especialistas escolhidos (com probabilidade) e motivo do fallback. Os templates DEFINE e DESIGN ganham essa seção. |
-| **MUST** | Um conjunto rotulado de **20 specs reais** (ao menos 5 single e 5 multiagent) e um modo de avaliação (`--eval`) que roda JEV e fallback sobre o conjunto e imprime acurácia de variante e F1 de especialistas para cada um. |
-| **MUST** | `build-plugin.sh` empacota `jev_select.py` em `plugin/scripts/`; os comandos chamam `${CLAUDE_PLUGIN_ROOT:-.}/scripts/jev_select.py`. |
-| **MUST** | Testes pytest com HTTP mockado (sem rede) cobrindo o caminho feliz, todos os motivos de fallback e a normalização de `confidence`. |
-| **SHOULD** | Variáveis de ambiente para ajuste sem editar código: `JEV_URL`, `JEV_MODEL`, `JEV_SINGLE_THRESHOLD`, `JEV_UNCERTAIN_BAND`, `JEV_FIT_THRESHOLD`, `JEV_TIMEOUT_MS`, `JEV_DISABLE=1`. |
-| **COULD** | Pré-preencher o arquivo de rótulos com a sugestão da heurística, para acelerar a rotulagem manual. |
+| **MUST** | `/define` e `/design` aplicam o mesmo bloco de `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` à spec de entrada para escolher `single` ou `multiagent` e até quatro especialistas do catálogo; a contagem de domínios KB não decide a variante. |
+| **MUST** | `/define-m` e `/design-m` mantêm a variante `multiagent` escolhida explicitamente e usam a rubrica para os especialistas. |
+| **MUST** | Os documentos gerados registram variante, fonte `llm (rubrica)` ou `locked`, justificativa, especialistas com motivo e o estado da segunda opinião JEV na seção "Seleção de Agentes". |
+| **MUST** | `JEV_SECOND_OPINION=1` executa `jev_select.py` e registra seu resultado, sem substituir a escolha da LLM nem bloquear a fase quando o serviço falha; sem essa variável, não há chamada HTTP. |
+| **MUST** | A rubrica medida por `eval_llm_baseline.py` é a mesma aplicada pelos quatro comandos e empacotada nos bundles. O benchmark retrospectivo informa acurácia, F1 e proveniência dos rótulos; não é apresentado como validação humana nem como estimativa de produção. |
+| **MUST** | `jev_select.py` continua disponível, com fallback determinístico, limites e testes de resiliência do escopo anterior, para segunda opinião e medição offline. |
+| **MUST** | `make check` passa e os bundles Claude, Codex, Grok e DSH incluem os comandos e a rubrica vigentes. |
+| **SHOULD** | Uma nova amostra com rótulos do maintainer pode calibrar acurácia de produção após o ship; seu resultado deve ser publicado separadamente do benchmark retrospectivo. |
 
 ---
 
 ## Critérios de Sucesso
 
-- [ ] **Variante:** num conjunto **holdout** (specs não usadas para ajustar a formulação — v1.1), o JEV atinge acurácia **≥ 85%** e pelo menos **10 pontos percentuais acima** da heurística.
-- [ ] **Especialistas:** no mesmo conjunto (casos multiagent), o F1 médio do JEV é **≥ F1 da heurística + 0.10**.
-- [ ] **Resiliência:** em 100% dos cenários de falha testados (sem chave, HTTP 4xx/5xx, timeout, JSON inválido, baixa confiança), o script sai com código 0 e `source: "fallback"`.
-- [ ] **Latência:** o script adiciona no máximo **5 s** à fase no pior caso (timeout de 4 s mais overhead).
-- [ ] **Auditoria:** 100% dos DEFINE e DESIGN gerados após a feature contêm a seção "Seleção de Agentes" preenchida.
-- [ ] **Distribuição:** `plugin/scripts/jev_select.py` existe após `./build-plugin.sh`, e `make test` passa.
+- [x] **Qualidade retrospectiva:** ao menos uma LLM de família diferente da que rotulou os 46 casos obtém acurácia de variante ≥ 0.80, F1 médio de especialistas ≥ 0.40 e supera a regra antiga em ambas as métricas. Publicar contagem, modelo, corpus e ressalva de rótulos do build-agent; essa medição não prova generalização.
+- [x] **Fluxo real:** executar `/define` numa spec de uma área e `/design` numa spec de duas áreas em diretórios descartáveis; conferir variante, até quatro especialistas válidos, justificativa e seção de auditoria. Executar `/design` com `JEV_SECOND_OPINION=1` após a correção do snippet e conferir que a segunda opinião é registrada sem governar a variante.
+- [x] **Variante explícita:** `/define-m` ou `/design-m` preserva `multiagent` mesmo quando a rubrica ou a segunda opinião sugerem `single`.
+- [x] **Resiliência:** todos os cenários de falha de `jev_select.py` testados retornam exit 0 e fallback, inclusive timeout dentro de 5 s; a fase não depende da chave OpenRouter.
+- [x] **Distribuição e regressão:** rubrica e comandos sincronizados nos bundles; `make check` passa no código atual.
 
 ---
 
@@ -66,19 +59,20 @@ A variante de `/define` e `/design` (single ou `-multiagent`) e os especialistas
 
 | ID | Cenário | Dado | Quando | Então |
 |----|---------|------|--------|-------|
-| AT-001 | Caminho feliz: subir para multiagent | Chave válida; JEV devolve `variant=multiagent`, `confidence=0.9`; 3 candidatos com Noul 0.8, 0.6, 0.2 | `/define BRAINSTORM_X.md` | O fluxo roda `define-multiagent` com os 2 especialistas acima do limiar; o documento registra `fonte: jev` e as probabilidades |
-| AT-002 | Caminho feliz: manter single | JEV devolve `variant=single`, `confidence=0.85` | `/design DEFINE_X.md` | Roda `design-agent`, sem consulta a especialistas; a seção registra `fonte: jev` |
+| AT-001 | Rubrica escolhe multiagent | Spec com frontend e API/banco reais | `/design DEFINE_X.md` | Segue o fluxo multiagent e registra `fonte: llm (rubrica)`, justificativa e até quatro especialistas válidos |
+| AT-002 | Rubrica escolhe single | Spec limitada a uma área técnica | `/define BRAINSTORM_X.md` | Segue o fluxo single e registra a decisão justificada na seção "Seleção de Agentes" |
 | AT-003 | Chave ausente | `OPENROUTER_API_KEY` não definida | `jev_select.py ...` | Exit 0, `source=fallback`, `fallback_reason=missing_key`; a variante segue a regra "≥ 3 domínios" |
 | AT-004 | Timeout | O endpoint não responde em 4 s | `jev_select.py ...` | Retorna em ≤ 5 s com `fallback_reason=timeout` |
 | AT-005 | Erro HTTP | O endpoint retorna 404 ou 500 | `jev_select.py ...` | Exit 0, `fallback_reason=http_<code>` |
 | AT-006 | Incerteza (v1.1) | `p(single)=0.55` | `jev_select.py ...` | `source=fallback`, `fallback_reason=uncertain`; as probabilidades do JEV ficam registradas mesmo assim |
 | AT-007 | Domínios em texto livre (v1.1) | `kb_domains=["`tailwind`", "a11y", "sql/postgres", "golang"]` | `jev_select.py ...` | `kb_domains=[tailwind-css, accessibility, sql-patterns]`, `kb_domains_dropped=[golang]` |
 | AT-008 | Nenhum especialista acima do limiar | `variant=multiagent` confiante; todos os Nouls < limiar | `jev_select.py ...` | Especialistas pelo fallback (top-4 por overlap), `fallback_reason=no_fit_above_threshold` só para especialistas |
-| AT-009 | `-m` explícito | JEV devolve `variant=single` | `/define-m BRAINSTORM_X.md` | A variante multiagent é respeitada; os especialistas vêm do JEV |
+| AT-009 | `-m` explícito | Rubrica ou JEV sugerem `single` | `/design-m DEFINE_X.md` | A variante `multiagent` é respeitada; especialistas vêm da rubrica e a segunda opinião não a altera |
 | AT-010 | Máximo de 4 | 6 candidatos com Noul ≥ limiar | `jev_select.py ...` | Retorna exatamente os 4 de maior probabilidade |
-| AT-011 | Avaliação offline | Arquivo de rótulos com 20 specs | `jev_select.py --eval <rótulos>` | Imprime, para JEV e fallback: acurácia de variante, F1 médio de especialistas e contagem de fallbacks |
+| AT-011 | Avaliação retrospectiva | 46 specs rotuladas pelo build-agent, com essa proveniência explícita | `eval_llm_baseline.py` com a rubrica publicada | Acurácia/F1 da LLM e da regra antiga são reproduzidos; limites do corpus são declarados |
 | AT-012 | Empacotamento | Repo limpo | `./build-plugin.sh` | `plugin/scripts/jev_select.py` existe e é idêntico à fonte |
 | AT-013 | Kill switch | `JEV_DISABLE=1` | `jev_select.py ...` | Nenhuma chamada HTTP; `fallback_reason=disabled` |
+| AT-014 | Segunda opinião no `/design` automático | Spec de uma área, `JEV_SECOND_OPINION=1` e `JEV_DISABLE=1` | `/design DEFINE_X.md` após a correção do snippet | Documento registra o fallback `disabled`; a rubrica mantém `single` e a segunda opinião não decide |
 
 ---
 
@@ -171,9 +165,12 @@ Nenhuma bloqueia o Design. Para resolver durante o Design ou no início do Build
 | 1.1 | 2026-09-24 | iterate-agent | Cascata do DESIGN v1.1: variante por Noul `single_area` e portão por `p(single)` com faixa de incerteza; implementadores sempre candidatos; normalização de domínios; critério de variante medido em holdout; AT-006/AT-007 revistos; SHOULD de normalização de `confidence` removido |
 | 1.2 | 2026-09-25 | iterate-agent | Cascata do DESIGN v1.2: candidatos por ranking amplo em duas etapas; terceiro conjunto a partir de PRDs |
 | 1.3 | 2026-09-25 | iterate-agent | Resultado final: critérios de sucesso do JEV não atingidos; baseline LLM superior. Escopo entregue = rubrica aplicada pela LLM da fase + JEV como segunda opinião opcional |
+| 1.4 | 2026-09-26 | Codex (iterate) | Critérios e ATs vigentes alinhados à Decisão 16; benchmark retrospectivo identificado como tal; execução real e contrato de evals exigidos antes de ship |
+| 1.5 | 2026-09-26 | Codex (ship-agent) | Shipped e arquivado após sete evals PASS; ressalvas retrospectivas preservadas |
+
 
 ---
 
 ## Próximo Passo
 
-**Pronto para:** `/design .claude/sdd/features/DEFINE_JEV_AGENT_SELECTION.md`
+**Pronto para:** validar o DESIGN v1.4 e executar `/eval JEV_AGENT_SELECTION` após as novas verificações.

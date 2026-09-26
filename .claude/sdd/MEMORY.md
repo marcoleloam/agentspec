@@ -1,5 +1,21 @@
 # AgentSpec — Project Memory
 
+## 2026-09-26 — Shipped JEV_AGENT_SELECTION
+
+### Decisions
+| Decision | Rationale |
+| -------- | --------- |
+| LLM da fase aplica `AGENT_SELECTION_RUBRIC.md`; JEV é segunda opinião opcional | No corpus retrospectivo, LLM superou JEV e regra por domínios; a decisão e os motivos ficam no documento. |
+| `/define-m` e `/design-m` preservam `multiagent` explícito | A escolha do usuário não pode ser revertida pela rubrica nem pela segunda opinião. |
+
+### Gotchas
+- O contrato de sete evals foi escrito após o build v1.3: registrar essa cronologia; PASS não significa TDD histórico.
+- Os 46 rótulos são do build-agent Claude e o corpus não é versionado: não apresentar 0,8913 de acurácia como validação humana ou estimativa de produção.
+- `memory-index.py brief` apontou ausência de trajetória no Blackboard para define, design e build: acrescentar entradas ao longo das fases, não só no `/iterate`.
+
+### Reusable
+- Usar a mesma rubrica nos comandos e no benchmark, com teste de sincronismo, reduz divergência entre comportamento entregue e medição.
+
 ## 2026-09-25 — Shipped LIVING_MEMORY
 
 ### Decisions

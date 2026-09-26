@@ -1,0 +1,14 @@
+{
+  "attestations": [],
+  "waivers": [
+    {
+      "eval_id": "*legacy*",
+      "supervisor": "Codex",
+      "reason": "DESIGN_JEV_AGENT_SELECTION.md é legado e não contém bloco ## Evals; dispensa explícita solicitada pelo usuário para executar /eval sem contrato pós-build.",
+      "waived_at": "2026-09-26T19:30:15Z",
+      "commit": "4ff0c356edab815667b0255415041a21e457cec8",
+      "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contract_digest": null
+    }
+  ]
+}

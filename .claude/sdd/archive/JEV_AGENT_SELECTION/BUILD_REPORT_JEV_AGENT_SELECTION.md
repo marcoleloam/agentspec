@@ -11,7 +11,7 @@
 | **Autor** | build-agent |
 | **DEFINE** | [DEFINE_JEV_AGENT_SELECTION.md](../features/DEFINE_JEV_AGENT_SELECTION.md) |
 | **DESIGN** | [DESIGN_JEV_AGENT_SELECTION.md](../features/DESIGN_JEV_AGENT_SELECTION.md) |
-| **Status** | ✅ Finalizado (v1.3) — LLM da fase decide pela rubrica; JEV como segunda opinião opcional (ver Implementação Final) |
+| **Status** | ✅ Aceite v1.4 concluído — sete evals PASS sem waiver; LLM da fase decide pela rubrica, JEV é segunda opinião opcional (ver Aceite final v1.4) |
 
 ---
 
@@ -19,7 +19,7 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Tarefas Concluídas** | 16/17 (a #17, rotulagem das 20 specs, é do maintainer) |
+| **Tarefas Concluídas** | 16 tarefas entregues; a #17 original (rótulos do maintainer) foi substituída na v1.4 por medição retrospectiva com rótulos do build-agent, sem validação humana independente |
 | **Arquivos Criados** | 11 na fonte (script, 2 testes, 7 fixtures, 1 doc) + 2 cópias geradas (`plugin/scripts/`, `plugin-grok/scripts/`) |
 | **Arquivos Modificados (fonte)** | 15 |
 | **Arquivos Regenerados** | 57 (`plugin/`, `plugin-grok/`, `plugin-dsh/`, `.codex/`, `.grok/`) |
@@ -49,7 +49,7 @@
 | 14 | `docs/concepts/jev-agent-selection.md` | @code-documenter | (direto) | ✅ Completo | Setup, dados enviados, `JEV_DISABLE`, `--eval`, limites |
 | 15 | `.gitignore` | (direto) | (direto) | ✅ Completo | Ignora o conjunto completo de rótulos |
 | 16 | `CHANGELOG.md` | (direto) | (direto) | ✅ Completo | Added + Changed (mudança de comportamento do `-m`) |
-| 17 | `.claude/sdd/evals/agent_selection_labels.json` (20 specs) | (maintainer) | — | ⏳ Pendente | Rotulagem humana decidida no DEFINE |
+| 17 | `.claude/sdd/evals/agent_selection_labels.json` (20 specs) | (maintainer) | build-agent (rótulos cegos) | ↪ Substituída na v1.4 | O requisito original de rótulos humanos não foi cumprido; o DEFINE v1.4 declara a limitação e exige medição retrospectiva identificada |
 
 **Legenda:** ✅ Completo | 🔄 Em Andamento | ⏳ Pendente | ❌ Bloqueado
 
@@ -204,6 +204,8 @@ Isso confirma que `routing.json` é encontrado em `plugin/skills/agent-router/`.
 ---
 
 ## Status Final
+
+> O checklist abaixo registra o estado histórico da v1.3. O aceite vigente é o DEFINE/DESIGN v1.4; os resultados novos estão na seção "Iteração de aceite v1.4" ao fim deste relatório. As falhas históricas do JEV como decisor permanecem registradas.
 
 ### Geral: ✅ FINALIZADO (v1.3) — rubrica aplicada pela LLM da fase (maior ganho medido); JEV opcional onde teve ganho
 
@@ -495,3 +497,37 @@ Codex e Grok concordam na variante em 91% dos casos. Nenhuma das duas inventou n
 4. Push e PR, quando o maintainer decidir.
 4. Rodar `/define` e `/design` numa spec real para fechar AT-001, AT-002 e AT-009 (depois do `/iterate`).
 5. `/ship JEV_AGENT_SELECTION` só quando os critérios forem atingidos num conjunto novo.
+
+---
+
+## Iteração de aceite v1.4 (2026-09-26)
+
+O usuário pediu atualizar ou cumprir os critérios, obter evidências e repetir `/eval` antes de `/ship`. DEFINE v1.4 e DESIGN Decisão 17 substituem o JEV como decisor pela LLM da fase com a rubrica já implementada. O contrato de sete evals foi escrito **depois** do build v1.3 e congelado em `sha256:62bb43f3931ff55c745f5667b19e967a62dacf59f288383caea28b6ebcbac3cc`. O `pre` inicial desta iteração passou com a `.venv`, mas dois evals já passavam porque o código antecede o contrato; isso não é prova de teste definido antes da implementação. O caso adicional de `/design` com segunda opinião foi incorporado ao contrato antes da rodada final de `/eval`.
+
+| Evidência nova | Resultado | Limite |
+|---------------|-----------|--------|
+| `check_agent_selection_quality.py --provider codex --answers <respostas novas>` nos 46 casos locais | 41/46 variantes corretas (0.8913) e F1 0.5426; regra antiga 21/46 (0.4565) e F1 0.1870; 31 casos multiagent | Rótulos feitos pelo build-agent Claude; corpus retrospectivo e não versionado. Medição nova não é holdout humano nem estimativa de produção. |
+| `make check` | 318 passed, 1 skipped; geradores Codex, Grok, DSH, agent-router e phase routing em sincronia | Exercita código e artefatos gerados, não substitui E2E do agente de fase. |
+| Codex CLI em diretório descartável: skill `source-command-workflow-define` na spec de protótipo frontend com três domínios KB | DEFINE gerado com variante `single`, fonte `llm (rubrica)`, justificativa e `react-developer`, `css-specialist`, `ux-designer`; validador de documento passou | Um caso controlado, sem generalização estatística. |
+| Codex CLI: skill `source-command-workflow-design` numa DEFINE com frontend React e backend Python/PostgreSQL reais | DESIGN gerado com variante `multiagent`, fonte `llm (rubrica)`, justificativa e `react-developer`, `python-developer`, `schema-designer`; validador passou | O runtime tentou consultar os especialistas, mas não obteve pareceres independentes e registrou o fallback inline. A evidência comprova a seleção, não a consulta bem-sucedida. |
+| Codex CLI: skill `source-command-workflow-design-m` numa DEFINE de área única com `JEV_SECOND_OPINION=1`, `JEV_DISABLE=1` | DESIGN gerado com `multiagent` travado; rubrica escolheria `single`. Três especialistas válidos foram consultados. Segunda opinião executou e registrou `source=fallback`, `fallback_reason=disabled`, sem controlar a variante. | Um caso controlado; o modo disabled comprova o snippet e o isolamento da decisão, não uma resposta do JEV remoto. |
+| Codex CLI: skill `source-command-workflow-design` na mesma área única, com `JEV_SECOND_OPINION=1` e `JEV_DISABLE=1` | DESIGN gerado com `single`, fonte `llm (rubrica)`; a segunda opinião registrou `variant=multiagent`, `source=fallback`, `fallback_reason=disabled`, e não alterou a escolha. O validador do documento passou. | Fecha a regressão do snippet no comando automático, mas testa fallback controlado e uma spec sintética. |
+| `JEV_DISABLE=1` com `variant_locked=multiagent` no `jev_select.py` | Exit 0; `source=fallback`, `fallback_reason=disabled`, variante com `source=locked` | Prova o script, não a execução do `/design-m`. |
+
+**Evidência concluída nesta rodada:** execução integral do novo `/eval` e verificação do recibo. A tentativa E2E pelo Claude CLI nesta rodada retornou limite de uso da conta antes de gerar artefato; os E2E novos usam Codex CLI e devem ser identificados como tal.
+
+## Aceite final v1.4 (2026-09-26)
+
+O `eval_runner.py run JEV_AGENT_SELECTION` produziu `PASS`: sete evals determinísticos obrigatórios passaram (`phase_single`, `phase_multi`, `phase_locked`, `phase_second_opinion`, `selector_regression`, `rubric_quality`, `distribution`), sem erros estruturais, avisos ou waivers. O `eval_runner.py verify JEV_AGENT_SELECTION` retornou `OK — gate satisfied — ready to ship`. O recibo foi gerado no commit `4ff0c356edab815667b0255415041a21e457cec8`, worktree `sha256:9071d10db83118896c7e23af983dfff433f42015bd118fa718d2dc086d7ed76e`, contrato `sha256:62bb43f3931ff55c745f5667b19e967a62dacf59f288383caea28b6ebcbac3cc`.
+
+| Critério vigente | Evidência do `/eval` | Resultado |
+|------------------|----------------------|-----------|
+| Qualidade retrospectiva | Codex `gpt-6-astra`, 46 casos (31 multiagent): variante 41/46 = 0,8913 contra 21/46 = 0,4565 da regra antiga; F1 0,5392 contra 0,1870 | ✅ Passou os limiares 0,80 e 0,40 e superou a regra antiga |
+| Fluxo real | `/define` single; `/design` multiagent; `/design` single com segunda opinião registrada sem alterar a decisão | ✅ Três evals PASS |
+| Variante explícita | `/design-m` manteve `multiagent` travado e registrou segunda opinião com fallback `disabled` | ✅ PASS |
+| Resiliência | Regressão do seletor: 79 testes passaram, incluindo falhas de transporte e kill switch | ✅ PASS |
+| Distribuição | `make check` passou; 318 testes passaram, 1 foi ignorado; bundles e roteadores sincronizados | ✅ PASS |
+
+Os rótulos do benchmark são do build-agent Claude, não de um avaliador humano independente. O corpus local não é versionado; os hashes SHA-256 dos três arquivos estão no recibo do eval. O contrato e os limiares foram definidos retrospectivamente, depois da implementação. O resultado demonstra regressão controlada neste conjunto, não acurácia de produção. A consulta independente de especialistas não é requisito deste aceite e o E2E valida seleção, justificativa e registro documental; a tentativa inicial pelo Claude CLI esbarrou no limite de uso da conta. As falhas históricas do JEV como decisor continuam documentadas acima, sem conversão em sucesso.
+
+**Status vigente:** critérios da v1.4 cumpridos, BUILD_REPORT aprovado para `/ship`. As pendências históricas da v1.3 foram substituídas pela Decisão 17 do DESIGN; uma avaliação com rótulos humanos novos permanece recomendada para medir generalização após o ship.
