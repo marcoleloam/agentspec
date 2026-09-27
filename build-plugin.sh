@@ -28,7 +28,7 @@ else
 fi
 
 echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}  AgentSpec Plugin Builder v3.6.0${NC}"
+echo -e "${BLUE}  AgentSpec Plugin Builder v3.7.0${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 

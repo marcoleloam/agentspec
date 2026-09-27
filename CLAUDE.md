@@ -8,7 +8,7 @@
 
 **What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 74 agents (data engineering + frontend), 43 commands, 39 KB domains, and 10 distributed skills (14 in-repo; 4 are contributor-only).
 
-**Current Status:** v3.6.0 — Living Memory: the feature BLACKBOARD is the trajectory memory from Brainstorm to Ship, read back by `memory-index.py` (≤15-line brief on phase entry, 🔴 gate, SessionStart tail, cross-feature index) and enforced by plugin hooks. Builds on v3.5.0 (LLM phase routing, `/eval` gate) and v3.3.0 (blackboard coordination, `/work`, file-based memory).
+**Current Status:** v3.7.0 — Rubric-based agent selection (the phase LLM applies `AGENT_SELECTION_RUBRIC.md`; JEV as opt-in second opinion) and the KB × Context7 benchmark (`scripts/kb_bench/`). Builds on v3.6.0 — Living Memory: the feature BLACKBOARD is the trajectory memory from Brainstorm to Ship, read back by `memory-index.py` (≤15-line brief on phase entry, 🔴 gate, SessionStart tail, cross-feature index) and enforced by plugin hooks. Builds on v3.5.0 (LLM phase routing, `/eval` gate) and v3.3.0 (blackboard coordination, `/work`, file-based memory).
 
 ---
 
@@ -198,6 +198,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | Post-build evals (/eval + JEV) | Shipped 2026-09-24 | New Phase 3.5 gate: `## Evals` TOML contract in DESIGN, frozen by digest, PRE-checked before /build, reexecuted by eval-agent via `eval_runner.py`; JEV grades `graded` evals, escalating to `/judge` or a human until calibrated; `/ship` requires a PASS receipt |
 | LLM phase routing | Done 2026-09-24 | `PHASE_MODEL_ROLES.toml` maps each SDD phase to an OMP model role (+ Claude alias, Codex effort); `/design` and `/ship` delegate to their phase agent; `make omp-roles` prints `task.agentModelOverrides`; `plugin/agents/` flattened so OMP discovers agents; **Gerado por** provenance row in SDD docs |
 | Living Memory (Blackboard Brainstorm → Ship) | Shipped 2026-09-25 | `memory-index.py` brief/gate/tail/index over BLACKBOARD, archive and MEMORY.md; plugin hooks (`memory-hook.py`) inject the brief, gate new DESIGNs on 🔴, rebuild the index; 🔴 closes only with the user's answer |
+| KB × Context7 benchmark | Shipped 2026-09-27 | `scripts/kb_bench/`: 4 knowledge arms on the same tasks, sandbox isolation, blind human queue; first run says retire the KB, with a ceiling effect — round 2 needs real tasks and a non-Grok executor |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -305,8 +306,8 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Version
 
-- **Version:** 3.6.0
-- **Status:** Release — Living Memory: the BLACKBOARD spans Brainstorm → Ship, `memory-index.py` (brief / gate / tail / index) and plugin hooks that make those calls deterministic; plugin script paths fixed (`AGENTSPEC_SCRIPTS`). Builds on 3.5.0 (LLM phase routing, `/eval` gate). 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
+- **Version:** 3.7.0
+- **Status:** Release — rubric-based agent selection for `/define` and `/design` (JEV as opt-in second opinion) and the contributor-only KB × Context7 benchmark (`scripts/kb_bench/`). Builds on 3.6.0 (Living Memory) and 3.5.0 (LLM phase routing, `/eval` gate). 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
 - **Upstream Base:** luanmorenommaciel/agentspec @ d577ec5 (2026-07-15)
 - **Last Sync:** 2026-07-27 (wave 1 — additive only; thin-executor refactor deferred)
-- **Last Updated:** 2026-09-25
+- **Last Updated:** 2026-09-27

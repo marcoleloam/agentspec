@@ -6,8 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-09-27
+
 ### Added
 
+- **KB × Context7 benchmark (contributor tool)** — `scripts/kb_bench/` runs the same 18 data
+  engineering tasks in 4 knowledge arms (current KB, Context7, lean KB + Context7, nothing) with
+  OS-sandbox isolation, transcript contamination checks, a blind human queue and a per-stratum
+  decision rule; `make kb-bench*` targets. The first full run (72 pairs, `grok-4.7`) recommends
+  retiring the KB in all 3 strata, but with a ceiling effect (arms B, C and D at 100%), so it is
+  indicative only; a second round with real tasks needs a new executor. Not shipped in the plugin.
 - **Agent selection rubric** — `/define` and `/design` now pick their variant (single or
   `-multiagent`) and up to 4 specialists by having the phase LLM apply one shared rubric
   (`.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md`) to the spec, instead of counting KB
