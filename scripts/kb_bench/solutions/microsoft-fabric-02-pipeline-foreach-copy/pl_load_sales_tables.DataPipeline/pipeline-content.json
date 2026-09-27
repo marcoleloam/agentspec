@@ -1,0 +1,148 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "ForEach source table",
+        "type": "ForEach",
+        "dependsOn": [],
+        "typeProperties": {
+          "items": {
+            "value": "@pipeline().parameters.table_list",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 4,
+          "activities": [
+            {
+              "name": "Copy table to lh_bronze",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 1,
+                "retryIntervalInSeconds": 60,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "typeProperties": {
+                "source": {
+                  "type": "AzureSqlSource",
+                  "queryTimeout": "02:00:00",
+                  "partitionOption": "None",
+                  "datasetSettings": {
+                    "annotations": [],
+                    "type": "AzureSqlTable",
+                    "schema": [],
+                    "typeProperties": {
+                      "schema": {
+                        "value": "@item().schema_name",
+                        "type": "Expression"
+                      },
+                      "table": {
+                        "value": "@item().table_name",
+                        "type": "Expression"
+                      },
+                      "database": "salesdb"
+                    },
+                    "externalReferences": {
+                      "connection": "c0ffee00-1234-4abc-9def-001122334455"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "Overwrite",
+                  "datasetSettings": {
+                    "annotations": [],
+                    "linkedService": {
+                      "name": "lh_bronze",
+                      "properties": {
+                        "annotations": [],
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "workspaceId": "8d2f5c1e-3b7a-4c9e-9f10-2a6b7c8d9e01",
+                          "artifactId": "5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+                          "rootFolder": "Tables"
+                        }
+                      }
+                    },
+                    "type": "LakehouseTable",
+                    "schema": [],
+                    "typeProperties": {
+                      "table": {
+                        "value": "@item().target_table",
+                        "type": "Expression"
+                      }
+                    }
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "type": "TabularTranslator",
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": true,
+                    "treatBooleanAsNumber": false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Build silver",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "ForEach source table",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2918",
+          "workspaceId": "8d2f5c1e-3b7a-4c9e-9f10-2a6b7c8d9e01",
+          "parameters": {
+            "load_date": {
+              "value": {
+                "value": "@pipeline().parameters.load_date",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "table_list": {
+        "type": "array",
+        "defaultValue": [
+          {
+            "schema_name": "dbo",
+            "table_name": "orders",
+            "target_table": "orders"
+          },
+          {
+            "schema_name": "dbo",
+            "table_name": "customers",
+            "target_table": "customers"
+          }
+        ]
+      },
+      "load_date": {
+        "type": "string"
+      }
+    },
+    "annotations": []
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "schema": "agentspec/eval-receipt/v1",
+  "feature": "KB_CONTEXT7_REFRESH",
+  "commit": "2d8bb0b3cce8df967d09300e898505699f757e64",
+  "worktree_digest": "sha256:b564f8e749b9ed7408d98b8b23d61a0e3372fd2f90ceca8e96d467e6cc09b491",
+  "contract_digest": "sha256:5dd9c7f7f6a3a159a2cf5350516eb53cb2aadc3821626d38ec1e7bfe05ffd634",
+  "extras_digest": null,
+  "evaluated_at": "2026-09-27T17:29:39Z",
+  "runner_version": "1.0.0",
+  "jev": {
+    "model": "typesafe/jev-1.13",
+    "calibrated": false
+  },
+  "results": [
+    {
+      "eval_id": "eval_1",
+      "origin": "contract",
+      "verifies": [
+        "AT-001"
+      ],
+      "check_type": "deterministic",
+      "description": "A rodada completa tem 72 registros e o REPORT.md traz placar braço × estrato e uma recomendação por estrato",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.403,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 46 deselected in 0.04s\nAT-001 ok: 72 records; ['**aposentar KB**', '**aposentar KB**', '**aposentar KB**']\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_2",
+      "origin": "contract",
+      "verifies": [
+        "AT-002"
+      ],
+      "check_type": "deterministic",
+      "description": "Tarefa não discriminante é rejeitada, e as 18 tarefas do benchmark discriminam (falham nas fixtures, passam na solução)",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 50.143,
+      "evidence": {
+        "stdout": "..                                                                       [100%]\n2 passed, 45 deselected in 0.06s\n[ok] airflow-01-migrate-orders-etl (airflow, synthetic) — solution ✓\n[ok] airflow-02-asset-driven-mart (airflow, synthetic) — solution ✓\n[ok] airflow-03-dynamic-mapping-sales (airflow, synthetic) — solution ✓\n[ok] data-modeling-01-sales-star-history (data-modeling, synthetic) — solution ✓\n[ok] data-modeling-02-account-balance-snapshot (data-modeling, synthetic) — solution ✓\n[ok] data-modeling-03-raw-vault-batches (data-modeling, synthetic) — solution ✓\n[ok] dbt-01-incremental-orders (dbt, synthetic) — solution ✓\n[ok] dbt-02-yaml-snapshot (dbt, synthetic) — solution ✓\n[ok] dbt-03-contract-unit-test (dbt, synthetic) — solution ✓\n[ok] medallion-01-orders-layered-pipeline (medallion, synthetic) — solution ✓\n[ok] medallion-02-payment-webhook-events (medallion, synthetic) — solution ✓\n[ok] medallion-03-incremental-customer-cdc (medallion, synthetic) — solution ✓\n[ok] microsoft-fabric-01-lakehouse-upsert (microsoft-fabric, synthetic) — solution ✓\n[ok] microsoft-fabric-02-pipeline-foreach-copy (microsoft-fabric, synthetic) — solution ✓\n[ok] microsoft-fabric-03-warehouse-dim-customer (microsoft-fabric, synthetic) — solution ✓\n[ok] shadowtraffic-01-kafka-clickstream (shadowtraffic, synthetic) — solution ✓\n[ok] shadowtraffic-02-postgres-orders-lookup (shadowtraffic, synthetic) — solution ✓\n[ok] shadowtraffic-03-iot-cross-connection (shadowtraffic, synthetic) — solution ✓\n18/18 tasks valid\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_3",
+      "origin": "contract",
+      "verifies": [
+        "AT-003"
+      ],
+      "check_type": "deterministic",
+      "description": "Retry: até 2 retries com a saída do eval no prompt; pass_retry acumula tentativas e custo; esgotado vira human",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 1.259,
+      "evidence": {
+        "stdout": "....                                                                     [100%]\n4 passed, 43 deselected in 0.95s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_4",
+      "origin": "contract",
+      "verifies": [
+        "AT-004"
+      ],
+      "check_type": "deterministic",
+      "description": "Leitura de KB/plugin, Context7 fora de B/C ou web marcam contaminated; leituras negadas pelo sandbox não",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.489,
+      "evidence": {
+        "stdout": ".........                                                                [100%]\n9 passed, 38 deselected in 0.25s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_5",
+      "origin": "contract",
+      "verifies": [
+        "AT-005"
+      ],
+      "check_type": "deterministic",
+      "description": "Falha de preflight, de transporte ou ausência do MCP Context7 em B/C resulta em unavailable",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.929,
+      "evidence": {
+        "stdout": "...                                                                      [100%]\n3 passed, 44 deselected in 0.70s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_6",
+      "origin": "contract",
+      "verifies": [
+        "AT-006"
+      ],
+      "check_type": "deterministic",
+      "description": "Fila humana cega: ID opaco, sem braço no conteúdo, mapeamento em arquivo separado",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.601,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 46 deselected in 0.36s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_7",
+      "origin": "contract",
+      "verifies": [
+        "AT-007"
+      ],
+      "check_type": "deterministic",
+      "description": "Regra de decisão: B ≥ A → substituir por B; D empata com A → aposentar KB; demais saídas e inconclusivo",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.254,
+      "evidence": {
+        "stdout": "........                                                                 [100%]\n8 passed, 39 deselected in 0.02s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_8",
+      "origin": "contract",
+      "verifies": [
+        "AT-008"
+      ],
+      "check_type": "deterministic",
+      "description": "Dry-run: tarefas e evals validados e preflight de braços, trust e MCP aprovado sem conta Grok e sem chamada ao modelo",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 52.415,
+      "evidence": {
+        "stdout": "..                                                                       [100%]\n2 passed, 45 deselected in 0.98s\n[ok] airflow-01-migrate-orders-etl (airflow, synthetic) — solution ✓\n[ok] airflow-02-asset-driven-mart (airflow, synthetic) — solution ✓\n[ok] airflow-03-dynamic-mapping-sales (airflow, synthetic) — solution ✓\n[ok] data-modeling-01-sales-star-history (data-modeling, synthetic) — solution ✓\n[ok] data-modeling-02-account-balance-snapshot (data-modeling, synthetic) — solution ✓\n[ok] data-modeling-03-raw-vault-batches (data-modeling, synthetic) — solution ✓\n[ok] dbt-01-incremental-orders (dbt, synthetic) — solution ✓\n[ok] dbt-02-yaml-snapshot (dbt, synthetic) — solution ✓\n[ok] dbt-03-contract-unit-test (dbt, synthetic) — solution ✓\n[ok] medallion-01-orders-layered-pipeline (medallion, synthetic) — solution ✓\n[ok] medallion-02-payment-webhook-events (medallion, synthetic) — solution ✓\n[ok] medallion-03-incremental-customer-cdc (medallion, synthetic) — solution ✓\n[ok] microsoft-fabric-01-lakehouse-upsert (microsoft-fabric, synthetic) — solution ✓\n[ok] microsoft-fabric-02-pipeline-foreach-copy (microsoft-fabric, synthetic) — solution ✓\n[ok] microsoft-fabric-03-warehouse-dim-customer (microsoft-fabric, synthetic) — solution ✓\n[ok] shadowtraffic-01-kafka-clickstream (shadowtraffic, synthetic) — solution ✓\n[ok] shadowtraffic-02-postgres-orders-lookup (shadowtraffic, synthetic) — solution ✓\n[ok] shadowtraffic-03-iot-cross-connection (shadowtraffic, synthetic) — solution ✓\n18/18 tasks valid\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_9",
+      "origin": "contract",
+      "verifies": [
+        "AT-009"
+      ],
+      "check_type": "deterministic",
+      "description": "Execução sem evento de fim (limite de turnos/tempo) resulta em timeout",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.68,
+      "evidence": {
+        "stdout": ".                                                                        [100%]\n1 passed, 46 deselected in 0.37s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "eval_10",
+      "origin": "contract",
+      "verifies": [
+        "AT-010"
+      ],
+      "check_type": "deterministic",
+      "description": "Sem efeito colateral: nenhuma mudança em .claude/ (fora de .claude/sdd/), plugin*/, .codex/, .grok/ ou build-plugin.sh",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 0.095,
+      "evidence": {
+        "stdout": "AT-010 ok\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "required": [
+    "eval_1",
+    "eval_2",
+    "eval_3",
+    "eval_4",
+    "eval_5",
+    "eval_6",
+    "eval_7",
+    "eval_8",
+    "eval_9",
+    "eval_10"
+  ],
+  "structural_errors": [],
+  "warnings": [],
+  "waivers": [],
+  "verdict": "PASS"
+}

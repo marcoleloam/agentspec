@@ -1,0 +1,125 @@
+id = "medallion-02-payment-webhook-events"
+domain = "medallion"
+stratum = "conceptual"
+origin = "synthetic"
+authored_from = "Widely accepted medallion (bronze/silver/gold) practice for at-least-once event feeds and the DuckDB 1.x SQL docs (read_json, TIMESTAMPTZ, AT TIME ZONE); not derived from .claude/kb"
+fixtures = "fixtures/medallion/medallion-02-payment-webhook-events"
+prompt = """
+Build a medallion (bronze -> silver -> gold) pipeline in plain DuckDB SQL for
+finance reporting on payment webhooks.
+
+The payments provider pushes webhook events; our collector writes them as
+newline-delimited JSON files in `data/landing/`
+(`payment_events_YYYY-MM-DD.jsonl`, two so far). What to know about the feed:
+delivery is at-least-once, so the same event (same `event_id`) can arrive more
+than once, possibly with different `delivery` metadata; `occurred_at` is an
+ISO-8601 timestamp carrying the merchant's local UTC offset;
+`payment.amount_minor` is the amount in minor units (cents); currency codes are
+not consistently cased. Finance only accepts BRL, USD and EUR, and closes its
+books on UTC calendar days.
+
+Deliver three scripts. They run in this order, in one DuckDB session, from the
+workspace root (read files with relative paths such as `data/landing/...`):
+
+1. `sql/bronze/bronze_payment_events.sql` creates table
+   `bronze_payment_events`: every delivered event line, with the top-level
+   event fields as delivered (`event_id`, `event_type`, `occurred_at`,
+   `payment`, `delivery`) plus `_source_file` (the file it came from) and
+   `_ingested_at` (when it was loaded).
+2. `sql/silver/silver_payment_events.sql` creates table `silver_payment_events`
+   with columns `event_id`, `payment_id`, `event_type`, `amount` (major units,
+   e.g. 12000 minor units -> 120.00), `currency` (ISO 4217 code) and
+   `occurred_at_utc` (the instant the event occurred, in UTC). Each business
+   event must be counted exactly once. An event is invalid when it has no
+   payment id, its `occurred_at` is not a valid timestamp, its amount is not
+   positive, or its currency is not accepted. Invalid events must never reach
+   `silver_payment_events`, but they must be kept for audit in table
+   `silver_payment_events_rejected` (with a non-empty `reject_reason`).
+3. `sql/gold/gold_daily_net_revenue.sql` creates table `gold_daily_net_revenue`
+   with columns `revenue_date`, `currency`, `captured_amount`,
+   `refunded_amount` and `net_amount`: one row per day and currency with at
+   least one valid event. `captured_amount` and `refunded_amount` are the
+   positive totals of the `payment.captured` and `payment.refunded` events of
+   that day; `net_amount` = captured - refunded.
+
+The orchestrator may re-run all three scripts at any time, and the tables must
+come out the same.
+"""
+
+[[evals]]
+name = "bronze keeps every delivery, redeliveries included, with lineage"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_payment_events.sql", "sql/silver/silver_payment_events.sql", "sql/gold/gold_daily_net_revenue.sql",
+       "--assert", "select count(*) from bronze_payment_events == 14",
+       "--assert", "select count(distinct _source_file) from bronze_payment_events == 2",
+       "--assert", "select count(*) from bronze_payment_events where _source_file is null or _ingested_at is null == 0",
+       "--assert", "select count(*) from bronze_payment_events where cast(event_id as varchar) = 'evt_001' == 2"]
+
+[[evals]]
+name = "silver counts each event once with UTC instants, major units and ISO currency"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_payment_events.sql", "sql/silver/silver_payment_events.sql", "sql/gold/gold_daily_net_revenue.sql",
+       "--assert", "select count(*) from silver_payment_events == 8",
+       "--assert-empty", "select event_id from silver_payment_events group by event_id having count(*) > 1",
+       "--assert", "select string_agg(distinct currency, ',' order by currency) from silver_payment_events == BRL,EUR,USD",
+       "--assert", "select payment_id from silver_payment_events where event_id = 'evt_007' == pay_01",
+       "--assert", "select cast(round(amount * 100) as bigint) from silver_payment_events where event_id = 'evt_008' == 15000",
+       "--assert", "select cast(epoch(occurred_at_utc) as bigint) from silver_payment_events where event_id = 'evt_002' == 1788312600",
+       "--assert", "select cast(epoch(occurred_at_utc) as bigint) from silver_payment_events where event_id = 'evt_003' == 1788300900",
+       "--assert", "select cast(epoch(occurred_at_utc) as bigint) from silver_payment_events where event_id = 'evt_011' == 1788402600"]
+
+[[evals]]
+name = "invalid events are quarantined with a reason, not silently dropped"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_payment_events.sql", "sql/silver/silver_payment_events.sql", "sql/gold/gold_daily_net_revenue.sql",
+       "--assert", "select count(*) from silver_payment_events_rejected == 4",
+       "--assert", "select count(*) from silver_payment_events_rejected where reject_reason is null or trim(cast(reject_reason as varchar)) = '' == 0",
+       "--assert", "select count(distinct event_id) from silver_payment_events_rejected where event_id in ('evt_005', 'evt_006', 'evt_009', 'evt_010') == 4",
+       "--assert", "select count(*) from silver_payment_events where event_id in ('evt_005', 'evt_006', 'evt_009', 'evt_010') == 0"]
+
+[[evals]]
+name = "gold nets captures and refunds per UTC day and currency"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_payment_events.sql", "sql/silver/silver_payment_events.sql", "sql/gold/gold_daily_net_revenue.sql",
+       "--assert", "select count(*) from gold_daily_net_revenue == 6",
+       "--assert", "select cast(round(net_amount * 100) as bigint) from gold_daily_net_revenue where cast(revenue_date as date) = DATE '2026-09-01' and currency = 'BRL' == 20000",
+       "--assert", "select cast(round(net_amount * 100) as bigint) from gold_daily_net_revenue where cast(revenue_date as date) = DATE '2026-09-01' and currency = 'USD' == 2500",
+       "--assert", "select cast(round(net_amount * 100) as bigint) from gold_daily_net_revenue where cast(revenue_date as date) = DATE '2026-09-02' and currency = 'USD' == 6000",
+       "--assert", "select cast(round(net_amount * 100) as bigint) from gold_daily_net_revenue where cast(revenue_date as date) = DATE '2026-09-03' and currency = 'BRL' == -8000",
+       "--assert", "select cast(round(sum(captured_amount) * 100) as bigint) from gold_daily_net_revenue == 43500",
+       "--assert", "select cast(round(sum(refunded_amount) * 100) as bigint) from gold_daily_net_revenue == 10000"]
+
+[[evals]]
+name = "re-running the whole pipeline is idempotent"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_payment_events.sql", "sql/silver/silver_payment_events.sql", "sql/gold/gold_daily_net_revenue.sql",
+       "sql/bronze/bronze_payment_events.sql", "sql/silver/silver_payment_events.sql", "sql/gold/gold_daily_net_revenue.sql",
+       "--assert", "select count(*) from bronze_payment_events == 14",
+       "--assert", "select count(*) from silver_payment_events == 8",
+       "--assert", "select count(*) from silver_payment_events_rejected == 4",
+       "--assert-empty", "select revenue_date, currency from gold_daily_net_revenue group by revenue_date, currency having count(*) > 1"]
+
+[[evals]]
+name = "gold is an explicit-column mart built from silver only"
+cmd = ["python", "-c", '''
+import sys, sqlglot
+from sqlglot import exp
+bad, silver = [], False
+for path in sys.argv[1:]:
+    for stmt in sqlglot.parse(open(path, encoding="utf-8").read(), read="duckdb"):
+        if stmt is None:
+            continue
+        for sel in stmt.find_all(exp.Select):
+            if any(isinstance(e, exp.Star) or (isinstance(e, exp.Column) and isinstance(e.this, exp.Star)) for e in sel.expressions):
+                bad.append(f"{path}: SELECT * in a gold projection")
+        for tbl in stmt.find_all(exp.Table):
+            src = tbl.this.sql("duckdb").lower() if isinstance(tbl.this, exp.Func) else ""
+            if tbl.name.lower().startswith("bronze") or tbl.db.lower() == "bronze" or src.startswith("read_"):
+                bad.append(f"{path}: gold reads {tbl.sql('duckdb')} instead of silver")
+            silver = silver or tbl.name.lower().startswith("silver") or tbl.db.lower() == "silver"
+if not silver:
+    bad.append("gold does not read any silver table")
+for b in bad:
+    print("FAIL:", b)
+sys.exit(1 if bad else 0)
+''', "sql/gold/gold_daily_net_revenue.sql"]

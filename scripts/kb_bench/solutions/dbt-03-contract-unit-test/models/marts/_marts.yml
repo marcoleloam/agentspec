@@ -1,0 +1,47 @@
+models:
+  - name: dim_customers
+    description: One row per customer with lifetime value and loyalty tier.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: customer_id
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+      - name: full_name
+        data_type: varchar
+      - name: order_count
+        data_type: integer
+      - name: lifetime_value
+        data_type: decimal(12, 2)
+      - name: tier
+        data_type: varchar
+
+unit_tests:
+  - name: dim_customers_tier_rules
+    description: Tier thresholds are inclusive and returned orders are excluded.
+    model: dim_customers
+    given:
+      - input: ref('stg_customers')
+        rows:
+          - {customer_id: 1, full_name: Gold Exact}
+          - {customer_id: 2, full_name: Silver Exact}
+          - {customer_id: 3, full_name: Just Below Silver}
+          - {customer_id: 4, full_name: No Orders}
+          - {customer_id: 5, full_name: Returned Only}
+      - input: ref('stg_orders')
+        rows:
+          - {order_id: 1, customer_id: 1, status: completed, amount: 600.00}
+          - {order_id: 2, customer_id: 1, status: completed, amount: 400.00}
+          - {order_id: 3, customer_id: 2, status: completed, amount: 250.00}
+          - {order_id: 4, customer_id: 3, status: completed, amount: 249.99}
+          - {order_id: 5, customer_id: 5, status: returned, amount: 5000.00}
+    expect:
+      rows:
+        - {customer_id: 1, order_count: 2, lifetime_value: 1000.00, tier: gold}
+        - {customer_id: 2, order_count: 1, lifetime_value: 250.00, tier: silver}
+        - {customer_id: 3, order_count: 1, lifetime_value: 249.99, tier: bronze}
+        - {customer_id: 4, order_count: 0, lifetime_value: 0, tier: bronze}
+        - {customer_id: 5, order_count: 0, lifetime_value: 0, tier: bronze}

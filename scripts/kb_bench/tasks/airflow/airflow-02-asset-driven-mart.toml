@@ -1,0 +1,55 @@
+id = "airflow-02-asset-driven-mart"
+domain = "airflow"
+stratum = "library"
+origin = "synthetic"
+authored_from = "Apache Airflow 3.1 docs: Asset definitions and asset-aware scheduling (airflow.sdk.Asset, task outlets, schedule on assets), Airflow 3 upgrade notes (Dataset renamed to Asset); not derived from .claude/kb"
+fixtures = "fixtures/airflow/airflow-02-asset-driven-mart"
+prompt = """
+Our cluster runs Apache Airflow 3.1. `dags/build_orders_mart.py` waits for
+`dags/ingest_orders.py` with a sensor that polls every few minutes: it wastes worker
+slots, and it breaks whenever the two DAGs' schedules drift apart.
+
+Change the two DAGs so the mart is driven by the data itself:
+
+- `build_orders_mart` must run whenever `ingest_orders` has successfully written new
+  raw orders to `s3://lake/raw/orders/` — no clock/cron schedule, no sensor or polling;
+- `ingest_orders` keeps its hourly schedule and must not trigger or reference the mart
+  DAG: other teams will subscribe to the same raw orders data later without touching it;
+- keep the dag_ids and the existing task ids (`extract_orders`, `write_raw_orders`,
+  `build_mart`); the mart's sensor task goes away;
+- keep each DAG file self-contained (no imports between DAG files or from helper
+  modules), and identify the raw orders data by the URI `s3://lake/raw/orders/`.
+
+Airflow is not installed here, so you cannot run it.
+"""
+
+[[evals]]
+name = "ingest_orders still scheduled and does not trigger the mart"
+cmd = ["python", "-m", "kb_bench.checks.airflow_ast", "dags/ingest_orders.py",
+       "--dag-id", "ingest_orders", "--require-schedule-kw", "--forbid", "schedule_interval",
+       "--forbid", "TriggerDagRunOperator", "--min-tasks", "2"]
+
+[[evals]]
+name = "ingest declares the raw orders Asset as a task outlet"
+cmd = ["python", "-m", "kb_bench.checks.py_ast", "dags/ingest_orders.py",
+       "--require-name", "Asset", "--require-name", "outlets",
+       "--forbid-import", "airflow.datasets", "--forbid-name", "Dataset",
+       "--require-string", '^s3://lake/raw/orders/?$']
+
+[[evals]]
+name = "build_orders_mart has no sensor"
+cmd = ["python", "-m", "kb_bench.checks.airflow_ast", "dags/build_orders_mart.py",
+       "--dag-id", "build_orders_mart", "--require-schedule-kw", "--forbid", "schedule_interval",
+       "--forbid", "ExternalTaskSensor", "--forbid", "ExternalTaskMarker"]
+
+[[evals]]
+name = "build_orders_mart is scheduled on the raw orders Asset"
+cmd = ["python", "-m", "kb_bench.checks.py_ast", "dags/build_orders_mart.py",
+       "--require-name", "Asset",
+       "--forbid-import", "airflow.datasets", "--forbid-name", "Dataset",
+       "--require-string", '^s3://lake/raw/orders/?$']
+
+[[evals]]
+name = "mart schedule is data-driven, not a clock"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/build_orders_mart.py",
+       '\bschedule\s*=\s*(?!None\b|["\x27]|timedelta\b|datetime\.timedelta\b|CronTriggerTimetable\b|CronDataIntervalTimetable\b|DeltaTriggerTimetable\b|DeltaDataIntervalTimetable\b|MultipleCronTriggerTimetable\b)\S']

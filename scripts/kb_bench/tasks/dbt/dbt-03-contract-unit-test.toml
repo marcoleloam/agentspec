@@ -1,0 +1,80 @@
+id = "dbt-03-contract-unit-test"
+domain = "dbt"
+stratum = "library"
+origin = "synthetic"
+authored_from = "dbt Core 1.8+ docs (unit_tests YAML: model/given/expect) and model contracts (contract.enforced, column data_type, constraints); not derived from .claude/kb"
+fixtures = "fixtures/dbt/dbt-03-contract-unit-test"
+prompt = """
+This is a dbt Core project (target: dbt Core 1.12 with the dbt-duckdb adapter;
+profile `bench`, already configured in ./profiles.yml). You cannot run dbt in
+this environment, so write the files carefully.
+
+The mart model `models/marts/dim_customers.sql` is consumed by the finance
+dashboards and its loyalty-tier logic keeps regressing. Harden it without
+changing its SQL:
+
+1. Guarantee its public shape: the build must fail if the model's output
+   columns or their data types ever drift from what is declared for
+   `customer_id`, `full_name`, `order_count`, `lifetime_value` and `tier`.
+   The declared types must match what the model currently produces. The
+   warehouse must also enforce `customer_id` as the table's primary key.
+2. Add a dbt unit test named `dim_customers_tier_rules` for `dim_customers`
+   that pins the tier rules using mocked input rows (not the seed data). It
+   must cover gold, silver and bronze outcomes, including a lifetime value of
+   exactly 1000 and exactly 250, a customer with no orders, and a customer
+   whose only orders were returned.
+
+Put the configuration in a YAML properties file under `models/marts/`.
+"""
+
+[[evals]]
+name = "project parses"
+cmd = ["dbt", "parse", "--project-dir", ".", "--profiles-dir", ".", "--no-partial-parse"]
+
+[[evals]]
+name = "dim_customers has an enforced contract with every column typed"
+cmd = ["python", "-c", '''
+import json, sys
+m = json.load(open("target/manifest.json"))
+node = next((n for n in m["nodes"].values()
+             if n["resource_type"] == "model" and n["name"] == "dim_customers"), None)
+if node is None:
+    sys.exit("FAIL: model dim_customers not found")
+problems = []
+if not (node["config"].get("contract") or {}).get("enforced"):
+    problems.append("contract is not enforced")
+cols = node.get("columns") or {}
+for col in ("customer_id", "full_name", "order_count", "lifetime_value", "tier"):
+    if not (cols.get(col) or {}).get("data_type"):
+        problems.append("column %s has no data_type" % col)
+for p in problems:
+    print("FAIL:", p)
+sys.exit(1 if problems else 0)
+''']
+
+[[evals]]
+name = "unit test dim_customers_tier_rules mocks both inputs and expects all tiers"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "target/manifest.json",
+       "--eq", "unit_tests.*.name=dim_customers_tier_rules",
+       "--eq", "unit_tests.*.model=dim_customers",
+       "--min-len", "unit_tests.*.given=2",
+       "--min-len", "unit_tests.*.expect.rows=4",
+       "--contains", "unit_tests.*.expect=gold",
+       "--contains", "unit_tests.*.expect=silver",
+       "--contains", "unit_tests.*.expect=bronze"]
+
+[[evals]]
+name = "dbt build passes (unit test green, contract accepted)"
+timeout_s = 240
+cmd = ["sh", "-c", '''dbt build --project-dir . --profiles-dir . > build.log 2>&1 || { tail -40 build.log; exit 1; }''']
+
+[[evals]]
+name = "warehouse enforces customer_id as primary key on dim_customers"
+cmd = ["python", "-c", '''
+import sys, duckdb
+con = duckdb.connect("bench.duckdb", read_only=True)
+rows = con.execute("select constraint_type, constraint_column_names from duckdb_constraints() "
+                   "where table_name = 'dim_customers'").fetchall()
+print("constraints:", rows)
+sys.exit(0 if ("PRIMARY KEY", ["customer_id"]) in [(t, list(c)) for t, c in rows] else 1)
+''']

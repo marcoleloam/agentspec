@@ -1,0 +1,4 @@
+order_number,customer_ref,order_date,order_total
+SO-1,C-001,2024-04-30,120.00
+SO-2,c-003,2024-04-30,80.00
+SO-3,C-004,2024-05-01,45.00

@@ -1,0 +1,62 @@
+id = "shadowtraffic-01-kafka-clickstream"
+domain = "shadowtraffic"
+stratum = "niche"
+origin = "synthetic"
+authored_from = "ShadowTraffic official docs (docs.shadowtraffic.io: Kafka connection, generators, weightedOneOf, normalDistribution, now, localConfigs); not derived from .claude/kb"
+prompt = """
+We need fake clickstream traffic for testing a new Kafka consumer. Write a
+ShadowTraffic configuration at `shadowtraffic/config.json`.
+
+Target system: a single local Kafka broker at `localhost:9092`; records are
+JSON-serialized (both key and value).
+
+Traffic to simulate — one stream of page-view events on the Kafka topic
+`page_views`:
+
+- The Kafka record key is the browsing session id, a random UUID.
+- The record value has these fields:
+  - `user_id`: a random UUID.
+  - `page`: one of `/home`, `/search`, `/product`, `/cart`, `/checkout`, picked with equal probability.
+  - `device`: `mobile` about 70% of the time, `desktop` about 25%, `tablet` about 5%.
+  - `dwell_time_seconds`: time spent on the page, bell-shaped around a mean of 45 seconds with a standard deviation of 15.
+  - `event_ts`: the emission time as epoch milliseconds.
+- Emit one event every 200 milliseconds (this generator only).
+
+Only produce the configuration file; ShadowTraffic is not installed here.
+"""
+
+[[evals]]
+name = "kafka connection with producer configs"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "connections.*.kind=kafka",
+       "--any-key", 'connections.*.producerConfigs=^bootstrap\.servers$']
+
+[[evals]]
+name = "generator targets page_views with a uuid key"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.topic=page_views",
+       "--contains", "generators.*.key=uuid",
+       "--has", "generators.*.value.user_id"]
+
+[[evals]]
+name = "device weighted choice, page uniform choice"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.value.device._gen=weightedOneOf",
+       "--eq", "generators.*.value.page._gen=oneOf"]
+
+[[evals]]
+name = "dwell time is normally distributed"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.value.dwell_time_seconds._gen=normalDistribution",
+       "--eq", "generators.*.value.dwell_time_seconds.mean=45",
+       "--eq", "generators.*.value.dwell_time_seconds.sd=15"]
+
+[[evals]]
+name = "event timestamp from now"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.value.event_ts._gen=now"]
+
+[[evals]]
+name = "throttled to 200ms"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "shadowtraffic/config.json",
+       '"throttleMs"\s*:\s*200\b']

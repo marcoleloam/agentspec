@@ -16,7 +16,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps spec-lint spec-judge spec-venvs
+.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps spec-lint spec-judge spec-venvs kb-bench kb-bench-setup kb-bench-validate kb-bench-smoke kb-bench-report kb-bench-teardown
 
 # ----------------------------------------------------------------------------
 # Help
@@ -93,6 +93,30 @@ spec-venvs: ## Create/refresh the tools/ virtualenvs (spec-linter + spec-judge)
 	@tools/spec-judge/.venv/bin/python -m pip install -q --upgrade pip
 	@tools/spec-judge/.venv/bin/python -m pip install -q -e 'tools/spec-linter' -e 'tools/spec-judge[dev]'
 	@echo "Done. Verify with: make spec-lint && make spec-judge"
+
+# ----------------------------------------------------------------------------
+# KB bench (KB_CONTEXT7_REFRESH) — KB vs Context7 on the Grok CLI
+# ----------------------------------------------------------------------------
+
+KB_BENCH := PYTHONPATH=scripts python3 -m kb_bench
+
+kb-bench-setup: ## KB bench — arm folders, eval venv, trust arms B/C (asks first; ARGS=--yes)
+	@$(KB_BENCH) setup $(ARGS)
+
+kb-bench-validate: ## KB bench — check every task discriminates (fails on fixtures, passes on solution)
+	@$(KB_BENCH) validate $(ARGS)
+
+kb-bench-smoke: ## KB bench — preflight: grok, trust, MCP per arm, sandbox canary, Context7 coverage
+	@$(KB_BENCH) smoke $(ARGS)
+
+kb-bench: ## KB bench — full run (ARGS="--dry-run" | "--stratum library" | "--arm B" | "--resume ID")
+	@$(KB_BENCH) run $(ARGS)
+
+kb-bench-report: ## KB bench — rebuild REPORT.md for the latest run (or RUN=<id>)
+	@$(KB_BENCH) report $(if $(RUN),--run $(RUN),)
+
+kb-bench-teardown: ## KB bench — remove the trust entries setup added (backup kept)
+	@$(KB_BENCH) teardown
 
 # ----------------------------------------------------------------------------
 # Hygiene

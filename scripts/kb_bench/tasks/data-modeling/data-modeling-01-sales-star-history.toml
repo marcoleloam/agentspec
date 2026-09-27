@@ -1,0 +1,97 @@
+id = "data-modeling-01-sales-star-history"
+domain = "data-modeling"
+stratum = "conceptual"
+origin = "synthetic"
+authored_from = "Kimball dimensional modeling practice (declared grain, surrogate keys, type 2 history, unknown members, date dimension); author's own knowledge, not derived from .claude/kb"
+fixtures = "fixtures/data-modeling/data-modeling-01-sales-star-history"
+prompt = """
+We are building the sales mart for a small retailer in DuckDB. The source
+extracts are in `data/`:
+
+- `orders.csv` — one row per order line (order_id, line_no, order_date,
+  customer_id, product_code, quantity, unit_price).
+- `customers.csv` — the CRM feed. A row is appended every time the CRM sends a
+  customer record; a record takes effect on its `updated_at` date (inclusive).
+  The CRM sometimes re-sends a record that is identical to the previous one.
+- `products.csv` — the product catalogue.
+
+Write `sql/sales_mart.sql`: plain DuckDB SQL that runs top to bottom on an
+empty in-memory database from the workspace root, reading the sources with
+`read_csv('data/<file>.csv')`, and creates and loads these tables:
+
+- `dim_customer(customer_key, customer_id, customer_name, segment, valid_from, valid_to, is_current)`
+  — `is_current` is a BOOLEAN.
+- `dim_product(product_key, product_code, product_name, category)`
+- `dim_date(date_key, full_date, year, quarter, month)` — `date_key` is an
+  INTEGER in yyyymmdd form, `full_date` a DATE; it must cover every calendar
+  day of 2024.
+- `fact_sales(order_id, line_no, date_key, customer_key, product_key, quantity, sales_amount)`
+  — `sales_amount` = quantity * unit_price.
+
+Business requirements:
+
+1. Customers move between segments over time. The history of segment changes
+   must be preserved, and revenue by segment must reflect the segment the
+   customer belonged to on the order date — not the customer's segment today.
+2. Revenue in the mart must reconcile exactly with `orders.csv`. Some order
+   lines reference customers or products that are not (yet) in the reference
+   extracts; they must still be counted, and must report under segment
+   `'Unknown'` and category `'Unknown'` respectively.
+3. The BI tool joins every fact row to exactly one row of each dimension with a
+   plain equality join on the `*_key` columns
+   (`fact_sales.customer_key = dim_customer.customer_key`, and likewise for
+   product and date).
+
+You may run `python3` to inspect the data; the evaluation executes your SQL
+file in DuckDB and queries the resulting tables.
+"""
+
+[[evals]]
+name = "mart builds with the required tables and columns"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/sales_mart.sql",
+  "--assert", "select count(*) from information_schema.columns where lower(table_name || '.' || column_name) in ('dim_customer.customer_key','dim_customer.customer_id','dim_customer.customer_name','dim_customer.segment','dim_customer.valid_from','dim_customer.valid_to','dim_customer.is_current','dim_product.product_key','dim_product.product_code','dim_product.product_name','dim_product.category','dim_date.date_key','dim_date.full_date','dim_date.year','dim_date.quarter','dim_date.month','fact_sales.order_id','fact_sales.line_no','fact_sales.date_key','fact_sales.customer_key','fact_sales.product_key','fact_sales.quantity','fact_sales.sales_amount') == 23",
+]
+
+[[evals]]
+name = "fact grain is one row per order line and reconciles with the source"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/sales_mart.sql",
+  "--assert", "select count(*) from fact_sales == 15",
+  "--assert-empty", "select order_id, line_no from fact_sales group by all having count(*) > 1",
+  "--assert", "select cast(round(sum(sales_amount) * 100) as bigint) from fact_sales == 21175",
+  "--assert-empty", "select 1 from fact_sales f left join dim_customer c on c.customer_key = f.customer_key where c.customer_key is null",
+  "--assert-empty", "select 1 from fact_sales f left join dim_product p on p.product_key = f.product_key where p.product_key is null",
+  "--assert-empty", "select 1 from fact_sales f left join dim_date d on d.date_key = f.date_key where d.date_key is null",
+]
+
+[[evals]]
+name = "customer segment history kept as versions with exactly one current"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/sales_mart.sql",
+  "--assert-empty", "select customer_key from dim_customer group by 1 having count(*) > 1",
+  "--assert", "select string_agg(customer_id || ':' || n, ',' order by customer_id) from (select customer_id, count(*) as n from dim_customer where customer_id in ('C001','C002','C003','C004') group by 1) == C001:2,C002:1,C003:3,C004:1",
+  "--assert-empty", "select customer_id from dim_customer where customer_id in ('C001','C002','C003','C004') group by 1 having count(*) filter (where is_current) <> 1",
+  "--assert", "select segment from dim_customer where customer_id = 'C003' and is_current == Enterprise",
+  "--assert-empty", "select 1 from dim_customer a join dim_customer b on a.customer_id = b.customer_id and a.customer_key <> b.customer_key where a.customer_id in ('C001','C002','C003','C004') and a.valid_from < coalesce(b.valid_to, date '9999-12-31') and b.valid_from < coalesce(a.valid_to, date '9999-12-31')",
+]
+
+[[evals]]
+name = "revenue by segment reflects the segment at order date"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/sales_mart.sql",
+  "--assert", "select string_agg(segment || ':' || cents, ',' order by segment) from (select c.segment, cast(round(sum(f.sales_amount) * 100) as bigint) as cents from fact_sales f join dim_customer c on c.customer_key = f.customer_key group by 1) == Enterprise:725,Premium:8575,Standard:11325,Unknown:550",
+  "--assert", "select string_agg(f.order_id || ':' || c.segment, ',' order by f.order_id) from fact_sales f join dim_customer c on c.customer_key = f.customer_key where f.order_id in ('O1002','O1003','O1006','O1007','O1009') == O1002:Standard,O1003:Premium,O1006:Standard,O1007:Premium,O1009:Enterprise",
+]
+
+[[evals]]
+name = "unmatched customer and product references land in Unknown members"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/sales_mart.sql",
+  "--assert", "select string_agg(category || ':' || cents, ',' order by category) from (select p.category, cast(round(sum(f.sales_amount) * 100) as bigint) as cents from fact_sales f join dim_product p on p.product_key = f.product_key group by 1) == Books:5075,Hardware:15500,Unknown:600",
+  "--assert", "select c.segment from fact_sales f join dim_customer c on c.customer_key = f.customer_key where f.order_id = 'O1011' == Unknown",
+]
+
+[[evals]]
+name = "date dimension has one row per day of 2024"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/sales_mart.sql",
+  "--assert", "select count(*) from dim_date == 366",
+  "--assert-empty", "select date_key from dim_date group by 1 having count(*) > 1",
+  "--assert", "select min(date_key) || '-' || max(date_key) from dim_date == 20240101-20241231",
+  "--assert", "select cast(cast(full_date as date) as varchar) || '/' || quarter || '/' || month from dim_date where date_key = 20240229 == 2024-02-29/1/2",
+]

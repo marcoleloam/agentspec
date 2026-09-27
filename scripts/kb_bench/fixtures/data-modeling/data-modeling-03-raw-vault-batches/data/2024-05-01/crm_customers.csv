@@ -1,0 +1,4 @@
+customer_number,full_name,email,tier
+C-001,Ana Souza,ana@example.com,Silver
+" c-002 ",Bruno Lima,bruno@example.com,Gold
+C-003,Carla Dias,carla@example.com,Silver

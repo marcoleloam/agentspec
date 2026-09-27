@@ -1,0 +1,15 @@
+name: bench
+version: "1.0.0"
+config-version: 2
+profile: bench
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+models:
+  bench:
+    staging:
+      +materialized: view

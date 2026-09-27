@@ -1,0 +1,62 @@
+id = "microsoft-fabric-02-pipeline-foreach-copy"
+domain = "microsoft-fabric"
+stratum = "niche"
+origin = "synthetic"
+authored_from = "Microsoft Learn — Fabric Data Factory docs (pipeline parameters and expressions, ForEach activity, Copy activity with Lakehouse table destination, Notebook activity, Git integration item definitions); not derived from .claude/kb"
+fixtures = "fixtures/microsoft-fabric/microsoft-fabric-02-pipeline-foreach-copy"
+prompt = """
+Author a Microsoft Fabric Data Factory pipeline named `pl_load_sales_tables`
+as its Git-integration definition file at
+`pl_load_sales_tables.DataPipeline/pipeline-content.json`. All workspace,
+lakehouse, connection and notebook ids are in `README.md`.
+
+Required behaviour:
+
+- Pipeline parameters:
+  - `table_list` — an array of objects with keys `schema_name`, `table_name`
+    and `target_table`; default value: `dbo.orders -> orders` and
+    `dbo.customers -> customers`.
+  - `load_date` — a string.
+- For every entry of `table_list`, copy the whole source table from the Azure
+  SQL database `salesdb` into the lakehouse `lh_bronze` as a Delta table named
+  after `target_table`. Each run fully replaces the target table's contents.
+- At most 4 tables may be copied at the same time.
+- Only after all table copies have succeeded, run the Fabric notebook
+  `nb_build_silver`, passing the pipeline's `load_date` as the notebook
+  parameter `load_date`.
+
+Only produce the JSON definition; there is no Fabric workspace here.
+"""
+
+[[evals]]
+name = "parameters declared and a ForEach iterates table_list"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "pl_load_sales_tables.DataPipeline/pipeline-content.json",
+       "--has", "properties.parameters.table_list",
+       "--has", "properties.parameters.load_date",
+       "--eq", "properties.activities.*.type=ForEach",
+       "--contains", "properties.activities.*.typeProperties.items=pipeline().parameters.table_list"]
+
+[[evals]]
+name = "ForEach runs at most 4 iterations in parallel"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "pl_load_sales_tables.DataPipeline/pipeline-content.json",
+       "--eq", "properties.activities.*.typeProperties.batchCount=4"]
+
+[[evals]]
+name = "Copy activity inside the ForEach is driven by the current item"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "pl_load_sales_tables.DataPipeline/pipeline-content.json",
+       "--eq", "properties.activities.*.typeProperties.activities.*.type=Copy",
+       "--contains", "properties.activities.*.typeProperties.activities.*.typeProperties=item()",
+       "--contains", "properties.activities.*.typeProperties.activities.*.typeProperties.sink=target_table"]
+
+[[evals]]
+name = "Copy sink is a Lakehouse table that is overwritten"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "pl_load_sales_tables.DataPipeline/pipeline-content.json",
+       "--contains", "properties.activities.*.typeProperties.activities.*.typeProperties.sink=Lakehouse",
+       "--contains", "properties.activities.*.typeProperties.activities.*.typeProperties.sink=Overwrite"]
+
+[[evals]]
+name = "Fabric notebook activity runs on success with load_date"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "pl_load_sales_tables.DataPipeline/pipeline-content.json",
+       "--eq", "properties.activities.*.type=TridentNotebook",
+       "--eq", "properties.activities.*.dependsOn.*.dependencyConditions.*=Succeeded",
+       "--contains", "properties.activities.*.typeProperties.parameters.load_date=pipeline().parameters.load_date"]

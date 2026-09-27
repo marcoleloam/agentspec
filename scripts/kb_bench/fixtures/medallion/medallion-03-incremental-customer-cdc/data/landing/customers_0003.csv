@@ -1,0 +1,5 @@
+customer_id,email,full_name,country,op,changed_at
+1,ana@example.com,Ana Lima,br,U,2026-09-01 12:00:00
+7,gus@example.com,Gus Hahn,us,I,2026-09-03 08:00:00
+5,,,,D,2026-09-03 09:00:00
+4,dee@example.com,Dee Costa,PT,U,2026-09-01 18:00:00

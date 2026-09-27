@@ -1,0 +1,49 @@
+# kb_bench default configuration. Override the home with KB_BENCH_HOME and the
+# model with KB_BENCH_MODEL. See DESIGN_KB_CONTEXT7_REFRESH.md (Padrão 5).
+
+[run]
+model = "grok-4.7"
+max_turns = 30
+attempt_timeout_s = 1800       # 600 s cut live grok-4.7 attempts mid-work (dbt-01, 2026-09-24)
+max_retries = 2
+seed = 20260923
+budget_usd = 60.0          # abort the run when the CLI-reported cost passes this (raised from 30: full run projects ~US$ 39, 2026-09-24)
+retry_feedback_bytes = 4096
+eval_timeout_s = 120
+
+[paths]
+home = "~/.kb-bench"       # must live outside any git repository
+repo_kb = ".claude/kb"
+
+[sandbox]
+profile = "kbbench"
+# Resolved at runtime (the sandbox takes literal paths, not globs). The repo
+# root and the canary folder are always added.
+deny_globs = [
+  "~/.grok/installed-plugins/*/kb",
+  "~/.claude/plugins/cache/agentspec",
+  "~/projetos/framework/agentspec",
+  "~/.superconductor/worktrees/agentspec",
+  "~/.super.engineering/worktrees/agentspec",
+]
+
+[context7]
+package = "@upstash/context7-mcp"
+startup_timeout_s = 90
+disabled_global_mcps = ["wiki-sysmanager", "azure-devops-oauth", "azure-devops-sebrae"]
+
+[arms.A]
+kb = "repo"
+context7 = false
+
+[arms.B]
+kb = "none"
+context7 = true
+
+[arms.C]
+kb = "lean"
+context7 = true
+
+[arms.D]
+kb = "none"
+context7 = false

@@ -1,0 +1,60 @@
+{
+  "generators": [
+    {
+      "connection": "pg",
+      "table": "devices",
+      "row": {
+        "device_id": { "_gen": "uuid" },
+        "site": { "_gen": "oneOf", "choices": ["plant-a", "plant-b", "plant-c"] }
+      },
+      "localConfigs": {
+        "maxEvents": 50
+      }
+    },
+    {
+      "connection": "kafka",
+      "topic": "sensor_readings",
+      "key": {
+        "_gen": "lookup",
+        "table": "devices",
+        "path": ["row", "device_id"]
+      },
+      "value": {
+        "temperature_c": {
+          "_gen": "normalDistribution",
+          "mean": 21.5,
+          "sd": 3,
+          "decimals": 1
+        },
+        "reading_ts": {
+          "_gen": "formatDateTime",
+          "ms": { "_gen": "now" },
+          "format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+        }
+      },
+      "localConfigs": {
+        "throttleMs": 500
+      }
+    }
+  ],
+  "connections": {
+    "pg": {
+      "kind": "postgres",
+      "connectionConfigs": {
+        "host": "localhost",
+        "port": 5432,
+        "username": "postgres",
+        "password": "postgres",
+        "db": "plant"
+      }
+    },
+    "kafka": {
+      "kind": "kafka",
+      "producerConfigs": {
+        "bootstrap.servers": "localhost:9092",
+        "key.serializer": "io.shadowtraffic.kafka.serdes.JsonSerializer",
+        "value.serializer": "io.shadowtraffic.kafka.serdes.JsonSerializer"
+      }
+    }
+  }
+}

@@ -1,0 +1,108 @@
+id = "medallion-03-incremental-customer-cdc"
+domain = "medallion"
+stratum = "conceptual"
+origin = "synthetic"
+authored_from = "Widely accepted medallion (bronze/silver/gold) practice for incremental CDC ingestion (append-only bronze, idempotent loads, current-state silver) and the DuckDB 1.x SQL docs (SET VARIABLE/getvariable, read_csv); not derived from .claude/kb"
+fixtures = "fixtures/medallion/medallion-03-incremental-customer-cdc"
+prompt = """
+Build an incremental medallion (bronze -> silver -> gold) pipeline in plain
+DuckDB SQL for the customers table of our CRM.
+
+The CRM publishes change-data-capture (CDC) extracts as CSV files in
+`data/landing/` (`customers_NNNN.csv`). Each row is one change: `op` is `I`
+(insert), `U` (update) or `D` (delete; delete rows carry only the key), and
+`changed_at` is when the change happened in the CRM. The CRM occasionally
+replays history, so an extract can contain changes that are older than changes
+already received, and the same extract is sometimes landed twice.
+
+For every landed file the orchestrator uses one long-lived DuckDB session
+(tables from earlier batches are still there) and runs, from the workspace
+root: first `config/batch_N.sql`, which sets the DuckDB variable
+`landing_file` to that file's relative path, then these three scripts in
+order:
+
+1. `sql/bronze/bronze_customers.sql` loads that file - and only that file -
+   into table `bronze_customers`: the append-only raw history of every change
+   ever received, with the source columns (`customer_id`, `email`,
+   `full_name`, `country`, `op`, `changed_at`) plus `_source_file` (the file
+   the change came from) and `_ingested_at` (when it was loaded). Landing the
+   same file again must not add anything.
+2. `sql/silver/silver_customers.sql` maintains table `silver_customers` with
+   columns `customer_id` (integer), `email`, `full_name`, `country_code`
+   (upper-case ISO 3166 alpha-2) and `updated_at` (timestamp): every customer
+   that exists in the CRM right now, as of that customer's most recent change.
+3. `sql/gold/gold_customers_by_country.sql` maintains table
+   `gold_customers_by_country` with columns `country_code` and
+   `customer_count` (current customers per country) for BI.
+
+Silver and gold are sometimes skipped for a batch (only bronze runs); their
+next run must catch up.
+"""
+
+[[evals]]
+name = "bronze loads only the newly landed file, with lineage"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "config/batch_1.sql", "sql/bronze/bronze_customers.sql",
+       "--assert", "select count(*) from bronze_customers == 5",
+       "--assert", "select count(distinct _source_file) from bronze_customers == 1",
+       "--assert", "select count(*) from bronze_customers where _source_file is null or _ingested_at is null == 0"]
+
+[[evals]]
+name = "bronze is append-only and ignores a re-landed file"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "config/batch_1.sql", "sql/bronze/bronze_customers.sql", "config/batch_2.sql", "sql/bronze/bronze_customers.sql", "config/batch_2.sql", "sql/bronze/bronze_customers.sql", "config/batch_3.sql", "sql/bronze/bronze_customers.sql", "config/batch_3.sql", "sql/bronze/bronze_customers.sql",
+       "--assert", "select count(*) from bronze_customers == 13",
+       "--assert", "select count(distinct _source_file) from bronze_customers == 3",
+       "--assert", "select count(*) from bronze_customers where upper(trim(cast(op as varchar))) = 'D' == 2"]
+
+[[evals]]
+name = "silver is the current state after incremental runs, replays and deletes"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "config/batch_1.sql", "sql/bronze/bronze_customers.sql", "sql/silver/silver_customers.sql", "sql/gold/gold_customers_by_country.sql",
+       "config/batch_2.sql", "sql/bronze/bronze_customers.sql", "sql/silver/silver_customers.sql", "sql/gold/gold_customers_by_country.sql",
+       "config/batch_2.sql", "sql/bronze/bronze_customers.sql", "sql/silver/silver_customers.sql", "sql/gold/gold_customers_by_country.sql",
+       "config/batch_3.sql", "sql/bronze/bronze_customers.sql", "sql/silver/silver_customers.sql", "sql/gold/gold_customers_by_country.sql",
+       "--assert", "select count(*) from silver_customers == 5",
+       "--assert-empty", "select customer_id from silver_customers group by customer_id having count(*) > 1",
+       "--assert", "select count(*) from silver_customers where cast(customer_id as varchar) in ('4', '5') == 0",
+       "--assert", "select country_code from silver_customers where cast(customer_id as varchar) = '1' == PT",
+       "--assert", "select email from silver_customers where cast(customer_id as varchar) = '2' == bob@newmail.com",
+       "--assert", "select string_agg(distinct country_code, ',' order by country_code) from silver_customers == BR,CA,PT,US",
+       "--assert", "select bool_and(typeof(updated_at) like 'TIMESTAMP%' and typeof(customer_id) in ('TINYINT', 'SMALLINT', 'INTEGER', 'BIGINT', 'HUGEINT', 'UINTEGER', 'UBIGINT')) from silver_customers == True"]
+
+[[evals]]
+name = "gold catches up after a skipped run and counts current customers"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "config/batch_1.sql", "sql/bronze/bronze_customers.sql", "sql/silver/silver_customers.sql", "sql/gold/gold_customers_by_country.sql",
+       "config/batch_2.sql", "sql/bronze/bronze_customers.sql",
+       "config/batch_3.sql", "sql/bronze/bronze_customers.sql", "sql/silver/silver_customers.sql", "sql/gold/gold_customers_by_country.sql",
+       "--assert", "select count(*) from gold_customers_by_country == 4",
+       "--assert", "select customer_count from gold_customers_by_country where country_code = 'BR' == 2",
+       "--assert", "select customer_count from gold_customers_by_country where country_code = 'PT' == 1",
+       "--assert", "select customer_count from gold_customers_by_country where country_code = 'CA' == 1",
+       "--assert", "select sum(customer_count) from gold_customers_by_country == 5"]
+
+[[evals]]
+name = "gold is an explicit-column mart built from silver only"
+cmd = ["python", "-c", '''
+import sys, sqlglot
+from sqlglot import exp
+bad, silver = [], False
+for path in sys.argv[1:]:
+    for stmt in sqlglot.parse(open(path, encoding="utf-8").read(), read="duckdb"):
+        if stmt is None:
+            continue
+        for sel in stmt.find_all(exp.Select):
+            if any(isinstance(e, exp.Star) or (isinstance(e, exp.Column) and isinstance(e.this, exp.Star)) for e in sel.expressions):
+                bad.append(f"{path}: SELECT * in a gold projection")
+        for tbl in stmt.find_all(exp.Table):
+            src = tbl.this.sql("duckdb").lower() if isinstance(tbl.this, exp.Func) else ""
+            if tbl.name.lower().startswith("bronze") or tbl.db.lower() == "bronze" or src.startswith("read_"):
+                bad.append(f"{path}: gold reads {tbl.sql('duckdb')} instead of silver")
+            silver = silver or tbl.name.lower().startswith("silver") or tbl.db.lower() == "silver"
+if not silver:
+    bad.append("gold does not read any silver table")
+for b in bad:
+    print("FAIL:", b)
+sys.exit(1 if bad else 0)
+''', "sql/gold/gold_customers_by_country.sql"]

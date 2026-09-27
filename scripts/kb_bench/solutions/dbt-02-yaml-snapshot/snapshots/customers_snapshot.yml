@@ -1,0 +1,10 @@
+snapshots:
+  - name: customers_snapshot
+    description: SCD2 history of CRM customers.
+    relation: source('crm', 'customers')
+    config:
+      strategy: timestamp
+      unique_key: customer_id
+      updated_at: updated_at
+      dbt_valid_to_current: "cast('9999-12-31' as timestamp)"
+      hard_deletes: invalidate

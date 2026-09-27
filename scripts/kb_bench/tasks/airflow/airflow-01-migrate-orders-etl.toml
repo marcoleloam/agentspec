@@ -1,0 +1,59 @@
+id = "airflow-01-migrate-orders-etl"
+domain = "airflow"
+stratum = "library"
+origin = "synthetic"
+authored_from = "Apache Airflow 3.0/3.1 upgrade guide and release notes (removed imports, removed context variables, catchup_by_default and create_cron_data_intervals default changes), Timetables docs; not derived from .claude/kb"
+fixtures = "fixtures/airflow/airflow-01-migrate-orders-etl"
+prompt = """
+We are upgrading our orchestration cluster from Airflow 2.x to Apache Airflow 3.1.
+`dags/orders_etl.py` was written for Airflow 2.x and must be updated so that it
+imports and runs on Airflow 3.1 **without changing its behaviour**:
+
+- same dag_id `orders_etl`, same task ids (`start`, `extract_orders`, `load_orders`)
+  and the same dependencies;
+- same daily schedule, same start date, same retries;
+- for any given run, the extract function and the load command must receive exactly
+  the same dates they received on Airflow 2 (downstream reconciliation depends on it);
+- the team relies on intervals missed during a scheduler outage being run
+  automatically once the scheduler is back — that must keep working after the upgrade.
+
+Constraints: only edit files under `dags/`; do not rely on changes to `airflow.cfg`
+or environment variables. Airflow is not installed here, so you cannot run it.
+"""
+
+[[evals]]
+name = "orders_etl DAG uses schedule= with 3 tasks"
+cmd = ["python", "-m", "kb_bench.checks.airflow_ast", "dags/orders_etl.py",
+       "--dag-id", "orders_etl", "--require-schedule-kw", "--forbid", "schedule_interval",
+       "--min-tasks", "3"]
+
+[[evals]]
+name = "no import paths removed in Airflow 3"
+cmd = ["python", "-m", "kb_bench.checks.py_ast", "dags/orders_etl.py",
+       "--forbid-import", "airflow.operators.bash_operator",
+       "--forbid-import", "airflow.operators.python_operator",
+       "--forbid-import", "airflow.operators.dummy",
+       "--forbid-import", "airflow.operators.dummy_operator",
+       "--forbid-import", "airflow.utils.dates",
+       "--forbid-name", "DummyOperator"]
+
+[[evals]]
+name = "no context variables removed in Airflow 3 (execution_date, next_ds, ...)"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/orders_etl.py",
+       '(\{\{[^}]*|\[\s*["\x27]|\.get\(\s*["\x27]|def \w+\([^)]*)\b(?:(?:next_|prev_)?execution_date(?:_success)?|(?:next|prev|tomorrow|yesterday)_ds(?:_nodash)?)\b',
+       "--absent"]
+
+[[evals]]
+name = "catchup kept on explicitly (Airflow 3 default is False)"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/orders_etl.py",
+       'catchup\s*=\s*True']
+
+[[evals]]
+name = "daily schedule keeps Airflow 2 data-interval semantics"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/orders_etl.py",
+       'CronDataIntervalTimetable|CronTriggerTimetable\([^)]*\binterval\s*=']
+
+[[evals]]
+name = "task ids preserved"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/orders_etl.py",
+       '(?s)\A(?=.*\bstart\b)(?=.*\bextract_orders\b)(?=.*\bload_orders\b)']

@@ -1,0 +1,120 @@
+id = "medallion-01-orders-layered-pipeline"
+domain = "medallion"
+stratum = "conceptual"
+origin = "synthetic"
+authored_from = "Widely accepted medallion (bronze/silver/gold) lakehouse practice and the DuckDB 1.x SQL docs (read_csv, QUALIFY, try_cast); not derived from .claude/kb"
+fixtures = "fixtures/medallion/medallion-01-orders-layered-pipeline"
+prompt = """
+Build the first medallion (bronze -> silver -> gold) pipeline for the orders
+domain, in plain DuckDB SQL.
+
+The order system drops a daily CSV extract into `data/landing/`
+(`orders_YYYY-MM-DD.csv`; two have landed so far). The source stamps every
+change to an order with `updated_at`. The extracts are not clean: an order
+shows up in several extracts as it changes, records get re-delivered, older
+versions of an order can arrive late inside a newer extract, and some records
+are malformed.
+
+Deliver three scripts. They run in this order, in one DuckDB session, from the
+workspace root (read files with relative paths such as `data/landing/...`):
+
+1. `sql/bronze/bronze_orders.sql` creates table `bronze_orders`: the raw history
+   of every landed record, with the source columns (`order_id`, `customer_id`,
+   `order_date`, `status`, `amount`, `updated_at`) plus `_source_file` (the
+   extract the record came from) and `_ingested_at` (when it was loaded).
+2. `sql/silver/silver_orders.sql` creates table `silver_orders` with columns
+   `order_id` (integer), `customer_id`, `order_date` (date), `status`, `amount`
+   (numeric) and `updated_at` (timestamp): the current, trustworthy version of
+   each order. An order's most recent change wins. `status` must be one of
+   `pending`, `shipped`, `delivered`, `cancelled`. A record is invalid when it
+   has no `order_id`, its `order_date` is not a real calendar date, or its
+   `amount` is not a non-negative number. Invalid records must never reach
+   `silver_orders`, but they must be kept for audit in table
+   `silver_orders_rejected` (the source columns plus a non-empty
+   `reject_reason`).
+3. `sql/gold/gold_daily_revenue.sql` creates table `gold_daily_revenue` with
+   columns `order_date`, `order_count` and `revenue` for the BI dashboard: per
+   order date, the number and the total amount of current orders that are not
+   cancelled.
+
+The orchestrator may re-run all three scripts at any time (for example after a
+failure), and the tables must come out the same.
+"""
+
+[[evals]]
+name = "bronze keeps every landed record as delivered, with lineage"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_orders.sql", "sql/silver/silver_orders.sql", "sql/gold/gold_daily_revenue.sql",
+       "--assert", "select count(*) from bronze_orders == 19",
+       "--assert", "select count(distinct _source_file) from bronze_orders == 2",
+       "--assert", "select count(*) from bronze_orders where _source_file is null or _ingested_at is null == 0",
+       "--assert", "select count(*) from bronze_orders where cast(amount as varchar) = 'N/A' == 1",
+       "--assert", "select count(*) from bronze_orders where cast(order_date as varchar) = '2026-02-30' == 1"]
+
+[[evals]]
+name = "silver holds one current, typed, standardised row per order"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_orders.sql", "sql/silver/silver_orders.sql", "sql/gold/gold_daily_revenue.sql",
+       "--assert", "select count(*) from silver_orders == 7",
+       "--assert-empty", "select order_id from silver_orders group by order_id having count(*) > 1",
+       "--assert", "select status from silver_orders where cast(order_id as varchar) = '1002' == delivered",
+       "--assert", "select status from silver_orders where cast(order_id as varchar) = '1006' == shipped",
+       "--assert", "select cast(round(amount * 100) as bigint) from silver_orders where cast(order_id as varchar) = '1006' == 99999",
+       "--assert", "select cast(round(amount * 100) as bigint) from silver_orders where cast(order_id as varchar) = '1005' == 6500",
+       "--assert", "select string_agg(distinct status, ',' order by status) from silver_orders == cancelled,delivered,pending,shipped",
+       "--assert", "select bool_and(typeof(order_date) = 'DATE' and typeof(updated_at) like 'TIMESTAMP%' and (typeof(amount) like 'DECIMAL%' or typeof(amount) in ('DOUBLE', 'FLOAT')) and typeof(order_id) in ('TINYINT', 'SMALLINT', 'INTEGER', 'BIGINT', 'HUGEINT', 'UINTEGER', 'UBIGINT')) from silver_orders == True"]
+
+[[evals]]
+name = "invalid records are quarantined with a reason, not silently dropped"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_orders.sql", "sql/silver/silver_orders.sql", "sql/gold/gold_daily_revenue.sql",
+       "--assert", "select count(*) from silver_orders_rejected == 5",
+       "--assert", "select count(*) from silver_orders_rejected where reject_reason is null or trim(cast(reject_reason as varchar)) = '' == 0",
+       "--assert", "select count(*) from silver_orders_rejected where cast(order_id as varchar) in ('1007', '1008', '1009', '1012') == 4",
+       "--assert", "select count(*) from silver_orders where cast(order_id as varchar) in ('1007', '1008', '1009', '1012') == 0"]
+
+[[evals]]
+name = "gold daily revenue follows the business rules"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_orders.sql", "sql/silver/silver_orders.sql", "sql/gold/gold_daily_revenue.sql",
+       "--assert", "select count(*) from gold_daily_revenue == 3",
+       "--assert", "select cast(round(revenue * 100) as bigint) from gold_daily_revenue where cast(order_date as date) = DATE '2026-08-31' == 20050",
+       "--assert", "select cast(round(revenue * 100) as bigint) from gold_daily_revenue where cast(order_date as date) = DATE '2026-09-01' == 126499",
+       "--assert", "select cast(round(revenue * 100) as bigint) from gold_daily_revenue where cast(order_date as date) = DATE '2026-09-02' == 7525",
+       "--assert", "select order_count from gold_daily_revenue where cast(order_date as date) = DATE '2026-09-01' == 3",
+       "--assert", "select sum(order_count) from gold_daily_revenue == 6"]
+
+[[evals]]
+name = "re-running the whole pipeline is idempotent"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql",
+       "sql/bronze/bronze_orders.sql", "sql/silver/silver_orders.sql", "sql/gold/gold_daily_revenue.sql",
+       "sql/bronze/bronze_orders.sql", "sql/silver/silver_orders.sql", "sql/gold/gold_daily_revenue.sql",
+       "--assert", "select count(*) from bronze_orders == 19",
+       "--assert", "select count(*) from silver_orders == 7",
+       "--assert", "select count(*) from silver_orders_rejected == 5",
+       "--assert-empty", "select order_date from gold_daily_revenue group by order_date having count(*) > 1"]
+
+[[evals]]
+name = "gold is an explicit-column mart built from silver only"
+cmd = ["python", "-c", '''
+import sys, sqlglot
+from sqlglot import exp
+bad, silver = [], False
+for path in sys.argv[1:]:
+    for stmt in sqlglot.parse(open(path, encoding="utf-8").read(), read="duckdb"):
+        if stmt is None:
+            continue
+        for sel in stmt.find_all(exp.Select):
+            if any(isinstance(e, exp.Star) or (isinstance(e, exp.Column) and isinstance(e.this, exp.Star)) for e in sel.expressions):
+                bad.append(f"{path}: SELECT * in a gold projection")
+        for tbl in stmt.find_all(exp.Table):
+            src = tbl.this.sql("duckdb").lower() if isinstance(tbl.this, exp.Func) else ""
+            if tbl.name.lower().startswith("bronze") or tbl.db.lower() == "bronze" or src.startswith("read_"):
+                bad.append(f"{path}: gold reads {tbl.sql('duckdb')} instead of silver")
+            silver = silver or tbl.name.lower().startswith("silver") or tbl.db.lower() == "silver"
+if not silver:
+    bad.append("gold does not read any silver table")
+for b in bad:
+    print("FAIL:", b)
+sys.exit(1 if bad else 0)
+''', "sql/gold/gold_daily_revenue.sql"]

@@ -1,0 +1,43 @@
+{
+  "generators": [
+    {
+      "topic": "page_views",
+      "key": { "_gen": "uuid" },
+      "value": {
+        "user_id": { "_gen": "uuid" },
+        "page": {
+          "_gen": "oneOf",
+          "choices": ["/home", "/search", "/product", "/cart", "/checkout"]
+        },
+        "device": {
+          "_gen": "weightedOneOf",
+          "choices": [
+            { "weight": 70, "value": "mobile" },
+            { "weight": 25, "value": "desktop" },
+            { "weight": 5, "value": "tablet" }
+          ]
+        },
+        "dwell_time_seconds": {
+          "_gen": "normalDistribution",
+          "mean": 45,
+          "sd": 15,
+          "decimals": 1
+        },
+        "event_ts": { "_gen": "now" }
+      },
+      "localConfigs": {
+        "throttleMs": 200
+      }
+    }
+  ],
+  "connections": {
+    "localKafka": {
+      "kind": "kafka",
+      "producerConfigs": {
+        "bootstrap.servers": "localhost:9092",
+        "key.serializer": "io.shadowtraffic.kafka.serdes.JsonSerializer",
+        "value.serializer": "io.shadowtraffic.kafka.serdes.JsonSerializer"
+      }
+    }
+  }
+}

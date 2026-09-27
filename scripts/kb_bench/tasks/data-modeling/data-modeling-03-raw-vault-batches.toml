@@ -1,0 +1,94 @@
+id = "data-modeling-03-raw-vault-batches"
+domain = "data-modeling"
+stratum = "conceptual"
+origin = "synthetic"
+authored_from = "Data Vault 2.0 practice (hubs/links/satellites, hash keys on normalised business keys, hash-diff change detection, insert-only restartable loads); author's own knowledge, not derived from .claude/kb"
+fixtures = "fixtures/data-modeling/data-modeling-03-raw-vault-batches"
+prompt = """
+Our integration layer is a raw Data Vault in DuckDB. Two daily batches have
+arrived under `data/<batch date>/`:
+
+- `data/2024-05-01/` and `data/2024-05-02/`, each with
+  - `crm_customers.csv` — full snapshot of the CRM customer list
+    (customer_number, full_name, email, tier), sent every day whether or not
+    anything changed;
+  - `shop_orders.csv` — orders from the web shop (order_number, customer_ref,
+    order_date, order_total). The shop may re-deliver orders it already sent,
+    and it can reference customers that the CRM does not know yet.
+
+Business keys (customer numbers, order numbers) are case-insensitive and are
+not always clean in the extracts.
+
+Write three plain DuckDB SQL files that read the extracts with
+`read_csv('data/<batch date>/<file>.csv')` (paths relative to the workspace
+root):
+
+- `sql/raw_vault_ddl.sql` — creates the (empty) vault tables:
+  - `hub_customer(customer_hk, customer_bk, load_dts, record_source)`
+  - `hub_order(order_hk, order_bk, load_dts, record_source)`
+  - `link_customer_order(customer_order_hk, customer_hk, order_hk, load_dts, record_source)`
+  - `sat_customer_crm(customer_hk, load_dts, hash_diff, full_name, email, tier, record_source)`
+- `sql/load_2024_05_01.sql` and `sql/load_2024_05_02.sql` — each loads its own
+  batch into the vault.
+
+Requirements:
+
+1. The files are executed in this order on one in-memory database:
+   DDL, then the 2024-05-01 batch, then the 2024-05-02 batch.
+2. `*_hk` columns are hash keys, stored as hexadecimal strings, derived from
+   the business keys. `load_dts` is a TIMESTAMP equal to the batch date at
+   00:00:00 for everything a batch inserts. `record_source` names the source
+   system of the row.
+3. The vault is insert-only (never UPDATE or DELETE), and must keep the full
+   history of the CRM attributes as delivered, plus which customer placed
+   each order.
+4. Operations re-run a batch after a failure: executing a batch file again
+   must leave the vault unchanged.
+
+You may run `python3` to inspect the data; the evaluation executes your SQL
+files in DuckDB and queries the resulting tables.
+"""
+
+[[evals]]
+name = "vault builds with the required tables and columns"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/raw_vault_ddl.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_02.sql",
+  "--assert", "select count(*) from information_schema.columns where lower(table_name || '.' || column_name) in ('hub_customer.customer_hk','hub_customer.customer_bk','hub_customer.load_dts','hub_customer.record_source','hub_order.order_hk','hub_order.order_bk','hub_order.load_dts','hub_order.record_source','link_customer_order.customer_order_hk','link_customer_order.customer_hk','link_customer_order.order_hk','link_customer_order.load_dts','link_customer_order.record_source','sat_customer_crm.customer_hk','sat_customer_crm.load_dts','sat_customer_crm.hash_diff','sat_customer_crm.full_name','sat_customer_crm.email','sat_customer_crm.tier','sat_customer_crm.record_source') == 20",
+]
+
+[[evals]]
+name = "hubs hold each business key once with its first load"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/raw_vault_ddl.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_02.sql",
+  "--assert", "select string_agg(upper(trim(customer_bk)) || '@' || strftime(load_dts, '%m-%d'), ',' order by upper(trim(customer_bk))) from hub_customer == C-001@05-01,C-002@05-01,C-003@05-01,C-004@05-01,C-005@05-02",
+  "--assert", "select string_agg(upper(trim(order_bk)) || '@' || strftime(load_dts, '%m-%d'), ',' order by upper(trim(order_bk))) from hub_order == SO-1@05-01,SO-2@05-01,SO-3@05-01,SO-4@05-02,SO-5@05-02",
+  "--assert-empty", "select 1 from hub_customer where record_source is null union all select 1 from hub_order where record_source is null",
+]
+
+[[evals]]
+name = "hash keys are derived from the normalised business key"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/raw_vault_ddl.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_02.sql",
+  "--assert-empty", "select customer_bk from hub_customer where lower(customer_hk) not in (md5(upper(trim(customer_bk))), sha1(upper(trim(customer_bk))), sha256(upper(trim(customer_bk))))",
+  "--assert-empty", "select order_bk from hub_order where lower(order_hk) not in (md5(upper(trim(order_bk))), sha1(upper(trim(order_bk))), sha256(upper(trim(order_bk))))",
+  "--assert-empty", "select customer_hk from hub_customer group by 1 having count(*) > 1 union all select order_hk from hub_order group by 1 having count(*) > 1",
+]
+
+[[evals]]
+name = "satellite stores a new version only when attributes change"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/raw_vault_ddl.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_02.sql",
+  "--assert", "select string_agg(upper(trim(h.customer_bk)) || '@' || strftime(s.load_dts, '%m-%d') || ':' || trim(s.tier) || ':' || trim(s.email), ',' order by upper(trim(h.customer_bk)), s.load_dts) from sat_customer_crm s join hub_customer h on h.customer_hk = s.customer_hk == C-001@05-01:Silver:ana@example.com,C-001@05-02:Gold:ana@example.com,C-002@05-01:Gold:bruno@example.com,C-003@05-01:Silver:carla@example.com,C-003@05-02:Silver:carla.dias@example.com,C-005@05-02:Bronze:eva@example.com",
+  "--assert-empty", "select 1 from sat_customer_crm s where s.hash_diff is null or s.record_source is null or not exists (select 1 from hub_customer h where h.customer_hk = s.customer_hk)",
+]
+
+[[evals]]
+name = "link relates each order to its customer exactly once"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/raw_vault_ddl.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_02.sql",
+  "--assert", "select string_agg(upper(trim(o.order_bk)) || '>' || upper(trim(c.customer_bk)), ',' order by upper(trim(o.order_bk))) from link_customer_order l join hub_order o on o.order_hk = l.order_hk join hub_customer c on c.customer_hk = l.customer_hk == SO-1>C-001,SO-2>C-003,SO-3>C-004,SO-4>C-002,SO-5>C-001",
+  "--assert", "select count(*) || ':' || count(distinct customer_order_hk) from link_customer_order == 5:5",
+  "--assert-empty", "select 1 from link_customer_order where customer_order_hk is null or load_dts is null or record_source is null",
+]
+
+[[evals]]
+name = "re-running a batch leaves the vault unchanged"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/raw_vault_ddl.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_01.sql", "sql/load_2024_05_02.sql", "sql/load_2024_05_02.sql",
+  "--assert", "select (select count(*) from hub_customer) || ',' || (select count(*) from hub_order) || ',' || (select count(*) from link_customer_order) || ',' || (select count(*) from sat_customer_crm) == 5,5,5,6",
+  "--assert", "select string_agg(upper(trim(customer_bk)) || '@' || strftime(load_dts, '%m-%d'), ',' order by upper(trim(customer_bk))) from hub_customer == C-001@05-01,C-002@05-01,C-003@05-01,C-004@05-01,C-005@05-02",
+]

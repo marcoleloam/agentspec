@@ -1,0 +1,5 @@
+customer_id,email,full_name,country,op,changed_at
+2,bob@newmail.com,Bob Stone,CA,U,2026-09-02 09:00:00
+4,,,,D,2026-09-02 09:30:00
+6,fay@example.com,Fay Nunes,BR,I,2026-09-02 10:00:00
+1,ana@example.com,Ana Lima,PT,U,2026-09-02 11:00:00

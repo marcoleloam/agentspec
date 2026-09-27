@@ -1,0 +1,69 @@
+id = "shadowtraffic-03-iot-cross-connection"
+domain = "shadowtraffic"
+stratum = "niche"
+origin = "synthetic"
+authored_from = "ShadowTraffic official docs (docs.shadowtraffic.io: multiple connections with per-generator connection, Kafka topic/key/value vs Postgres table/row, lookup, normalDistribution, formatDateTime, now, localConfigs); not derived from .claude/kb"
+prompt = """
+Simulate an IoT plant for an end-to-end test that spans two systems. Write a
+single ShadowTraffic configuration at `shadowtraffic/config.json` that feeds
+both systems at once.
+
+Target systems:
+- Postgres at `localhost:5432`, database `plant`, user `postgres`, password `postgres`.
+- Kafka broker at `localhost:9092`, JSON-serialized keys and values.
+
+Data to generate (exactly these two generators):
+
+1. Device registry — Postgres table `devices`, exactly 50 rows then stop:
+   - `device_id`: a random UUID.
+   - `site`: one of `plant-a`, `plant-b`, `plant-c`.
+2. Sensor readings — Kafka topic `sensor_readings`, continuous, one reading
+   every 500 milliseconds:
+   - The Kafka record key is the `device_id` of a device that was actually
+     generated into the `devices` table (no readings from unknown devices).
+   - The record value has:
+     - `temperature_c`: bell-shaped around 21.5 with a standard deviation of 3, rounded to 1 decimal place.
+     - `reading_ts`: the emission time rendered as an ISO-8601 date-time string (not epoch millis).
+
+Only produce the configuration file; ShadowTraffic is not installed here.
+"""
+
+[[evals]]
+name = "both kafka and postgres connections declared"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "connections.*.kind=kafka",
+       "--eq", "connections.*.kind=postgres",
+       "--has", "connections.*.connectionConfigs.host",
+       "--any-key", 'connections.*.producerConfigs=^bootstrap\.servers$']
+
+[[evals]]
+name = "each generator names its connection"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--has", "generators.0.connection",
+       "--has", "generators.1.connection",
+       "--eq", "generators.*.table=devices",
+       "--eq", "generators.*.topic=sensor_readings",
+       "--has", "generators.*.row.device_id"]
+
+[[evals]]
+name = "reading key looks up generated devices"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "shadowtraffic/config.json",
+       '"_gen"\s*:\s*"lookup"[^{}]*"table"\s*:\s*"devices"|"table"\s*:\s*"devices"[^{}]*"_gen"\s*:\s*"lookup"']
+
+[[evals]]
+name = "temperature normal with 1 decimal"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.value.temperature_c._gen=normalDistribution",
+       "--eq", "generators.*.value.temperature_c.decimals=1"]
+
+[[evals]]
+name = "reading timestamp formatted from now"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.value.reading_ts._gen=formatDateTime",
+       "--contains", "generators.*.value.reading_ts=now"]
+
+[[evals]]
+name = "devices capped at 50 and readings throttled"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.localConfigs.maxEvents=50",
+       "--eq", "generators.*.localConfigs.throttleMs=500"]

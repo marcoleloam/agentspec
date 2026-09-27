@@ -1,0 +1,63 @@
+id = "microsoft-fabric-01-lakehouse-upsert"
+domain = "microsoft-fabric"
+stratum = "niche"
+origin = "synthetic"
+authored_from = "Microsoft Learn — Fabric docs (Lakehouse Files vs Tables, load data with notebooks, Delta Lake merge, Delta table optimization and V-Order, Spark resource profiles, NotebookUtils); not derived from .claude/kb"
+fixtures = "fixtures/microsoft-fabric/microsoft-fabric-01-lakehouse-upsert"
+prompt = """
+We need the silver load for CRM customers in Microsoft Fabric. See `README.md`
+and the sample export in `sample_data/`.
+
+Write a Fabric PySpark notebook at `notebooks/nb_silver_customers.ipynb`
+(the notebook's default lakehouse is `lh_crm`) that:
+
+1. Reads every CSV file currently sitting in the lakehouse's file area under
+   `landing/customers/` (files have a header row).
+2. Keeps only the most recent row per `customer_id` (by `updated_at`).
+3. Upserts the result into the lakehouse table `silver_customers`, keyed on
+   `customer_id`: existing customers are updated, new customers inserted. On
+   the very first run the table does not exist yet and must be created. The
+   table must appear under the lakehouse's Tables in the explorer and be
+   queryable from the SQL analytics endpoint.
+4. `silver_customers` feeds a Power BI Direct Lake semantic model, while the
+   workspace runs with Fabric's write-optimized Spark defaults — make sure this
+   notebook writes the table with Fabric's read-optimized Parquet layout.
+5. After a successful load, moves the processed CSV files to
+   `archive/customers/` in the same file area so they are not picked up again.
+
+There is no Spark or Fabric runtime here, so the notebook cannot be executed;
+it must be correct for the current Fabric Spark runtime as written.
+"""
+
+[[evals]]
+name = "notebook uses the Files landing/archive folders, keys on customer_id, targets silver_customers"
+cmd = ["python", "-m", "kb_bench.checks.py_ast", "notebooks/nb_silver_customers.ipynb",
+       "--require-string", "Files/landing/customers",
+       "--require-string", "archive/customers",
+       "--require-string", "customer_id",
+       "--require-string", "silver_customers"]
+
+[[evals]]
+name = "upsert uses a Delta MERGE with insert of unmatched rows"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "notebooks/nb_silver_customers.ipynb",
+       '(whenNotMatchedInsert|WHEN\s+NOT\s+MATCHED)', "--ignore-case"]
+
+[[evals]]
+name = "table is not written as a Delta folder under Files"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "notebooks/nb_silver_customers.ipynb",
+       '(\.save|forPath|\.parquet)\([^)]*Files/', "--absent"]
+
+[[evals]]
+name = "V-Order is enabled for the write"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "notebooks/nb_silver_customers.ipynb",
+       '(vorder|readHeavyForPBI)', "--ignore-case"]
+
+[[evals]]
+name = "processed files are moved to the archive folder"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "notebooks/nb_silver_customers.ipynb",
+       '((notebookutils|mssparkutils)\.fs\.(mv|cp)\(|shutil\.(move|copy\w*)\(|os\.(rename|replace)\()']
+
+[[evals]]
+name = "uses notebookutils, not the legacy mssparkutils name"
+cmd = ["python", "-m", "kb_bench.checks.py_ast", "notebooks/nb_silver_customers.ipynb",
+       "--forbid-name", "mssparkutils"]

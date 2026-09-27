@@ -1,0 +1,14 @@
+sources:
+  - name: crm
+    description: >
+      CRM export. In this local project the CRM table is loaded by the seed
+      `raw_customers`, so the source points at that table.
+    schema: main
+    tables:
+      - name: customers
+        identifier: raw_customers
+        columns:
+          - name: customer_id
+          - name: email
+          - name: tier
+          - name: updated_at

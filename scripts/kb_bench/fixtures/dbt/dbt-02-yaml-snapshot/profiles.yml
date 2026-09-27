@@ -1,0 +1,7 @@
+bench:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: bench.duckdb
+      threads: 1

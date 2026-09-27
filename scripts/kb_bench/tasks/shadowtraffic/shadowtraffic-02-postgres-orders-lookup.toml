@@ -1,0 +1,61 @@
+id = "shadowtraffic-02-postgres-orders-lookup"
+domain = "shadowtraffic"
+stratum = "niche"
+origin = "synthetic"
+authored_from = "ShadowTraffic official docs (docs.shadowtraffic.io: Postgres connection, table/row generators, sequentialInteger, lookup, uniformDistribution, decimals, weightedOneOf, localConfigs.maxEvents); not derived from .claude/kb"
+prompt = """
+Seed a local Postgres database with synthetic e-commerce data using
+ShadowTraffic. Write the configuration at `shadowtraffic/config.json`.
+
+Target system: Postgres at `localhost:5432`, database `shop`, user `postgres`,
+password `postgres`.
+
+Data to generate:
+
+1. Table `customers` — exactly 100 rows, then this generator stops:
+   - `customer_id`: consecutive integers starting at 1.
+   - `full_name`: a realistic fake person name.
+   - `tier`: one of `bronze`, `silver`, `gold`, with equal probability.
+2. Table `orders` — keeps generating continuously:
+   - `order_id`: a random UUID.
+   - `customer_id`: must always be the id of a customer that was actually
+     generated into `customers` (referential integrity — no orphan orders).
+   - `amount`: uniformly distributed between 5 and 500, rounded to 2 decimal places.
+   - `status`: `completed` about 80% of the time, `pending` about 15%, `cancelled` about 5%.
+
+Only produce the configuration file; ShadowTraffic is not installed here.
+"""
+
+[[evals]]
+name = "postgres connection with connection configs"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "connections.*.kind=postgres",
+       "--has", "connections.*.connectionConfigs.host"]
+
+[[evals]]
+name = "table generators with row payloads"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.table=customers",
+       "--eq", "generators.*.table=orders",
+       "--has", "generators.*.row.order_id",
+       "--has", "generators.*.row.full_name"]
+
+[[evals]]
+name = "customer ids are sequential and capped at 100"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.row.customer_id._gen=sequentialInteger",
+       "--eq", "generators.*.localConfigs.maxEvents=100"]
+
+[[evals]]
+name = "orders reference customers via lookup"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.row.customer_id._gen=lookup",
+       "--eq", "generators.*.row.customer_id.table=customers",
+       "--contains", "generators.*.row.customer_id.path=customer_id"]
+
+[[evals]]
+name = "amount uniform with 2 decimals and weighted status"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "shadowtraffic/config.json",
+       "--eq", "generators.*.row.amount._gen=uniformDistribution",
+       "--eq", "generators.*.row.amount.decimals=2",
+       "--eq", "generators.*.row.status._gen=weightedOneOf"]

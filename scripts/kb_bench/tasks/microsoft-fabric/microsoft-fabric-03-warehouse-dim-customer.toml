@@ -1,0 +1,56 @@
+id = "microsoft-fabric-03-warehouse-dim-customer"
+domain = "microsoft-fabric"
+stratum = "niche"
+origin = "synthetic"
+authored_from = "Microsoft Learn — Fabric Data Warehouse docs (data types, primary/foreign/unique keys, T-SQL surface area, cross-database queries with the SQL analytics endpoint); not derived from .claude/kb"
+fixtures = "fixtures/microsoft-fabric/microsoft-fabric-03-warehouse-dim-customer"
+prompt = """
+Build the gold customer dimension in our Microsoft Fabric Warehouse `wh_gold`.
+The environment is described in `README.md`.
+
+Write one T-SQL script at `warehouse/dim_customer.sql` that runs unmodified in
+the Fabric Warehouse (it may be re-run to rebuild the dimension) and:
+
+1. Creates the table `dbo.dim_customer` with columns `customer_key` (a BIGINT
+   surrogate key), `customer_id`, `customer_name`, `email`, `country_code` and
+   `loaded_at` (the load timestamp; microsecond precision is enough).
+2. Declares `customer_key` as the table's primary key, so the query optimizer
+   and Power BI modelling tools know it is unique. Our load process guarantees
+   uniqueness itself.
+3. Populates the table directly from the staging table `stg_customers` of the
+   lakehouse `lh_bronze` in the same workspace — without copying the data
+   through a pipeline or any other tool first.
+4. Analysts filter this dimension on `customer_id` constantly; if the
+   Warehouse offers something you should add for that, add it, otherwise
+   leave it out.
+
+There is no Fabric workspace here; only the script is needed.
+"""
+
+[[evals]]
+name = "valid T-SQL that creates dim_customer with loaded_at"
+cmd = ["python", "-m", "kb_bench.checks.sql_check", "warehouse/dim_customer.sql",
+       "--dialect", "tsql", "--require-create",
+       "--require-table", "dim_customer",
+       "--require-column", "loaded_at",
+       "--require-column", "customer_key"]
+
+[[evals]]
+name = "primary key declared NONCLUSTERED NOT ENFORCED"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "warehouse/dim_customer.sql",
+       'PRIMARY\s+KEY\s+NONCLUSTERED\b[^;]*?NOT\s+ENFORCED', "--ignore-case"]
+
+[[evals]]
+name = "no legacy datetime or smalldatetime type"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "warehouse/dim_customer.sql",
+       '\b(small)?datetime\b', "--ignore-case", "--absent"]
+
+[[evals]]
+name = "no index DDL (unsupported in Fabric Warehouse)"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "warehouse/dim_customer.sql",
+       'CREATE\s+(UNIQUE\s+)?((NON)?CLUSTERED\s+)?(COLUMNSTORE\s+)?INDEX\b', "--ignore-case", "--absent"]
+
+[[evals]]
+name = "reads the lakehouse table with a cross-database three-part name"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "warehouse/dim_customer.sql",
+       '\[?lh_bronze\]?\s*\.\s*\[?dbo\]?\s*\.\s*\[?stg_customers\]?', "--ignore-case"]

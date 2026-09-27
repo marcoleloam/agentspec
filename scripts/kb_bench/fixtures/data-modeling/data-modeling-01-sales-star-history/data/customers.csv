@@ -1,0 +1,9 @@
+customer_id,customer_name,segment,updated_at
+C003,Carla Dias,Premium,2024-02-01
+C001,Ana Souza,Standard,2023-06-01
+C002,Bruno Lima,Premium,2023-07-15
+C004,Diego Alves,Standard,2023-09-05
+C001,Ana Souza,Premium,2024-03-15
+C003,Carla Dias,Standard,2023-08-20
+C002,Bruno Lima,Premium,2024-04-01
+C003,Carla Dias,Enterprise,2024-06-10

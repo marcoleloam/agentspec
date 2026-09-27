@@ -1,0 +1,77 @@
+id = "dbt-01-incremental-orders"
+domain = "dbt"
+stratum = "library"
+origin = "synthetic"
+authored_from = "dbt Core 1.10-1.12 docs (incremental models: unique_key, is_incremental(), {{ this }}; generic test `arguments:` property and DeprecationsSummary); not derived from .claude/kb"
+fixtures = "fixtures/dbt/dbt-01-incremental-orders"
+prompt = """
+This is a dbt Core project (target: dbt Core 1.12 with the dbt-duckdb adapter;
+profile `bench`, already configured in ./profiles.yml). You cannot run dbt in
+this environment, so write the files carefully.
+
+The seed `raw_orders` (staged as `stg_orders`) is the order service's daily
+export. It is a rolling window: it only contains order rows created or changed
+in the last 3 days, and an order can appear again later with a newer
+`updated_at` when its status or amount changes.
+
+Build the mart model `fct_orders` in `models/marts/fct_orders.sql`:
+
+- Exactly one row per `order_id`, holding the latest known version of the order
+  (columns: order_id, customer_id, status, amount, updated_at).
+- It must keep every order it has ever seen, even after the order drops out of
+  the 3-day export window, and apply later changes to existing orders in place.
+- Scheduled runs must only process export rows newer than what the table
+  already holds; the table must not be rebuilt from scratch on every run.
+- Declare `unique` and `not_null` data tests on `fct_orders.order_id` in a YAML
+  properties file under `models/marts/`.
+
+The whole project must parse on dbt Core 1.12 with zero deprecation warnings —
+fix any deprecated syntax already present in the project.
+"""
+
+[[evals]]
+name = "project parses"
+cmd = ["dbt", "parse", "--project-dir", ".", "--profiles-dir", ".", "--no-partial-parse"]
+
+[[evals]]
+name = "no deprecation warnings on dbt 1.12"
+cmd = ["dbt", "parse", "--project-dir", ".", "--profiles-dir", ".", "--no-partial-parse",
+       "--warn-error-options", '{"error": ["DeprecationsSummary"]}']
+
+[[evals]]
+name = "fct_orders is incremental keyed on order_id with a unique test"
+cmd = ["python", "-m", "kb_bench.checks.dbt_manifest", "target/manifest.json",
+       "--model", "fct_orders", "--materialized", "incremental", "--unique-key", "order_id",
+       "--column-test", "order_id:unique", "--column-test", "order_id:not_null",
+       "--depends-on", "stg_orders"]
+
+[[evals]]
+name = "incremental filter reads the existing table via is_incremental() and this"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "models/marts/fct_orders.sql",
+       '(?s)is_incremental\(\s*\).*?\{\{\s*this\s*\}\}']
+
+[[evals]]
+name = "two daily runs succeed (dbt build day 1, new export, dbt build day 2)"
+timeout_s = 240
+cmd = ["sh", "-c", '''set -e
+dbt build --project-dir . --profiles-dir . > day1.log 2>&1 || { tail -40 day1.log; exit 1; }
+printf 'order_id,customer_id,status,amount,updated_at\n2,101,completed,35.00,2024-06-03 10:00:00\n3,102,shipped,78.25,2024-06-02 11:15:00\n4,100,returned,15.99,2024-06-03 12:00:00\n5,103,placed,52.10,2024-06-03 13:30:00\n' > seeds/raw_orders.csv
+dbt build --project-dir . --profiles-dir . > day2.log 2>&1 || { tail -40 day2.log; exit 1; }''']
+
+[[evals]]
+name = "after day 2 fct_orders keeps dropped orders, applies updates, has no duplicates"
+cmd = ["python", "-c", '''
+import sys, duckdb
+con = duckdb.connect("bench.duckdb", read_only=True)
+got = con.execute("""
+    select count(*), count(distinct order_id),
+           max(case when order_id = 1 then status end),
+           max(case when order_id = 2 then status end),
+           max(case when order_id = 4 then status end),
+           count(*) filter (where order_id = 5)
+    from fct_orders
+""").fetchone()
+want = (5, 5, "completed", "completed", "returned", 1)
+print("got", got, "want", want)
+sys.exit(0 if got == want else 1)
+''']

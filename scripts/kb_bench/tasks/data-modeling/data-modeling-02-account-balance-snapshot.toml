@@ -1,0 +1,81 @@
+id = "data-modeling-02-account-balance-snapshot"
+domain = "data-modeling"
+stratum = "conceptual"
+origin = "synthetic"
+authored_from = "Kimball dimensional modeling practice (transaction vs periodic snapshot facts, additive vs semi-additive measures); author's own knowledge, not derived from .claude/kb"
+fixtures = "fixtures/data-modeling/data-modeling-02-account-balance-snapshot"
+prompt = """
+A bank wants a small account mart in DuckDB for Q1 2024 (2024-01-01 to
+2024-03-31). The source extracts are in `data/`:
+
+- `accounts.csv` — account_id, branch, opened_date, opening_balance.
+  `opening_balance` is the balance at the start of 2024-01-01 for accounts
+  opened before 2024, and the balance on the opening day (before any
+  transaction) for accounts opened later.
+- `transactions.csv` — txn_id, account_id, txn_ts (timestamp), amount
+  (positive = deposit, negative = withdrawal).
+
+Write `sql/account_mart.sql`: plain DuckDB SQL that runs top to bottom on an
+empty in-memory database from the workspace root, reading the sources with
+`read_csv('data/<file>.csv')`, and creates and loads:
+
+- `dim_account(account_key, account_id, branch, opened_date)`
+- `dim_date(date_key, full_date, year, month)` — `date_key` is an INTEGER in
+  yyyymmdd form, `full_date` a DATE; cover every calendar day of 2024.
+- `fact_transaction(txn_id, date_key, account_key, amount)`
+- `fact_account_daily_balance(date_key, account_key, balance)` — the risk team
+  needs each account's end-of-day balance for every day of Q1 2024 on which
+  the account is open.
+- `rpt_branch_month(branch, month_start, month_end_balance, avg_daily_balance, net_flow, txn_count)`
+  (table or view) — one row per branch per month of Q1 2024, `month_start`
+  being the first day of the month as a DATE:
+  - `month_end_balance`: the total money held by the branch's accounts at the
+    end of the last day of the month;
+  - `avg_daily_balance`: the average, over the calendar days of the month, of
+    the branch's total end-of-day balance;
+  - `net_flow`: the net amount of the month's transactions at the branch;
+  - `txn_count`: the number of transactions in the month at the branch.
+
+Join facts to dimensions by equality on the `*_key` columns. You may run
+`python3` to inspect the data; the evaluation executes your SQL file in DuckDB
+and queries the resulting tables.
+"""
+
+[[evals]]
+name = "mart builds with the required tables and columns"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/account_mart.sql",
+  "--assert", "select count(*) from information_schema.columns where lower(table_name || '.' || column_name) in ('dim_account.account_key','dim_account.account_id','dim_account.branch','dim_account.opened_date','dim_date.date_key','dim_date.full_date','dim_date.year','dim_date.month','fact_transaction.txn_id','fact_transaction.date_key','fact_transaction.account_key','fact_transaction.amount','fact_account_daily_balance.date_key','fact_account_daily_balance.account_key','fact_account_daily_balance.balance','rpt_branch_month.branch','rpt_branch_month.month_start','rpt_branch_month.month_end_balance','rpt_branch_month.avg_daily_balance','rpt_branch_month.net_flow','rpt_branch_month.txn_count') == 21",
+]
+
+[[evals]]
+name = "daily balance snapshot has one row per account per open day"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/account_mart.sql",
+  "--assert", "select count(*) from fact_account_daily_balance == 233",
+  "--assert-empty", "select account_key, date_key from fact_account_daily_balance group by all having count(*) > 1",
+  "--assert", "select string_agg(a.account_id || ':' || x.n || ':' || x.first_day, ',' order by a.account_id) from (select account_key, count(*) as n, min(date_key) as first_day from fact_account_daily_balance group by 1) x join dim_account a on a.account_key = x.account_key == A1:91:20240101,A2:51:20240210,A3:91:20240101",
+]
+
+[[evals]]
+name = "balances are carried forward on days without activity"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/account_mart.sql",
+  "--assert", "select string_agg(a.account_id || '@' || strftime(d.full_date, '%m-%d') || ':' || cast(round(b.balance * 100) as bigint), ',' order by a.account_id, d.full_date) from fact_account_daily_balance b join dim_account a on a.account_key = b.account_key join dim_date d on d.date_key = b.date_key where d.full_date in (date '2024-01-04', date '2024-01-31', date '2024-02-10', date '2024-03-20', date '2024-03-31') == A1@01-04:100000,A1@01-31:105000,A1@02-10:105000,A1@03-20:110000,A1@03-31:112500,A2@02-10:30000,A2@03-20:20000,A2@03-31:20000,A3@01-04:250000,A3@01-31:220000,A3@02-10:320000,A3@03-20:320000,A3@03-31:320000",
+]
+
+[[evals]]
+name = "month-end balance is a point in time, not a sum over days"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/account_mart.sql",
+  "--assert", "select string_agg(branch || '/' || strftime(month_start, '%Y-%m') || ':' || cast(round(month_end_balance * 100) as bigint), ',' order by branch, month_start) from rpt_branch_month == North/2024-01:105000,North/2024-02:140000,North/2024-03:132500,South/2024-01:220000,South/2024-02:320000,South/2024-03:320000",
+]
+
+[[evals]]
+name = "average daily balance averages branch totals over the days of the month"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/account_mart.sql",
+  "--assert", "select string_agg(branch || '/' || strftime(month_start, '%Y-%m') || ':' || cast(round(avg_daily_balance * 100) as bigint), ',' order by branch, month_start) from rpt_branch_month == North/2024-01:116935,North/2024-02:127414,North/2024-03:131371,South/2024-01:233548,South/2024-02:320000,South/2024-03:320000",
+]
+
+[[evals]]
+name = "transaction flows are summed within the month"
+cmd = ["python", "-m", "kb_bench.checks.duckdb_sql", "sql/account_mart.sql",
+  "--assert", "select count(*) || ':' || cast(round(sum(amount) * 100) as bigint) from fact_transaction == 9:102500",
+  "--assert", "select string_agg(branch || '/' || strftime(month_start, '%Y-%m') || ':' || cast(round(coalesce(net_flow, 0) * 100) as bigint) || '#' || coalesce(txn_count, 0), ',' order by branch, month_start) from rpt_branch_month == North/2024-01:5000#2,North/2024-02:35000#2,North/2024-03:-7500#2,South/2024-01:-30000#2,South/2024-02:100000#1,South/2024-03:0#0",
+]

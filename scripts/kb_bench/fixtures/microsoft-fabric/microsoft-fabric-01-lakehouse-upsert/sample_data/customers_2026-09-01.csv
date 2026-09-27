@@ -1,0 +1,5 @@
+customer_id,customer_name,email,country_code,updated_at
+C001,Ana Souza,ana@example.com,BR,2026-09-01T08:15:00Z
+C002,John Smith,john@example.com,US,2026-09-01T09:02:11Z
+C001,Ana Souza,ana.souza@example.com,BR,2026-09-01T17:40:03Z
+C003,Lena Weber,lena@example.com,DE,2026-09-01T11:27:45Z

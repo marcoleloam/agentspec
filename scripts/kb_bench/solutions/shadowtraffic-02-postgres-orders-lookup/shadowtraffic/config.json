@@ -1,0 +1,51 @@
+{
+  "generators": [
+    {
+      "table": "customers",
+      "row": {
+        "customer_id": { "_gen": "sequentialInteger", "startingFrom": 1 },
+        "full_name": { "_gen": "string", "expr": "#{Name.fullName}" },
+        "tier": { "_gen": "oneOf", "choices": ["bronze", "silver", "gold"] }
+      },
+      "localConfigs": {
+        "maxEvents": 100
+      }
+    },
+    {
+      "table": "orders",
+      "row": {
+        "order_id": { "_gen": "uuid" },
+        "customer_id": {
+          "_gen": "lookup",
+          "table": "customers",
+          "path": ["row", "customer_id"]
+        },
+        "amount": {
+          "_gen": "uniformDistribution",
+          "bounds": [5, 500],
+          "decimals": 2
+        },
+        "status": {
+          "_gen": "weightedOneOf",
+          "choices": [
+            { "weight": 80, "value": "completed" },
+            { "weight": 15, "value": "pending" },
+            { "weight": 5, "value": "cancelled" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "pg": {
+      "kind": "postgres",
+      "connectionConfigs": {
+        "host": "localhost",
+        "port": 5432,
+        "username": "postgres",
+        "password": "postgres",
+        "db": "shop"
+      }
+    }
+  }
+}

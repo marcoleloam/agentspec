@@ -1,0 +1,4 @@
+customer_id,email,tier,updated_at
+1,ana@example.com,bronze,2024-06-01 08:00:00
+2,bruno@example.com,silver,2024-06-01 09:00:00
+3,carla@example.com,gold,2024-06-01 10:00:00

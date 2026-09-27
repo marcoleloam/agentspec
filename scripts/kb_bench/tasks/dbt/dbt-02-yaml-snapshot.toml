@@ -1,0 +1,99 @@
+id = "dbt-02-yaml-snapshot"
+domain = "dbt"
+stratum = "library"
+origin = "synthetic"
+authored_from = "dbt Core 1.9+ docs (snapshots configured in YAML: relation, strategy, unique_key, updated_at, dbt_valid_to_current, hard_deletes); not derived from .claude/kb"
+fixtures = "fixtures/dbt/dbt-02-yaml-snapshot"
+prompt = """
+This is a dbt Core project (target: dbt Core 1.12 with the dbt-duckdb adapter;
+profile `bench`, already configured in ./profiles.yml). You cannot run dbt in
+this environment, so write the files carefully.
+
+Customer support needs the full history of every CRM customer's tier. The CRM
+table is declared as the source `crm.customers` (locally it is loaded by the
+seed `raw_customers`); the CRM stamps `updated_at` on every change to a row.
+
+Add a type-2 history (SCD2) of `crm.customers` as the dbt snapshot
+`customers_snapshot`, defined in `snapshots/customers_snapshot.yml` using the
+current dbt Core 1.9+ snapshot configuration style — a legacy Jinja
+`{% snapshot %}` block is not acceptable.
+
+- One history row per version of each customer, keyed by `customer_id`;
+  detect new versions from the CRM's `updated_at` timestamp.
+- The currently valid row of each customer must have `dbt_valid_to` equal to
+  9999-12-31 (not NULL), so BI tools can join with BETWEEN.
+- When a customer is deleted from the CRM, its current history row must be
+  closed out (given a real `dbt_valid_to`) — do not add extra marker rows or
+  columns for deletions.
+"""
+
+[[evals]]
+name = "project parses"
+cmd = ["dbt", "parse", "--project-dir", ".", "--profiles-dir", ".", "--no-partial-parse"]
+
+[[evals]]
+name = "customers_snapshot exists in the manifest"
+cmd = ["python", "-m", "kb_bench.checks.dbt_manifest", "target/manifest.json",
+       "--has-snapshot", "customers_snapshot"]
+
+[[evals]]
+name = "snapshot is YAML-defined on crm.customers with timestamp strategy"
+cmd = ["python", "-c", '''
+import json, sys
+m = json.load(open("target/manifest.json"))
+snaps = [n for n in m["nodes"].values()
+         if n["resource_type"] == "snapshot" and n["name"] == "customers_snapshot"]
+if not snaps:
+    sys.exit("FAIL: snapshot customers_snapshot not found")
+n, c = snaps[0], snaps[0]["config"]
+uk = c.get("unique_key")
+uk = [uk] if isinstance(uk, str) else list(uk or [])
+problems = []
+if not n["original_file_path"].endswith((".yml", ".yaml")):
+    problems.append("defined in %s, expected a YAML file" % n["original_file_path"])
+if c.get("strategy") != "timestamp":
+    problems.append("strategy=%r, expected timestamp" % c.get("strategy"))
+if uk != ["customer_id"]:
+    problems.append("unique_key=%r, expected customer_id" % c.get("unique_key"))
+if c.get("updated_at") != "updated_at":
+    problems.append("updated_at=%r, expected updated_at" % c.get("updated_at"))
+if "source.bench.crm.customers" not in n["depends_on"]["nodes"]:
+    problems.append("does not select from source crm.customers: %r" % n["depends_on"]["nodes"])
+for p in problems:
+    print("FAIL:", p)
+sys.exit(1 if problems else 0)
+''']
+
+[[evals]]
+name = "deletions handled with the dbt 1.9+ hard_deletes config"
+cmd = ["python", "-m", "kb_bench.checks.json_check", "target/manifest.json",
+       "--eq", "nodes.*.config.hard_deletes=invalidate"]
+
+[[evals]]
+name = "two snapshot runs succeed (day 1, CRM changes, day 2)"
+timeout_s = 240
+cmd = ["sh", "-c", '''set -e
+{ dbt seed --project-dir . --profiles-dir . && dbt snapshot --project-dir . --profiles-dir . ; } > day1.log 2>&1 || { tail -40 day1.log; exit 1; }
+printf 'customer_id,email,tier,updated_at\n1,ana@example.com,silver,2024-06-05 12:00:00\n2,bruno@example.com,silver,2024-06-01 09:00:00\n4,davi@example.com,bronze,2024-06-05 14:00:00\n' > seeds/raw_customers.csv
+{ dbt seed --project-dir . --profiles-dir . && dbt snapshot --project-dir . --profiles-dir . ; } > day2.log 2>&1 || { tail -40 day2.log; exit 1; }''']
+
+[[evals]]
+name = "history rows: change versioned, open rows end 9999-12-31, deleted customer closed"
+cmd = ["python", "-c", '''
+import sys, duckdb
+con = duckdb.connect("bench.duckdb", read_only=True)
+loc = con.execute("select table_schema from information_schema.tables "
+                  "where table_name = 'customers_snapshot'").fetchone()
+if loc is None:
+    sys.exit("FAIL: table customers_snapshot not found in bench.duckdb")
+rows = con.execute(
+    'select customer_id, tier, cast(cast(dbt_valid_to as date) as varchar) '
+    'from "%s".customers_snapshot order by customer_id, dbt_valid_from' % loc[0]).fetchall()
+got = [(cid, tier, "closed" if cid == 3 and to not in (None, "9999-12-31") else to)
+       for cid, tier, to in rows]
+want = [(1, "bronze", "2024-06-05"), (1, "silver", "9999-12-31"), (2, "silver", "9999-12-31"),
+        (3, "gold", "closed"), (4, "bronze", "9999-12-31")]
+print("got ", got)
+print("want", want)
+sys.exit(0 if got == want else 1)
+''']

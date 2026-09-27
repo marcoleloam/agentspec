@@ -1,0 +1,51 @@
+id = "airflow-03-dynamic-mapping-sales"
+domain = "airflow"
+stratum = "library"
+origin = "synthetic"
+authored_from = "Apache Airflow 3.1 docs: Dynamic Task Mapping (partial/expand), TaskFlow API (airflow.sdk), task concurrency parameters, DAG scheduling with cron; not derived from .claude/kb"
+fixtures = "fixtures/airflow/airflow-03-dynamic-mapping-sales"
+prompt = """
+Create `dags/regional_sales.py` for Apache Airflow 3.1 with dag_id `regional_sales`,
+running every day at 06:00 UTC.
+
+Regional teams drop CSV files into `data/landing/`. How many files arrive changes from
+day to day and is only known when the run starts. The DAG needs these tasks:
+
+- `list_region_files` — finds the files for the run, using
+  `include/sales_io.py: list_landing_files()`;
+- `process_file` — loads one file into the table `sales_raw`, using
+  `include/sales_io.py: load_file(path, table)`. Every file must get its own task
+  instance, so a single bad file can be retried or cleared on its own and the UI shows
+  one entry per file;
+- `summarize` — receives the row counts returned for all files and logs the total.
+
+To protect the warehouse, at most 4 `process_file` instances may run at the same time.
+The DAG file must not read the landing folder while the scheduler parses it.
+Airflow is not installed here, so you cannot run it.
+"""
+
+[[evals]]
+name = "regional_sales DAG uses schedule= with 3 tasks"
+cmd = ["python", "-m", "kb_bench.checks.airflow_ast", "dags/regional_sales.py",
+       "--dag-id", "regional_sales", "--require-schedule-kw", "--forbid", "schedule_interval",
+       "--forbid", "days_ago", "--min-tasks", "3"]
+
+[[evals]]
+name = "runs daily at 06:00 via cron"
+cmd = ["python", "-m", "kb_bench.checks.py_ast", "dags/regional_sales.py",
+       "--require-string", '^\s*0 6 \* \* \*\s*$']
+
+[[evals]]
+name = "per-file fan-out uses dynamic task mapping"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/regional_sales.py",
+       '\.expand(_kwargs)?\s*\(']
+
+[[evals]]
+name = "at most 4 concurrent process_file instances"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/regional_sales.py",
+       '\b(max_active_tis_per_dag|max_active_tis_per_dagrun|max_active_tasks)\s*=\s*4\b']
+
+[[evals]]
+name = "task ids list_region_files, process_file, summarize present"
+cmd = ["python", "-m", "kb_bench.checks.regex_check", "dags/regional_sales.py",
+       '(?s)\A(?=.*\blist_region_files\b)(?=.*\bprocess_file\b)(?=.*\bsummarize\b)']

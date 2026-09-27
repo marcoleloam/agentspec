@@ -1,0 +1,8 @@
+models:
+  - name: fct_orders
+    description: Current state of every order ever seen, one row per order_id.
+    columns:
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
