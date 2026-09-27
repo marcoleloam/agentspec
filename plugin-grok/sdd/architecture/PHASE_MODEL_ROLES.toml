@@ -1,0 +1,128 @@
+# PHASE_MODEL_ROLES.toml — single source of truth for per-phase model routing.
+#
+# omp_role     : an OMP modelRoles name (plan, slow, smol, task, default, or a
+#                custom role). The concrete model lives ONLY in the user's
+#                ~/.omp/agent/config.yml. NEVER put concrete model IDs here.
+# claude_model : Claude Code alias written to the agent frontmatter
+#                (opus | sonnet | haiku | fable | inherit).
+# codex_effort : Codex model_reasoning_effort (low | medium | high); omit to inherit.
+#
+# Commands (keys are file stems under ${GROK_PLUGIN_ROOT}/commands/):
+#   mode = "delegated" -> the command body delegates the phase to `agent`
+#                         (the only way the role applies automatically).
+#   mode = "session"   -> runs inline; `recommended_role` is what the user
+#                         should start the session with (omp --model @<role>).
+#
+# Apply:  python3 scripts/phase_routing.py --apply
+# Check:  python3 scripts/phase_routing.py --check      (part of `make check`)
+# OMP:    python3 scripts/phase_routing.py --print-omp-overrides   (make omp-roles)
+#
+# Docs: docs/concepts/phase-model-routing.md
+
+schema_version = 1
+
+[agents.brainstorm-agent]
+omp_role = "plan"
+claude_model = "opus"
+codex_effort = "high"
+
+[agents.brainstorm-multiagent]
+omp_role = "plan"
+claude_model = "opus"
+codex_effort = "high"
+
+[agents.define-agent]
+omp_role = "plan"
+claude_model = "opus"
+codex_effort = "high"
+
+[agents.define-multiagent]
+omp_role = "plan"
+claude_model = "opus"
+codex_effort = "high"
+
+[agents.design-agent]
+omp_role = "slow"
+claude_model = "opus"
+codex_effort = "high"
+
+[agents.design-multiagent]
+omp_role = "slow"
+claude_model = "opus"
+codex_effort = "high"
+
+# The build orchestrator follows the session model; specialists keep their own.
+[agents.build-agent]
+omp_role = "default"
+claude_model = "inherit"
+codex_effort = "high"
+
+[agents.iterate-agent]
+omp_role = "plan"
+claude_model = "opus"
+codex_effort = "high"
+
+[agents.ship-agent]
+omp_role = "smol"
+claude_model = "haiku"
+codex_effort = "low"
+
+# eval-agent asks the user for attestations (ask_user_question), so /eval runs
+# in the session; independence comes from eval_runner.py + JEV, not the model.
+[agents.eval-agent]
+omp_role = "default"
+claude_model = "sonnet"
+codex_effort = "medium"
+
+[commands.brainstorm]
+mode = "session"
+recommended_role = "plan"
+
+[commands.define]
+mode = "session"
+recommended_role = "plan"
+
+[commands.define-m]
+mode = "session"
+recommended_role = "plan"
+
+[commands.iterate]
+mode = "session"
+recommended_role = "plan"
+
+[commands.design]
+mode = "delegated"
+agent = "design-agent"
+
+# design-m consults specialists via the Agent tool; a subagent cannot spawn
+# subagents in Claude Code, so it stays in the session.
+[commands.design-m]
+mode = "session"
+recommended_role = "slow"
+
+[commands.build]
+mode = "session"
+recommended_role = "default"
+
+[commands.continue]
+mode = "session"
+recommended_role = "default"
+
+[commands.work]
+mode = "session"
+recommended_role = "default"
+
+[commands.eval]
+mode = "session"
+recommended_role = "default"
+
+# Step 0 (eval_runner.py verify) runs in the session; Steps 1-8 are delegated.
+[commands.ship]
+mode = "delegated"
+agent = "ship-agent"
+
+# Cross-model review. judge.py still resolves its model via OpenRouter
+# (PHASE_MODEL_DEFAULTS / --model / JUDGE_MODEL). REVIEWER is an optional
+# custom OMP role; keep it on a different model family than plan/slow.
+[judge]
+omp_role = "REVIEWER"

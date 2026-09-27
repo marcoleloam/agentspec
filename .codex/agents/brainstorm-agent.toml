@@ -3,7 +3,7 @@
 
 name = "brainstorm-agent"
 description = "Collaborative exploration specialist for clarifying intent and approach (Phase 0)."
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
@@ -169,12 +169,53 @@ When brainstorm complete:
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" brief {FEATURE} --phase brainstorm --domains {candidate KB domains}` → reuse
+   decisions and lessons of related features; open a pointer only when the topic is relevant.
+
+ON EXIT (after writing BRAINSTORM, before the Quality Gate)
+1. Create the blackboard from `BLACKBOARD_TEMPLATE.md` if it does not exist (drop the `{…}`
+   placeholder rows). Metadados: `Fase` = Brainstorm, `Domínios KB`, `Relacionada a`.
+2. Record, all with `Fase` = `brainstorm`:
+   - `Q-###` 🟢 for each discovery answer that shaped the direction (`Resolução` = the answer)
+   - `D-###` for the chosen approach (`Alternativa Rejeitada` = the other approaches) and one
+     per YAGNI cut; `Onde Ler` = `BRAINSTORM_{FEATURE}.md#<anchor>`
+   - questions left for Define as `🟡 Delegada ao define` (or `🔴 Aberto` if nobody can answer yet)
+3. Run `python3 "$MI" build`.
+
+**Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (BRAINSTORM) must be written in Portuguese-BR (pt-BR).**
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, questions, answers, approach descriptions, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

@@ -5,6 +5,11 @@ description: Capture and validate requirements in one pass (Phase 1)
 
 # Define Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements and validate them in one pass (Phase 1)
 
 ## Usage
@@ -64,11 +69,47 @@ The `/define` command combines what used to be Intake + PRD + Refine into a sing
 
 ```markdown
 Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/DEFINE_TEMPLATE.md)
+Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)   # Living Memory: exact sections/columns
 Read(CLAUDE.md)
 
 # If file provided:
 Read(<input-file>)
 ```
+
+Load the living memory (open/delegated questions + related features, ≤15 lines):
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase define   # add --domains a,b when no blackboard exists yet
+```
+
+### Step 1b: Agent Selection
+
+Decide the variant for this phase and the specialists to consult by applying the rubric in
+`${CLAUDE_PLUGIN_ROOT}/sdd/architecture/AGENT_SELECTION_RUBRIC.md` yourself, to the input (BRAINSTORM, notes or raw text).
+
+1. Read the rubric and the catalog: the agents in `${CLAUDE_PLUGIN_ROOT}/skills/agent-router/routing.json` outside
+   the `workflow` and `domain` categories (the `agent-router` skill lists the same agents).
+2. Answer from the content of the document. Do not decide by counting the "Domínios KB" line
+   (that rule scored 0.46 variant accuracy; an LLM applying this rubric scored 0.85–0.89).
+3. Follow the decision:
+   - `single` → continue with this command as written.
+   - `multiagent` → continue with the `/define-m` process, consulting exactly the specialists you chose.
+4. Second opinion (opt-in): **always run** this snippet — it does nothing unless
+   `JEV_SECOND_OPINION=1` is set, so you do not need to check the environment yourself:
+
+   ```bash
+   [ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/jev_select.py" <<'JSON' || echo "JEV second opinion: not run"
+   {"phase": "define", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": null}
+   JSON
+   ```
+
+   When it prints JSON, record its `variant` and `specialists` next to your decision. It never
+   overrides the rubric decision.
+5. Write the **Seleção de Agentes** section using the template's table (one row per field): the variant with a one-line justification, each specialist
+   with a one-line reason, `fonte: llm (rubrica)`, and the JEV second opinion when it was run.
 
 ### Step 2: Classify Input
 
@@ -133,12 +174,33 @@ Example questions:
 - "What's the timeline: (a) this sprint, (b) this quarter, (c) no deadline?"
 ```
 
-### Step 6: Generate Document
+### Step 6: Save — Document + Blackboard
 
-Write the structured document following the template, then save:
+Both files are written in this step; the phase ends only after both exist. Write the structured
+document following the template:
 
 ```markdown
 Write(.claude/sdd/features/DEFINE_{FEATURE_NAME}.md)
+```
+
+Then update `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — **create it from
+`BLACKBOARD_TEMPLATE.md` when missing** (the brainstorm may have been skipped; import BRAINSTORM
+"Principais Decisões Tomadas" as `Fase` = `brainstorm` when it exists) — fill `Domínios KB`,
+then record with `Fase` = `define`:
+
+- `A-###` — one per assumption (⏳ Não validada)
+- `Q-###` — 🟢 answered · `🟡 Delegada ao design` for decisions Design must settle ·
+  `🔴 Aberto` only for what nobody can answer yet (**blocks `/design`**)
+- `D-###` — scope changes vs the brainstorm, `Substitui` = the brainstorm decision
+
+Copy the table headers from `BLACKBOARD_TEMPLATE.md` as they are (ID column `#`, sections
+`## Log de Decisões` / `## Premissas` / `## Perguntas Abertas e Bloqueadores`) — the index reads
+only those. Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status /
+Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — define is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
 ```
 
 ### Step 7: Optional Judge Pass (`--judge`)
@@ -164,7 +226,7 @@ MODEL=""   # empty → judge.py picks phase default
 STRICT_FLAG=""
 [[ "$mode" == "strict" ]] && STRICT_FLAG="--strict"
 
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/judge.py" \
   ".claude/sdd/features/DEFINE_{FEATURE_NAME}.md" \
   --phase define \
   ${MODEL:+--model "$MODEL"} \
@@ -205,6 +267,10 @@ budget exhaustion.
 | Artifact | Location |
 |----------|----------|
 | **DEFINE** | `.claude/sdd/features/DEFINE_{FEATURE_NAME}.md` |
+| **Blackboard** | `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — list the IDs this phase added |
+
+Report the Blackboard row in your final message. If you cannot name the IDs define added,
+the phase is not complete — go back to the save step.
 
 **Next Step:** `/design .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
 
@@ -221,6 +287,8 @@ Before saving, verify:
 [ ] Acceptance tests are testable
 [ ] Out of scope is explicit
 [ ] Clarity Score >= 12/15
+[ ] Blackboard has define entries (A / Q) and Domínios KB
+[ ] Seleção de Agentes section written (Step 1b)
 ```
 
 ---
@@ -236,7 +304,7 @@ Before saving, verify:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/define-agent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/define-agent.md`
 - Multi-agent variant: `/define-m` (`${CLAUDE_PLUGIN_ROOT}/commands/workflow/define-m.md`)
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/DEFINE_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`

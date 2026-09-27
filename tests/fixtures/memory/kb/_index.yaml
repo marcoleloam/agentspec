@@ -1,0 +1,15 @@
+version: '2.2'
+limits:
+  quick_reference: 100
+shared:
+  anti_patterns: shared/anti-patterns.md
+domains:
+  genai:
+    name: genai
+    path: genai/
+  python:
+    name: python
+    path: python/
+  data-quality:
+    name: data-quality
+    path: data-quality/

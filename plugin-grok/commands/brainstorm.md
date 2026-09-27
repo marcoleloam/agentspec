@@ -8,6 +8,11 @@ description: Explore ideas through collaborative dialogue before requirements ca
 
 # Brainstorm Command
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Collaborative exploration before requirements capture (Phase 0)
 
 ## Usage
@@ -68,7 +73,17 @@ The `/brainstorm` command explores ideas through dialogue before capturing forma
 ```markdown
 read_file(CLAUDE.md)
 read_file(${GROK_PLUGIN_ROOT}/sdd/templates/BRAINSTORM_TEMPLATE.md)
+read_file(${GROK_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)   # Living Memory: exact sections/columns
 Explore project structure, recent commits, existing patterns
+```
+
+Load the living memory of related work (≤15 lines; open pointers only when relevant):
+
+```bash
+MI="${GROK_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase brainstorm --domains {candidate KB domains}
 ```
 
 ### Step 2: Discovery Questions
@@ -129,10 +144,30 @@ Section → Check with user → Adjust if needed → Next section
 
 **Minimum:** 2 validation checkpoints
 
-### Step 7: Generate Document
+### Step 7: Save — Document + Blackboard
+
+Both files are written in this step; the phase ends only after both exist.
 
 ```markdown
 write(.claude/sdd/features/BRAINSTORM_{FEATURE}.md)
+```
+
+Then create `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` from `BLACKBOARD_TEMPLATE.md` (drop the
+`{…}` placeholder rows) and record, all with `Fase` = `brainstorm`:
+
+- `Q-###` 🟢 — discovery answers that shaped the direction (`Resolução` = the answer)
+- `D-###` — chosen approach (`Alternativa Rejeitada` = the others) and each YAGNI cut
+- `🟡 Delegada ao define` / `🔴 Aberto` — questions left for the next phase
+- Metadados: `Fase`, `Domínios KB`, `Relacionada a`
+
+Copy the table headers from `BLACKBOARD_TEMPLATE.md` as they are (ID column `#`, sections
+`## Log de Decisões` / `## Premissas` / `## Perguntas Abertas e Bloqueadores`) — the index reads
+only those. Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status /
+Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — brainstorm is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
 ```
 
 ---
@@ -142,6 +177,10 @@ write(.claude/sdd/features/BRAINSTORM_{FEATURE}.md)
 | Artifact | Location |
 |----------|----------|
 | **Brainstorm Document** | `.claude/sdd/features/BRAINSTORM_{FEATURE}.md` |
+| **Blackboard** | `.claude/sdd/features/BLACKBOARD_{FEATURE}.md` — list the IDs this phase added |
+
+Report the Blackboard row in your final message. If you cannot name the IDs brainstorm added,
+the phase is not complete — go back to the save step.
 
 **Next Step:** `/define .claude/sdd/features/BRAINSTORM_{FEATURE}.md`
 
@@ -159,6 +198,7 @@ Before marking complete:
 [ ] Minimum 2 validations completed
 [ ] User confirmed selected approach
 [ ] Draft requirements included
+[ ] Blackboard created with brainstorm entries (Q / D)
 ```
 
 ---

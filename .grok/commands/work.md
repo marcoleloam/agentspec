@@ -8,6 +8,11 @@ description: Enter and stay anchored to an active feature so improvement request
 
 # Work Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it anchors the session to the active feature).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Enter a feature's working context and stay anchored to it. Once active, plain requests
 > like "melhora o tratamento de erro" are understood against this feature — no need to
 > re-specify which feature or re-explain its design. Closes the post-build gap where every
@@ -76,6 +81,16 @@ read_file(.claude/sdd/features/BLACKBOARD_{FEATURE}.md)    → live state, inter
 read_file(.claude/sdd/reports/BUILD_REPORT_{FEATURE}.md)   → what was built and verified
 ```
 
+For the trajectory (current decisions, open questions, pending assumptions) use the
+living-memory brief instead of re-reading the whole blackboard:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase {phase from .active}
+```
+
 Present a compact orientation (do NOT dump full files):
 
 ```text
@@ -124,7 +139,7 @@ and build report. No server, no tokens spent rendering — a deterministic scrip
 
 ```bash
 # Resolves the feature from .active (or pass one explicitly), writes the HTML, prints its path
-DASH=$(python3 "${CLAUDE_PLUGIN_ROOT:-.}/scripts/status-dashboard.py" 2>/dev/null)
+DASH=$(python3 "${AGENTSPEC_SCRIPTS:-plugin-extras/scripts}/status-dashboard.py" 2>/dev/null)
 [ -n "$DASH" ] && open "$DASH" 2>/dev/null || echo "Dashboard: $DASH"
 ```
 

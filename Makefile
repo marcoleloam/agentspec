@@ -16,7 +16,12 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps spec-lint spec-judge spec-venvs kb-bench kb-bench-setup kb-bench-validate kb-bench-smoke kb-bench-report kb-bench-teardown
+.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps venv spec-lint spec-judge spec-venvs omp-roles phase-routing-apply kb-bench kb-bench-setup kb-bench-validate kb-bench-smoke kb-bench-report kb-bench-teardown
+
+# Project interpreter: the .venv created by `make venv` when present, else python3.
+# Override per call: make test PYTHON=python3.12
+VENV := .venv
+PYTHON ?= $(if $(wildcard $(VENV)/bin/python),$(VENV)/bin/python,python3)
 
 # ----------------------------------------------------------------------------
 # Help
@@ -36,21 +41,31 @@ help: ## Show this help
 build: ## Full plugin build (tests + regenerate agent-router + package)
 	@./build-plugin.sh
 
+test: ## Run the pytest suite (uses .venv when present — see make venv)
+	@$(PYTHON) -m pytest tests/ -q
+
 check: ## Drift check — tests + generators in --check mode (fails on drift)
-	@python3 -m pytest tests/ -q
-	@python3 scripts/generate-agent-router.py --check
-	@python3 scripts/generate-codex-plugin.py --check
-	@python3 scripts/generate-dsh-bundle.py --check
-	@python3 scripts/generate-grok-plugin.py --check
+	@$(PYTHON) -m pytest tests/ -q
+	@$(PYTHON) scripts/phase_routing.py --check
+	@$(PYTHON) scripts/generate-agent-router.py --check
+	@$(PYTHON) scripts/generate-codex-plugin.py --check
+	@$(PYTHON) scripts/generate-dsh-bundle.py --check
+	@$(PYTHON) scripts/generate-grok-plugin.py --check
 
 generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
-	@python3 scripts/generate-agent-router.py
+	@$(PYTHON) scripts/generate-agent-router.py
+
+omp-roles: ## Print task.agentModelOverrides for ~/.omp/agent/config.yml (stdout only)
+	@$(PYTHON) scripts/phase_routing.py --print-omp-overrides
+
+phase-routing-apply: ## Sync workflow agent frontmatter + command markers from PHASE_MODEL_ROLES.toml
+	@$(PYTHON) scripts/phase_routing.py --apply
 
 codex: ## Regenerate Codex CLI agents and command skills from .claude/
-	@python3 scripts/generate-codex-plugin.py
+	@$(PYTHON) scripts/generate-codex-plugin.py
 
 grok: ## Regenerate the Grok Build plugin (plugin-grok/ + .grok/{agents,commands})
-	@python3 scripts/generate-grok-plugin.py
+	@$(PYTHON) scripts/generate-grok-plugin.py
 
 grok-verify: ## Validate plugin-grok/ with the Grok CLI (skips if grok is missing)
 	@if command -v grok >/dev/null 2>&1; then \
@@ -60,7 +75,7 @@ grok-verify: ## Validate plugin-grok/ with the Grok CLI (skips if grok is missin
 	fi
 
 dsh: ## Regenerate the DeepSeek Harness (dsh) bundle assets from .claude/
-	@python3 scripts/generate-dsh-bundle.py
+	@$(PYTHON) scripts/generate-dsh-bundle.py
 
 dsh-verify: ## Smoke-test the dsh bundle plugins against the installed dsh services
 	@cd plugin-dsh && node verify.mjs
@@ -98,7 +113,7 @@ spec-venvs: ## Create/refresh the tools/ virtualenvs (spec-linter + spec-judge)
 # KB bench (KB_CONTEXT7_REFRESH) — KB vs Context7 on the Grok CLI
 # ----------------------------------------------------------------------------
 
-KB_BENCH := PYTHONPATH=scripts python3 -m kb_bench
+KB_BENCH := PYTHONPATH=scripts $(PYTHON) -m kb_bench
 
 kb-bench-setup: ## KB bench — arm folders, eval venv, trust arms B/C (asks first; ARGS=--yes)
 	@$(KB_BENCH) setup $(ARGS)
@@ -141,9 +156,19 @@ clean: ## Remove generated plugin/ artifacts (keep .claude-plugin/)
 		-exec rm -rf {} + 2>/dev/null || true
 	@echo "Plugin artifacts cleaned. Run 'make build' to rebuild."
 
-install-deps: ## Install optional dev dependencies (pytest, shellcheck)
-	@echo "Installing pytest..."
-	@python3 -m pip install --user pytest
+venv: ## Create/refresh .venv (Python >= 3.11) with requirements-dev.txt
+	@py=""; for c in python3 python3.13 python3.12 python3.11; do \
+		if command -v $$c >/dev/null 2>&1 && $$c -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null; then py=$$c; break; fi; \
+	done; \
+	if [ -z "$$py" ]; then echo "ERROR: no Python >= 3.11 found (tomllib is required)"; exit 2; fi; \
+	echo "Bootstrapping $(VENV) with $$($$py --version) ..."; \
+	$$py -m venv $(VENV)
+	@$(VENV)/bin/python -m pip install -q --upgrade pip
+	@$(VENV)/bin/python -m pip install -q -r requirements-dev.txt
+	@echo "Done. make test/check now use $(VENV). For /eval and /ship:"
+	@echo "  export AGENTSPEC_PYTHON=\"$(CURDIR)/$(VENV)/bin/python\""
+
+install-deps: venv ## Install dev dependencies (.venv with pytest; hints for shellcheck)
 	@if ! command -v shellcheck >/dev/null 2>&1; then \
 		echo ""; \
 		echo "shellcheck not installed. On macOS:  brew install shellcheck"; \

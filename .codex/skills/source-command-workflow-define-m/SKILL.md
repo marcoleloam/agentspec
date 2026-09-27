@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 # Define-M Command (Multi-Agent)
 
+<!-- phase-routing: mode=session role=plan -->
+> **Model routing:** this phase runs in the main session (it asks you questions).
+> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Capture requirements with specialist validation — catches missing requirements, hidden constraints, and unrealistic criteria
 
 ## Usage
@@ -33,7 +38,7 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 
 ## Overview
 
-This is the **multi-agent variant** of `/define` (Phase 1). Use when the problem touches **3+ KB domains**.
+This is the **multi-agent variant** of `/define` (Phase 1). Plain `/define` already picks this variant on its own when the spec needs it (agent selection rubric); call `/define-m` to force it.
 
 ```text
 /define   → single-agent  → extracts requirements from input
@@ -55,11 +60,27 @@ This is the **multi-agent variant** of `/define` (Phase 1). Use when the problem
 ## What This Command Does
 
 1. **Extract** — Pull requirements from input (same as `/define`)
-2. **Detect Domains** — Count KB domains; if < 3, falls back to `/define`
+2. **Select Specialists** — the phase LLM picks up to 4 specialists with the agent selection rubric (see Specialist Selection)
 3. **Draft** — Create preliminary DEFINE document
 4. **Consult** — Send draft to 3-4 domain specialists in parallel
 5. **Synthesize** — Merge specialist feedback: missing requirements, hidden constraints, adjusted criteria
 6. **Score** — Recalculate clarity score with specialist additions
+
+## Specialist Selection
+
+An explicit `/define-m` locks the multiagent variant — it never falls back to `/define`.
+Pick the specialists by applying the SPECIALISTS part of `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` to the input
+(at most 4, names exactly as in the catalog). Then **always run** the second-opinion snippet — it
+does nothing unless `JEV_SECOND_OPINION=1` is set:
+
+```bash
+[ "${JEV_SECOND_OPINION:-}" = "1" ] && python3 "${AGENTSPEC_SCRIPTS:-scripts}/jev_select.py" <<'JSON' || echo "JEV second opinion: not run"
+{"phase": "define", "summary": "<≤4000-char summary of the input>", "kb_domains": ["<entries of the Domínios KB line, verbatim>"], "variant_locked": "multiagent"}
+JSON
+```
+
+Record its specialists next to yours when it prints JSON; the rubric decision stands. Write the **Seleção de Agentes** section into the
+generated document using the template's table.
 
 ---
 
@@ -93,6 +114,32 @@ This is the **multi-agent variant** of `/define` (Phase 1). Use when the problem
 The document includes a **Validacao Multi-Agente** section with specialist attribution for every added requirement, constraint, and adjusted criterion.
 
 **Next Step:** `/design-m .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
+
+---
+
+## Living Memory
+
+Same protocol as `/define` (see its "Step 6: Save — Document + Blackboard" and the agent's
+`## Phase Memory` section). On entry:
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" brief {FEATURE} --phase define
+```
+
+On exit — in the same step that writes the DEFINE document, not after the summary —
+record the phase entries on `BLACKBOARD_{FEATURE}.md`, created from
+`Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` with its headers copied as they are
+(specialist-sourced entries carry the specialist as `Agente` / `Levantado por`), then:
+
+```bash
+test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — define is not done"
+python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+```
+
+The final message lists the Blackboard IDs this phase added, next to the DEFINE path.
 
 ---
 

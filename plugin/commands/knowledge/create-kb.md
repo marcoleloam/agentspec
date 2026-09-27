@@ -30,7 +30,7 @@ description: Create a complete KB domain from scratch with MCP validation
 
 ## See Also
 
-- **Agent**: `${CLAUDE_PLUGIN_ROOT}/agents/architect/kb-architect.md`
+- **Agent**: `${CLAUDE_PLUGIN_ROOT}/agents/kb-architect.md`
 - **Example**: `${CLAUDE_PLUGIN_ROOT}/kb/{domain}/`
 - **Templates**: `${CLAUDE_PLUGIN_ROOT}/kb/_templates/`
 - **Registry**: `${CLAUDE_PLUGIN_ROOT}/kb/_index.yaml`

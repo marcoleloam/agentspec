@@ -46,7 +46,7 @@ If Context7 has no coverage for the domain, the command:
 
 ## See Also
 
-- **Agent**: `${CLAUDE_PLUGIN_ROOT}/agents/dev/kb-evolution-agent.md`
+- **Agent**: `${CLAUDE_PLUGIN_ROOT}/agents/kb-evolution-agent.md`
 - **Lint**: `/lint-kb` for quality auditing
 - **Create**: `/create-kb` for new domains from scratch
 - **Registry**: `${CLAUDE_PLUGIN_ROOT}/kb/_index.yaml`

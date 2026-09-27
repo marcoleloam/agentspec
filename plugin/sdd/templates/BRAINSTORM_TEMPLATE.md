@@ -10,6 +10,7 @@
 | **Data** | {YYYY-MM-DD} |
 | **Autor** | brainstorm-agent |
 | **Status** | Explorando / Abordagens Identificadas / Pronto para Define |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 

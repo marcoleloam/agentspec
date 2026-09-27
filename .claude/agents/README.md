@@ -1,8 +1,8 @@
 # AgentSpec Agents
 
-AgentSpec deploys **63 specialized agents** across **9 categories**, each built on a **three-tier template system** with mandatory **KB-First knowledge resolution**. Every agent carries a cognitive framework that enforces structured confidence scoring, provenance tracking, and explicit stop conditions -- turning raw LLM capability into disciplined, auditable domain expertise.
+AgentSpec deploys **64 specialized agents** across **9 categories**, each built on a **three-tier template system** with mandatory **KB-First knowledge resolution**. Every agent carries a cognitive framework that enforces structured confidence scoring, provenance tracking, and explicit stop conditions -- turning raw LLM capability into disciplined, auditable domain expertise.
 
-`63 agents | 9 categories | 3 tiers (T1/T2/T3) | 28 KB domains | 100% template compliance`
+`64 agents | 9 categories | 3 tiers (T1/T2/T3) | 28 KB domains | 100% template compliance`
 
 ---
 
@@ -40,7 +40,7 @@ User
   |
   v
 Orchestrator (Claude Code)
-  |-- reads 63 agent descriptions from frontmatter
+  |-- reads 64 agent descriptions from frontmatter
   |-- pattern-matches message to capabilities
   |-- selects best-fit agent
   v
@@ -243,7 +243,7 @@ Developer tools and productivity.
 | `meeting-analyst` | T2 | sonnet | Extract decisions and action items from meetings |
 | `shell-script-specialist` | T2 | sonnet | Production-grade Bash scripts, automation, deployment scripts |
 
-### 9. Workflow (6 agents)
+### 9. Workflow (7 agents)
 
 Drive the SDD workflow phases.
 
@@ -253,6 +253,7 @@ Drive the SDD workflow phases.
 | `define-agent` | T2 | sonnet | 1 | Capture requirements with clarity scoring |
 | `design-agent` | T2 | opus | 2 | Create technical architecture with file manifest |
 | `build-agent` | T2 | opus | 3 | Execute implementation with agent delegation |
+| `eval-agent` | T2 | sonnet | 3.5 | Reexecute the DESIGN's eval contract via `eval_runner.py`; no Edit tool, writes only `EVALS_EXTRA_{F}.toml` |
 | `ship-agent` | T2 | sonnet | 4 | Archive with lessons learned |
 | `iterate-agent` | T2 | sonnet | All | Update documents with cascade awareness |
 
@@ -263,6 +264,10 @@ Drive the SDD workflow phases.
 Agents are not isolated. When a task crosses domain boundaries, agents escalate to the appropriate specialist.
 
 ```text
+Workflow <-> Workflow:
+  eval-agent -> build-agent (FAIL verdict: /continuar {F} to fix the code)
+  eval-agent -> iterate-agent (the eval contract itself is wrong or an AT changed)
+
 Workflow <-> Data Engineering:
   build-agent -> dbt-specialist, spark-engineer, pipeline-architect (DE delegation)
   design-agent -> schema-designer (data modeling), pipeline-architect (DAG design)

@@ -51,7 +51,7 @@ Use this skill when the user asks to run the migrated source command `knowledge-
 
 ## See Also
 
-- **Agent**: `${CLAUDE_PLUGIN_ROOT}/agents/dev/kb-evolution-agent.md`
+- **Agent**: `${CLAUDE_PLUGIN_ROOT}/agents/kb-evolution-agent.md`
 - **Ingest**: `/ingest-kb` for updating content via Context7
 - **Create**: `/create-kb` for new domains from scratch
 - **Registry**: `${CLAUDE_PLUGIN_ROOT}/kb/_index.yaml`

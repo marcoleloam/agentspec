@@ -11,6 +11,8 @@
 | **Autor** | design-agent |
 | **DEFINE** | [DEFINE_{FEATURE}.md](./DEFINE_{FEATURE}.md) |
 | **Status** | Rascunho / Pronto para Build |
+| **Evals Digest** | _gerado por `eval_runner.py freeze`_ |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 
@@ -100,6 +102,19 @@
 **Descoberta de Agentes:**
 - Escaneado: `${CLAUDE_PLUGIN_ROOT}/agents/**/*.md`
 - Correspondido por: Tipo de arquivo, palavras-chave de propósito, padrões de caminho, domínios KB
+
+---
+
+## Seleção de Agentes
+
+> Decidida pela LLM da fase aplicando `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/AGENT_SELECTION_RUBRIC.md` a esta especificação.
+
+| Campo | Valor |
+|-------|-------|
+| **Variante** | {single \| multiagent} — fonte: {llm (rubrica) \| locked (/-m explícito)} |
+| **Justificativa da variante** | {Uma linha: por que o trabalho fica numa área técnica ou atravessa várias} |
+| **Especialistas** | {@agente — motivo em uma linha; até 4 \| nenhum} |
+| **Segunda opinião JEV (opcional)** | {só com `JEV_SECOND_OPINION=1`: variante p(single)=…, especialistas …, fonte jev/fallback \| não executada} |
 
 ---
 
@@ -244,6 +259,58 @@
 
 ---
 
+## Evals
+
+> Contrato de aceitação executável: pelo menos um eval por AT do DEFINE. Escrito antes do código,
+> congelado por `eval_runner.py freeze` (linha **Evals Digest**), checado pelo `/build` (`pre`)
+> e reexecutado pelo `/eval`. Mude este bloco só via `/iterate`.
+>
+> - `deterministic`: bash; exit 0 = passa. Para Python, use `"$AGENTSPEC_PYTHON"`.
+> - `graded`: critério subjetivo; `[eval.state]` = campo → comando bash; 2–5 perguntas, ≥ 1 `score`. Máximo 50% do contrato.
+> - `human`: comportamento que exige execução real de agente ou serviço externo; `owner` + `instructions`.
+
+<!-- agentspec:evals:contract -->
+```toml
+[[eval]]
+id = "eval_1"
+verifies = ["AT-001"]
+check_type = "deterministic"
+description = "{O que este eval prova}"
+run = '''
+{comando bash que sai com 0 quando o AT-001 é satisfeito}
+'''
+
+[[eval]]
+id = "eval_2"
+verifies = ["AT-002"]
+check_type = "graded"
+description = "{Critério subjetivo}"
+
+[eval.state]
+artifact = "{comando bash cuja stdout é o artefato avaliado}"
+
+[[eval.questions]]
+id = "meets_criterion"
+type = "noul"
+instructions = "Does `artifact` {satisfaz o critério}?"
+
+[[eval.questions]]
+id = "quality"
+type = "score"
+instructions = "How well does `artifact` {satisfaz o critério}?"
+criteria = ["{nível mais baixo}", "{intermediário}", "{nível de topo}"]
+
+[[eval]]
+id = "eval_3"
+verifies = ["AT-003"]
+check_type = "human"
+owner = "{responsável}"
+description = "{O que a pessoa confirma}"
+instructions = "{Passos exatos para verificar}"
+```
+
+---
+
 ## Histórico de Revisões
 
 | Versão | Data | Autor | Mudanças |
@@ -254,4 +321,4 @@
 
 ## Próximo Passo
 
-**Pronto para:** `/build .claude/sdd/features/DESIGN_{FEATURE_NAME}.md`
+**Pronto para:** `/build .claude/sdd/features/DESIGN_{FEATURE_NAME}.md` (o `/build` roda `eval_runner.py pre` antes da primeira tarefa)

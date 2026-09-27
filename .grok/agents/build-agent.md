@@ -57,8 +57,8 @@ escalation_rules:
 │     └─ Load KB domains specified in design                          │
 │                                                                      │
 │  2. BLACKBOARD SEEDING (shared coordination state)                  │
-│     └─ Create: .claude/sdd/features/BLACKBOARD_{FEATURE}.md         │
-│     └─ From template: BLACKBOARD_TEMPLATE.md                        │
+│     └─ Exists? EXTEND it (never overwrite) — trajectory lives here  │
+│     └─ Missing? create from BLACKBOARD_TEMPLATE.md                  │
 │     └─ Seed: shared interfaces + file status from DESIGN manifest   │
 │                                                                      │
 │  3. KB PATTERN VALIDATION (before writing code)                     │
@@ -89,7 +89,8 @@ living memory of the feature.
 
 ```text
 BUILD START
-  └─ Copy BLACKBOARD_TEMPLATE.md → .claude/sdd/features/BLACKBOARD_{FEATURE}.md
+  └─ BLACKBOARD_{FEATURE}.md exists (created in Brainstorm/Define)? → EXTEND it, keep every entry
+     Missing? → create it from BLACKBOARD_TEMPLATE.md. NEVER overwrite an existing blackboard.
   └─ Fill "Interfaces Compartilhadas" from DESIGN (table names, schemas, signatures, config keys)
   └─ Fill "Status dos Arquivos" from DESIGN file manifest (all ⏳ Pendente)
 
@@ -122,6 +123,29 @@ Has @agent-name in manifest?
          • Verify against KB
          • Handle errors locally
 ```
+
+---
+
+### Pre-Build Eval Check (blocking, before the first task)
+
+Before generating any code, run the eval pre-check on the DESIGN's `## Evals` contract:
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" pre {FEATURE}
+```
+
+| Exit | Meaning | Action |
+|------|---------|--------|
+| `0` | Every deterministic eval runs cleanly and fails (nothing is built yet) | Proceed. Copy any `ALREADY_PASSING` warning into the BUILD_REPORT |
+| `1` | An eval cannot run (bash error, missing interpreter/tool) | **STOP.** The contract is broken — fix it through `/iterate` on the DESIGN, never by editing `## Evals` directly |
+| `3` | Structural contract error (orphan AT, invalid TOML, missing Evals Digest) | **STOP.** Escalate to design-agent / `/iterate` |
+
+A DESIGN without `## Evals` (legacy) prints a notice and exits `0`; the gap is enforced later by `/ship`.
+
+Rules:
+- Never edit the `## Evals` block or its **Evals Digest** during a build — `/eval` rejects the contract as `CONTRACT_TAMPERED`.
+- Evals that call Python must use `"$AGENTSPEC_PYTHON"`; set `AGENTSPEC_PYTHON` to the interpreter that has the project's test dependencies.
+- The build's own acceptance table in the BUILD_REPORT is **self-verification**. It does not replace `/eval`.
 
 ---
 
@@ -176,7 +200,8 @@ spawn_subagent(
        config keys another agent already registered.
     2. After writing your file, APPEND to the blackboard:
        - any new interface other agents will consume (Interfaces Compartilhadas)
-       - any decision that affects other files (Log de Decisões)
+       - any decision that affects other files (Log de Decisões, Fase = build;
+         if it deviates from the DESIGN, set Substitui = the design D-### it replaces)
        - any blocker you cannot resolve (Perguntas Abertas e Bloqueadores)
        - mark your file ✅ Completo in "Status dos Arquivos"
 
@@ -267,6 +292,7 @@ python -c "from pyspark.sql import SparkSession; exec(open('{file}').read())"
 
 ```text
 PRE-FLIGHT CHECK
+├─ [ ] Eval pre-check ran before the first task (exit 0)
 ├─ [ ] Blackboard seeded from DESIGN at build start
 ├─ [ ] All files from manifest created
 ├─ [ ] Each file verified (lint, types, tests)
@@ -277,7 +303,8 @@ PRE-FLIGHT CHECK
 ├─ [ ] Error cases handled
 ├─ [ ] DEFINE status updated to "Built"
 ├─ [ ] DESIGN status updated to "Built"
-└─ [ ] BUILD_REPORT generated
+├─ [ ] BUILD_REPORT generated
+└─ [ ] Next step points to /eval (not /ship)
 ```
 
 ### Anti-Patterns
@@ -287,6 +314,8 @@ PRE-FLIGHT CHECK
 | Skip DESIGN loading | No patterns to follow | Always load DESIGN first |
 | Ignore agent assignments | Lose specialization | Delegate as specified |
 | Skip verification | Broken code ships | Verify every file |
+| Edit `## Evals` or its digest during build | Contract tampering; `/eval` rejects it | Change evals only through `/iterate` |
+| Mark ATs as passed from your own run | Self-verification is not acceptance | Leave acceptance to `/eval` |
 | Improvise beyond DESIGN | Scope creep | Follow patterns exactly |
 | Leave TODO comments | Incomplete code | Finish or escalate |
 
@@ -320,8 +349,11 @@ PRE-FLIGHT CHECK
 | Lint (ruff) | ✅ Pass |
 | Types (mypy) | ✅ Pass |
 | Tests (pytest) | ✅ 8/8 pass |
+| Eval pre-check | ✅ 5 evals fail as expected (0 errors) |
 
 ## Status: ✅ COMPLETE
+
+Next: `/eval {FEATURE}` (independent acceptance), then `/ship`.
 ```
 
 ---
@@ -338,12 +370,52 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" gate {FEATURE} --to build` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP and surface the 🔴 questions.
+   Never close a 🔴 with your own assumption; if you cannot ask the user, stop and report.
+2. `python3 "$MI" brief {FEATURE} --phase build`.
+
+DURING / ON EXIT
+1. The blackboard usually exists already (created in Brainstorm/Define): EXTEND it, never
+   overwrite it. See "Blackboard Protocol (Shared Coordination)" above.
+2. Every deviation from the DESIGN → `D-###` with `Fase` = `build`, `Substitui` = the design
+   `D-###` it replaces, and the reason in `Justificativa`.
+3. Mark assumptions the build proved or broke (✅ / ❌). No 🔴 may remain at the end.
+4. Metadados: `Fase` = Build. Run `python3 "$MI" build`.
+
+**Template:** `read_file(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (BUILD_REPORT) must be written in Portuguese-BR (pt-BR).**
 
 Technical terms, file paths, commands, code, and tool names remain in English.
 Section headings, descriptions, notes, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

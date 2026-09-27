@@ -11,6 +11,7 @@
 | **Autor** | {autor} |
 | **Status** | {Rascunho / Em Andamento / Precisa de Esclarecimento / Pronto para Design} |
 | **Clarity Score** | {X}/15 |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 
@@ -102,6 +103,19 @@ Explicitamente NÃO incluído nesta feature:
 - **Localização** → Fase de Design usa a estrutura correta do projeto, evita arquivos mal posicionados
 - **Domínios KB** → Fase de Design puxa os padrões corretos de `.claude/kb/`
 - **Impacto IaC** → Aciona o planejamento de infraestrutura, evita falhas do tipo "funciona local"
+
+---
+
+## Seleção de Agentes
+
+> Decidida pela LLM da fase aplicando `.claude/sdd/architecture/AGENT_SELECTION_RUBRIC.md` a esta especificação.
+
+| Campo | Valor |
+|-------|-------|
+| **Variante** | {single \| multiagent} — fonte: {llm (rubrica) \| locked (/-m explícito)} |
+| **Justificativa da variante** | {Uma linha: por que o trabalho fica numa área técnica ou atravessa várias} |
+| **Especialistas** | {@agente — motivo em uma linha; até 4 \| nenhum} |
+| **Segunda opinião JEV (opcional)** | {só com `JEV_SECOND_OPINION=1`: variante p(single)=…, especialistas …, fonte jev/fallback \| não executada} |
 
 ---
 

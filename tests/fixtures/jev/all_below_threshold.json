@@ -1,0 +1,25 @@
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "single_area": {
+      "type": "noul",
+      "noul": 0.02
+    },
+    "fit_0": {
+      "type": "noul",
+      "noul": 0.1
+    },
+    "fit_1": {
+      "type": "noul",
+      "noul": 0.2
+    },
+    "fit_2": {
+      "type": "noul",
+      "noul": 0.3
+    }
+  },
+  "usage": {
+    "input_tokens": 810,
+    "output_tokens": 20
+  }
+}

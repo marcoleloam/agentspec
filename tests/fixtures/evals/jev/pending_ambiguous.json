@@ -1,0 +1,22 @@
+{
+  "model": "typesafe/jev-1.13-20260917",
+  "answers": {
+    "consistent": {
+      "type": "noul",
+      "noul": 0.70
+    },
+    "quality": {
+      "type": "score",
+      "score": 1.94,
+      "probabilities": {"0": 0.24, "1": 0.01, "2": 0.32, "3": 0.43},
+      "confidence": 0.0
+    }
+  },
+  "usage": {
+    "input_tokens": 349,
+    "output_tokens": 19,
+    "cost": 1.61e-05
+  },
+  "id": "req-jev-pending-20260923",
+  "provider": "TypeSafe"
+}

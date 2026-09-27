@@ -1,17 +1,23 @@
 # BLACKBOARD: {Nome da Feature}
 
-> Quadro de coordenação compartilhada — o estado vivo desta feature durante o Build.
-> Todos os agentes (orquestrador e especialistas) LEEM este arquivo antes de agir
-> e ANEXAM aqui qualquer decisão, interface ou bloqueador que criarem.
-> Substitui o repasse de contexto pelo orquestrador (padrão blackboard).
+> Quadro compartilhado da feature — o estado vivo e a memória da trajetória, do
+> Brainstorm ao Ship. Todos os agentes (orquestrador e especialistas) LEEM este arquivo
+> antes de agir e ANEXAM aqui as decisões, premissas, perguntas e interfaces que criarem.
+> Guarde ponteiro + uma frase de porquê: o conteúdo completo vive no documento de cada fase.
+> Regras completas: `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+>
+> Mantenha os títulos de seção e os cabeçalhos das tabelas exatamente como aqui (coluna
+> `#` para o ID): o `memory-index.py` lê só estes e avisa (exit 2) sobre linhas que não consegue ler.
 
 ## Metadados
 
 | Atributo | Valor |
 |----------|-------|
 | **Feature** | {FEATURE_NAME} |
-| **Fase** | Build |
+| **Fase** | Brainstorm / Define / Design / Build / Ship |
 | **Atualizado em** | {YYYY-MM-DD} |
+| **Domínios KB** | {domínio-1, domínio-2} |
+| **Relacionada a** | {OUTRA_FEATURE, …} ou — |
 | **DESIGN** | [DESIGN_{FEATURE}.md](DESIGN_{FEATURE}.md) |
 | **Status** | 🔄 Em Andamento / ✅ Completo / ❌ Bloqueado |
 
@@ -31,29 +37,43 @@
 
 ## Log de Decisões
 
-> Append-only. Cada agente registra decisões que afetam outros (ADR-lite). Nunca edite
-> uma decisão existente — adicione uma nova que a substitua e referencie a anterior.
+> Append-only, do Brainstorm ao Ship. Nunca edite uma decisão existente — registre uma
+> nova com "Substitui" apontando a anterior. No Build, todo desvio do DESIGN entra aqui
+> substituindo a decisão de Design correspondente.
 
-| # | Agente | Decisão | Justificativa | Substitui | Data |
-|---|--------|---------|---------------|-----------|------|
-| D-001 | @{agente} | {o que foi decidido} | {por quê} | — | {YYYY-MM-DD} |
+| # | Fase | Agente | Decisão | Justificativa | Alternativa Rejeitada | Substitui | Onde Ler | Data |
+|---|------|--------|---------|---------------|-----------------------|-----------|----------|------|
+| D-001 | {brainstorm/define/design/build/iterate} | @{agente} | {o que foi decidido} | {por quê, 1 frase} | {o que não foi feito} | — | {DESIGN_{FEATURE}.md#decisão-1-…} | {YYYY-MM-DD} |
+
+---
+
+## Premissas
+
+> O que, se estiver errado, invalida o desenho. Registradas no Define; o Design e o
+> Build marcam como validadas ou derrubadas — atualizando só a célula `Status` da linha.
+
+| # | Fase | Premissa | Se Errada | Status | Onde Ler |
+|---|------|----------|-----------|--------|----------|
+| A-001 | {fase} | {premissa} | {impacto} | ⏳ Não validada / ✅ Validada / ❌ Derrubada | {DEFINE_{FEATURE}.md#premissas} |
 
 ---
 
 ## Perguntas Abertas e Bloqueadores
 
-> Levante aqui o que você não consegue resolver sozinho em vez de assumir. O orquestrador
-> ou outro especialista resolve e marca como respondido.
+> Levante aqui o que você não consegue resolver sozinho em vez de assumir.
+> 🔴 Aberto **bloqueia** Define→Design e Design→Build. 🟡 Delegada = passada de propósito
+> à fase seguinte, que deve fechá-la como 🟢 citando o `D-###` que a responde — atualizando
+> só as células `Status` e `Resolução` da linha.
 
-| # | Levantado por | Pergunta / Bloqueador | Status | Resolução |
-|---|---------------|------------------------|--------|-----------|
-| Q-001 | @{agente} | {o que precisa ser decidido} | 🔴 Aberto / 🟢 Resolvido | {resposta} |
+| # | Fase | Levantado por | Pergunta / Bloqueador | Status | Resolução |
+|---|------|---------------|------------------------|--------|-----------|
+| Q-001 | {fase} | @{agente} | {o que precisa ser decidido} | 🔴 Aberto / 🟡 Delegada ao {fase} / 🟢 Resolvido | {resposta ou D-###} |
 
 ---
 
 ## Status dos Arquivos
 
-> Espelha o file manifest do DESIGN. Cada agente marca seu arquivo ao concluir.
+> Espelha o file manifest do DESIGN. Preenchido no Build; cada agente marca seu arquivo ao concluir.
 
 | Arquivo | Agente | Status | Verificado | Notas |
 |---------|--------|--------|------------|-------|

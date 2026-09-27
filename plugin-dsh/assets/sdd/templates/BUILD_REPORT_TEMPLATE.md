@@ -12,6 +12,7 @@
 | **DEFINE** | [DEFINE_{FEATURE}.md](../features/DEFINE_{FEATURE}.md) |
 | **DESIGN** | [DESIGN_{FEATURE}.md](../features/DESIGN_{FEATURE}.md) |
 | **Status** | Em Andamento / Completo / Bloqueado |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 
@@ -124,7 +125,12 @@
 
 ---
 
-## Verificação dos Testes de Aceitação
+## Autoverificação dos Testes de Aceitação
+
+> Checagem feita pelo próprio build. **Não substitui o `/eval`**, que reexecuta os evals-contrato
+> do DESIGN de forma independente e gera o recibo exigido pelo `/ship`.
+
+**Pre-check de evals (`eval_runner.py pre`):** {N evals falharam como esperado; avisos ALREADY_PASSING: nenhum / lista}
 
 | ID | Cenário | Status | Evidência |
 |----|---------|--------|-----------|
@@ -195,14 +201,14 @@
 - [ ] Todas as verificações passaram
 - [ ] Todos os testes passam
 - [ ] Sem bloqueadores
-- [ ] Testes de aceitação verificados
-- [ ] Pronto para /ship
+- [ ] Pre-check de evals executado antes da primeira tarefa
+- [ ] Pronto para /eval
 
 ---
 
 ## Próximo Passo
 
-**Se Completo:** `/ship .claude/sdd/features/DEFINE_{FEATURE_NAME}.md`
+**Se Completo:** `/eval {FEATURE_NAME}` (aceitação independente; o `/ship` exige recibo PASS)
 
 **Se Bloqueado:** Resolver bloqueadores, depois `/build` para retomar
 

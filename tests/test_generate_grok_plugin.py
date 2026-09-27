@@ -92,18 +92,20 @@ def test_adapt_command_flattens_and_rewrites_tools(gen):
 
 def test_all_commands_have_unique_stems(gen):
     stems = [md.name for md in gen._iter_md(gen.COMMANDS_DIR)]
-    assert len(stems) == 39
+    assert len(stems) == 40
     assert len(stems) == len(set(stems))
     assert "brainstorm.md" in stems
     assert "continue.md" in stems
     assert "work.md" in stems
+    assert "eval.md" in stems
 
 
 def test_all_agents_have_unique_filenames(gen):
     names = [md.name for md in gen._iter_md(gen.AGENTS_DIR)]
-    assert len(names) == 73
+    assert len(names) == 74
     assert len(names) == len(set(names))
     assert "dbt-specialist.md" in names
+    assert "eval-agent.md" in names
     assert "build-agent.md" in names
 
 

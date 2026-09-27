@@ -36,11 +36,11 @@ This is enforced by **Claude Code's native plugin loader** — when an agent nam
 To override an existing AgentSpec agent:
 
 ```bash
-# 1. Find the plugin agent
-ls $CLAUDE_PLUGIN_ROOT/agents/workflow/
+# 1. Find the plugin agent (plugin/agents/ is flat since the phase-routing change)
+ls $CLAUDE_PLUGIN_ROOT/agents/
 
 # 2. Copy it into your project
-cp $CLAUDE_PLUGIN_ROOT/agents/workflow/build-agent.md \
+cp $CLAUDE_PLUGIN_ROOT/agents/build-agent.md \
    .claude/agents/workflow/build-agent.md
 
 # 3. Edit your local copy — keep the `name:` field identical
@@ -48,6 +48,8 @@ $EDITOR .claude/agents/workflow/build-agent.md
 ```
 
 The `name:` field in frontmatter must match the plugin agent's name exactly. That's how Claude Code knows your version replaces the plugin one.
+
+> **OMP:** OMP does not scan `.claude/agents/`. Put OMP overrides in `.omp/agents/<name>.md` (flat), or change only the model with `task.agentModelOverrides` — see [phase-model-routing.md](phase-model-routing.md).
 
 ## How to Add a Custom Agent
 

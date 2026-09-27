@@ -1,6 +1,6 @@
 ---
 name: agent-router
-description: Intelligent agent routing -- automatically matches tasks to the best specialist agent based on file patterns, intent keywords, and domain context. Loaded every session to give Claude explicit routing rules for all 73 AgentSpec agents.
+description: Intelligent agent routing -- automatically matches tasks to the best specialist agent based on file patterns, intent keywords, and domain context. Loaded every session to give Claude explicit routing rules for all 74 AgentSpec agents.
 ---
 
 <!-- =========================================================================
@@ -14,7 +14,7 @@ description: Intelligent agent routing -- automatically matches tasks to the bes
 
 Explicit routing rules for matching tasks to the correct specialist agent. Generated from each agent's frontmatter, so any change to an agent's `description`, `kb_domains`, or `escalation_rules` flows here automatically.
 
-**Agent count:** 73  |  **Categories:** 10  |  **Content hash:** `ace6165378f2`
+**Agent count:** 74  |  **Categories:** 10  |  **Content hash:** `76afe2edd9f8`
 
 ## A. Agents by Category
 
@@ -119,15 +119,16 @@ Explicit routing rules for matching tasks to the correct specialist agent. Gener
 
 | Agent | Tier | Model | KB Domains | Escalates To |
 |-------|------|-------|-----------|--------------|
-| `brainstorm-agent` | T2 | sonnet | — | `define-agent` |
+| `brainstorm-agent` | T2 | opus | — | `define-agent` |
 | `brainstorm-multiagent` | T2 | opus | — | `define-agent`, `brainstorm-agent` |
-| `build-agent` | T2 | opus | — | `design-agent` |
-| `define-agent` | T2 | sonnet | — | `design-agent` |
+| `build-agent` | T2 | inherit | — | `design-agent` |
+| `define-agent` | T2 | opus | — | `design-agent` |
 | `define-multiagent` | T2 | opus | — | `design-multiagent`, `define-agent` |
 | `design-agent` | T2 | opus | — | `build-agent` |
 | `design-multiagent` | T2 | opus | — | `build-agent`, `design-agent` |
-| `iterate-agent` | T2 | sonnet | — | `define-agent`, `design-agent`, `build-agent` |
-| `ship-agent` | T2 | sonnet | — | `build-agent` |
+| `eval-agent` | T2 | sonnet | `testing` | `build-agent`, `iterate-agent` |
+| `iterate-agent` | T2 | opus | — | `define-agent`, `design-agent`, `build-agent` |
+| `ship-agent` | T2 | haiku | — | `build-agent`, `eval-agent` |
 
 ## B. KB Domain → Agents
 
@@ -162,7 +163,7 @@ Which agents know which domain. Use this when the user names a technology.
 | `streaming` | `ai-data-engineer`, `n8n-specialist`, `spark-engineer`, `spark-streaming-architect`, `streaming-engineer` |
 | `tailwind-css` | `css-specialist` |
 | `terraform` | `ai-data-engineer-cloud`, `ai-data-engineer-gcp`, `aws-data-architect`, `aws-deployer`, `aws-lambda-architect`, `ci-cd-specialist`, `gcp-data-architect` |
-| `testing` | `lambda-builder`, `python-developer`, `test-generator` |
+| `testing` | `eval-agent`, `lambda-builder`, `python-developer`, `test-generator` |
 ## C. Agent One-Liners
 
 Single-sentence purpose per agent, derived from frontmatter `description`.
@@ -198,6 +199,7 @@ Single-sentence purpose per agent, derived from frontmatter `description`.
 - **`define-multiagent`** — Multi-agent requirements analyst for complex cross-domain systems (Phase 1 enhanced).
 - **`design-agent`** — Architecture and technical specification specialist (Phase 2).
 - **`design-multiagent`** — Multi-agent architecture designer for complex cross-domain systems (Phase 2 enhanced).
+- **`eval-agent`** — Independent post-build acceptance specialist (Phase 3.5).
 - **`fabric-ai-specialist`** — Expert in Microsoft Fabric AI capabilities - Copilot, ML models, AI Skills, and Azure OpenAI integration.
 - **`fabric-architect`** — Strategic Fabric solution architect for end-to-end architectures using KB + MCP validation.
 - **`fabric-cicd-specialist`** — Expert in Microsoft Fabric CI/CD, Git integration, and deployment pipelines.

@@ -65,7 +65,7 @@ design-multiagent (this agent):
   Best for: 3+ KB domains, cross-domain complexity
 ```
 
-**Rule:** If the DEFINE touches fewer than 3 KB domains, escalate to design-agent. Do NOT use multi-agent for simple designs.
+**Rule:** The variant is decided before this agent runs — by the agent selection rubric in `/design`, or by the user for an explicit `/design-m` (never downgraded). Do not re-count domains to escalate.
 
 ---
 
@@ -89,11 +89,11 @@ design-multiagent (this agent):
 │     └─ Identify key decisions that need specialist input            │
 │                                                                      │
 │  3. DOMAIN DETECTION + AGENT DISCOVERY                              │
-│     └─ Count KB domains from DEFINE → if < 3, escalate to          │
-│        design-agent                                                  │
+│     └─ Variant already decided by the command (rubric)              │
 │     └─ Glob: ${GROK_PLUGIN_ROOT}/agents/*.md → Available agents              │
 │     └─ Match: kb_domains in agent frontmatter → DEFINE domains      │
-│     └─ Select top 3-4 agents with highest domain overlap            │
+│     └─ Use specialists passed by the command (rubric); apply        │
+│        the rubric yourself only when none were passed               │
 │                                                                      │
 │  4. SPECIALIST CONSULTATION (parallel)                              │
 │     └─ Build consultation prompt per specialist                     │
@@ -123,9 +123,7 @@ design-multiagent (this agent):
 
 1. Read DEFINE document (problem, users, success criteria, KB domains, constraints)
 2. Read `${GROK_PLUGIN_ROOT}/kb/_index.yaml` to confirm domain availability
-3. Count KB domains listed in DEFINE
-   - If < 3 domains → escalate to design-agent (cheaper, sufficient)
-   - If >= 3 domains → proceed with multi-agent design
+3. Take the variant and specialists from the command's rubric decision (do not re-count domains)
 4. Load KB patterns and concepts from all relevant domains
 
 ### Phase 2: Draft Architecture
@@ -141,7 +139,7 @@ This draft gives specialists concrete context to evaluate.
 
 ### Phase 3: Specialist Consultation
 
-**Select top 3-4 agents** whose `kb_domains` overlap with DEFINE's domains.
+**Specialist selection comes from the command.** `/design` and `/design-m` apply `${GROK_PLUGIN_ROOT}/sdd/architecture/AGENT_SELECTION_RUBRIC.md` and pass the chosen specialists (at most 4). Consult exactly those agents. Only when none were passed, apply the rubric's SPECIALISTS part yourself and record `fonte: llm (rubrica, no agente)` in **Seleção de Agentes**.
 
 **Build consultation prompt for each specialist:**
 
@@ -273,8 +271,8 @@ PRE-FLIGHT CHECK
 
 | Never Do | Why | Instead |
 |----------|-----|---------|
-| Consult specialists for < 3 domains | Waste of tokens | Escalate to design-agent |
-| Consult more than 4 specialists | Diminishing returns, high cost | Pick top 3-4 by domain overlap |
+| Override the specialists passed by the command | Breaks the audited selection | Consult exactly `specialists.value` |
+| Consult more than 4 specialists | Diminishing returns, high cost | The selector caps at 4 |
 | Consult specialists BEFORE drafting | No context for them to review | Draft first, then consult |
 | Pass full DEFINE to specialists | Context overload | Send 400-word summary + draft diagram |
 | Let specialists redesign the system | Contradictory recommendations | Instruction: "Do NOT redesign" |
@@ -299,12 +297,55 @@ PRE-FLIGHT CHECK
 
 ---
 
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${GROK_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" gate {FEATURE} --to design` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP. List the 🔴 questions, ask the
+   user to resolve them (answer now or `/iterate`). Do not write the DESIGN. Never close a 🔴
+   with your own assumption — not even in a non-interactive run; if you cannot ask, stop and report.
+2. `python3 "$MI" brief {FEATURE} --phase design` → honor current decisions and pending
+   assumptions; check related-feature decisions before re-deciding the same thing.
+
+ON EXIT (after writing DESIGN, before the Quality Gate)
+1. One `D-###` per inline decision, `Fase` = `design`: one-sentence why, rejected alternative,
+   `Onde Ler` = `DESIGN_{FEATURE}.md#<decision anchor>`. Never copy the decision body.
+2. Close every `🟡 Delegada ao design` as 🟢, citing the `D-###` that answers it.
+3. Mark assumptions ✅ Validada / ❌ Derrubada when the design settles them.
+4. Metadados: `Fase` = Design. Run `python3 "$MI" build`.
+
+Cross-domain risks raised by specialists that changed a decision are recorded in that decision's `Justificativa`.
+
+**Template:** `read_file(${GROK_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
+
+---
+
 ## Output Language
 
 **All generated SDD documents (DESIGN) must be written in Portuguese-BR (pt-BR).**
 
 Technical terms, file paths, code patterns, commands, agent names, and tool names remain in English.
 Section headings, decision context/rationale, component descriptions, and narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`${GROK_PLUGIN_ROOT}/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

@@ -9,6 +9,7 @@
 | **Feature** | {FEATURE_NAME} |
 | **Data de Entrega** | {YYYY-MM-DD} |
 | **Autor** | ship-agent |
+| **Gerado por** | {harness} · papel `{papel do OMP ou "sessão"}` · `{modelo ou desconhecido}` |
 
 ---
 

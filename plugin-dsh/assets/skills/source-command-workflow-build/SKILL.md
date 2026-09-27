@@ -11,6 +11,11 @@ Use this skill when the user asks to run the migrated source command `workflow-b
 
 # Build Command
 
+<!-- phase-routing: mode=session role=default -->
+> **Model routing:** this phase runs in the main session (it orchestrates the specialist agents).
+> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> **Gerado por** metadata row of the documents it writes.
+
 > Execute implementation with on-the-fly task generation (Phase 3)
 
 ## Usage
@@ -42,6 +47,7 @@ Phase 0: /brainstorm → .claude/sdd/features/BRAINSTORM_{FEATURE}.md (optional)
 Phase 1: /define     → .claude/sdd/features/DEFINE_{FEATURE}.md
 Phase 2: /design   → .claude/sdd/features/DESIGN_{FEATURE}.md
 Phase 3: /build    → Code + .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md (THIS COMMAND)
+Phase 3.5: /eval   → .claude/sdd/reports/EVAL_{FEATURE}.json + EVAL_REPORT_{FEATURE}.md
 Phase 4: /ship     → .claude/sdd/archive/{FEATURE}/SHIPPED_{DATE}.md
 ```
 
@@ -79,6 +85,32 @@ phase: build
 updated: $(date +%Y-%m-%d)
 EOF
 ```
+
+Gate and memory brief — a 🔴 open question on the blackboard **blocks** the build.
+A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
+with your own assumption, not even in a non-interactive run: if you cannot ask, stop and report.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+python3 "$MI" gate {FEATURE} --to build || exit 1   # 1 → 🔴 blocks · 2 → fix unreadable rows, re-run
+python3 "$MI" brief {FEATURE} --phase build
+```
+
+The blackboard usually exists already (created in Brainstorm/Define): **extend it, never
+overwrite it**. Every deviation from the DESIGN is recorded as a `D-###` with `Fase` = `build`
+and `Substitui` = the design decision it replaces. Run `python3 "$MI" build` at the end.
+
+### Step 1b: Pre-Build Eval Check (blocking)
+
+```bash
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/eval_runner.py" pre {FEATURE}
+```
+
+- Exit `0` → proceed (record `ALREADY_PASSING` warnings in the BUILD_REPORT).
+- Exit `1` (an eval cannot run) or `3` (structural contract error) → **stop before writing code** and fix the DESIGN through `/iterate`.
+- Never edit the `## Evals` block or its **Evals Digest** during the build.
 
 ### Step 2: Extract Tasks from File Manifest
 
@@ -154,7 +186,7 @@ MODEL=""   # empty → judge.py picks phase default
 STRICT_FLAG=""
 [[ "$mode" == "strict" ]] && STRICT_FLAG="--strict"
 
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/judge.py" \
   ".claude/sdd/reports/BUILD_REPORT_{FEATURE}.md" \
   --phase build \
   ${MODEL:+--model "$MODEL"} \
@@ -169,7 +201,7 @@ files individually instead of the whole report:
 
 ```bash
 # Judge the single riskiest file (migration, IAM, critical SQL)
-python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
+python3 "${AGENTSPEC_SCRIPTS:-${CLAUDE_PLUGIN_ROOT}/scripts}/judge.py" \
   "migrations/2026_X_add_roles.sql" \
   --phase build \
   --context "Postgres migration adding NOT NULL column on 50M-row table"
@@ -178,7 +210,7 @@ python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
 **Interpreting the verdict:**
 
 - **Advisory mode:** Show judge verdict, phase still complete, user decides
-- **Gated mode:** PASS → complete + suggest `/ship`. FAIL → phase not complete,
+- **Gated mode:** PASS → complete + suggest `/eval`. FAIL → phase not complete,
   surface concerns, user iterates or forces with `--force`
 
 **Budget / error handling:**
@@ -196,7 +228,7 @@ python3 ${CLAUDE_PLUGIN_ROOT:-.}/scripts/judge.py \
 | **Code** | As specified in DESIGN file manifest |
 | **Build Report** | `.claude/sdd/reports/BUILD_REPORT_{FEATURE}.md` |
 
-**Next Step:** `/ship .claude/sdd/features/DEFINE_{FEATURE}.md` (when ready)
+**Next Step:** `/eval {FEATURE}` — independent acceptance of the DEFINE's ATs. `/ship` refuses without a PASS eval receipt.
 
 ---
 
@@ -230,6 +262,7 @@ Before marking complete, verify:
 [ ] Tests pass (if applicable)
 [ ] No TODO comments left in code
 [ ] Build report generated
+[ ] Deviations from DESIGN recorded as D-### with Substitui; no 🔴 left on the blackboard
 ```
 
 ---
@@ -259,7 +292,7 @@ If you encounter issues:
 
 ## References
 
-- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/workflow/build-agent.md`
+- Agent: `${CLAUDE_PLUGIN_ROOT}/agents/build-agent.md`
 - Template: `${CLAUDE_PLUGIN_ROOT}/sdd/templates/BUILD_REPORT_TEMPLATE.md`
 - Contracts: `${CLAUDE_PLUGIN_ROOT}/sdd/architecture/WORKFLOW_CONTRACTS.yaml`
 - Next Phase: `${CLAUDE_PLUGIN_ROOT}/commands/workflow/ship.md`

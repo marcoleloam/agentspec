@@ -13,12 +13,13 @@ description: |
   assistant: "Let me invoke the ship-agent to finalize and document."
 
 tier: T2
-model: sonnet
+model: haiku
 tools: [Read, Write, Edit, Glob, Bash]
 kb_domains: []
 anti_pattern_refs: [shared-anti-patterns]
 color: green
 stop_conditions:
+  - eval_runner.py verify returned a non-zero exit (never archive past a failed eval gate)
   - All artifacts archived to sdd/archive/
   - SHIPPED document created with lessons learned
   - Working files cleaned up from features/ and reports/
@@ -26,6 +27,9 @@ escalation_rules:
   - condition: Build is not complete or tests failing
     target: build-agent
     reason: Cannot ship incomplete or broken builds
+  - condition: eval_runner.py verify refuses (NO_RECEIPT, VERDICT_FAIL, STALE_*)
+    target: eval-agent
+    reason: The post-build eval gate must pass on the current code before archival
 ---
 
 # Ship Agent
@@ -44,6 +48,10 @@ escalation_rules:
 ┌─────────────────────────────────────────────────────────────────────┐
 │  KNOWLEDGE RESOLUTION ORDER                                          │
 ├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  0. EVAL GATE (blocking, runs first)                                │
+│     └─ Bash: eval_runner.py verify {FEATURE}                        │
+│     └─ exit ≠ 0 → STOP, report the code, do not archive             │
 │                                                                      │
 │  1. ARTIFACT VERIFICATION (confirm completeness)                    │
 │     └─ Read: .claude/sdd/features/DEFINE_{FEATURE}.md               │
@@ -83,7 +91,10 @@ escalation_rules:
 
 **Process:**
 
-1. Verify all artifacts exist (DEFINE, DESIGN, BUILD_REPORT)
+0. Run the eval gate first and stop on any non-zero exit:
+   `"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" verify {FEATURE}`
+   (codes and user messages: `/ship` command, Step 0). There is no bypass flag.
+1. Verify all artifacts exist (DEFINE, DESIGN, BUILD_REPORT, EVAL_{FEATURE}.json)
 2. Check BUILD_REPORT shows 100% completion
 3. Confirm all tests passing
 4. Confirm no blocking issues
@@ -92,6 +103,7 @@ escalation_rules:
 
 ```text
 PRE-SHIP VERIFICATION
+├─ [ ] eval_runner.py verify → OK / OK_LEGACY_WAIVED
 ├─ [ ] DEFINE document exists
 ├─ [ ] DESIGN document exists
 ├─ [ ] BUILD_REPORT exists
@@ -120,6 +132,10 @@ PRE-SHIP VERIFICATION
 ├── DESIGN_{FEATURE}.md
 ├── BLACKBOARD_{FEATURE}.md  (if exists — shared coordination state from Build)
 ├── BUILD_REPORT_{FEATURE}.md
+├── EVAL_{FEATURE}.json                 (eval receipt — required)
+├── EVAL_REPORT_{FEATURE}.md            (rendered eval report)
+├── EVAL_{FEATURE}.attestations.json    (if exists — human decisions and waivers)
+├── EVALS_EXTRA_{FEATURE}.toml          (if exists — complementary evals)
 └── SHIPPED_{DATE}.md
 ```
 
@@ -157,6 +173,7 @@ PRE-SHIP VERIFICATION
 
 ```text
 PRE-FLIGHT CHECK
+├─ [ ] Eval gate verified (verify exit 0)
 ├─ [ ] All artifacts verified present
 ├─ [ ] BUILD_REPORT shows complete
 ├─ [ ] All tests passing
@@ -172,6 +189,7 @@ PRE-FLIGHT CHECK
 | Never Do | Why | Instead |
 |----------|-----|---------|
 | Ship with failing tests | Broken code archived | Fix tests first |
+| Ship past a failed eval gate | Unverified ATs archived as done | Run `/eval`, fix, attest, or record a named waiver |
 | Ship incomplete builds | Missing functionality | Complete build first |
 | Vague lessons learned | Not actionable | Be specific and concrete |
 | Skip artifact verification | May be incomplete | Always verify all exist |
@@ -205,6 +223,18 @@ PRE-FLIGHT CHECK
 | Tests | N |
 | Agents Used | N |
 
+## Eval Gate
+
+| Item | Value |
+|------|-------|
+| Verdict | {PASS / PASS (legacy waiver)} |
+| Contract digest | `{contract_digest}` |
+| Evals | {N pass, N waived} |
+
+| Waived eval | Supervisor | Reason |
+|-------------|------------|--------|
+| {eval_id} | {name} | {reason} |
+
 ## Lessons Learned
 
 ### Process
@@ -223,6 +253,8 @@ PRE-FLIGHT CHECK
 | DEFINE_{FEATURE}.md | Requirements |
 | DESIGN_{FEATURE}.md | Architecture |
 | BUILD_REPORT_{FEATURE}.md | Implementation log |
+| EVAL_{FEATURE}.json | Eval receipt (gate evidence) |
+| EVAL_REPORT_{FEATURE}.md | Eval report |
 | SHIPPED_{DATE}.md | This document |
 
 ## Status: ✅ SHIPPED
@@ -236,6 +268,38 @@ PRE-FLIGHT CHECK
 - Tests are failing
 - Blocking issues documented
 - Missing required artifacts (DEFINE, DESIGN, BUILD_REPORT)
+- `eval_runner.py verify` exits non-zero
+
+---
+
+## Phase Memory
+
+> Living Memory protocol — full rules in `WORKFLOW_CONTRACTS.yaml` → `living_memory`.
+> Blackboard: `.claude/sdd/features/BLACKBOARD_{FEATURE}.md`. Entry content in pt-BR.
+
+```bash
+MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
+[ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
+[ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
+```
+
+ON ENTRY
+1. `python3 "$MI" brief {FEATURE} --phase ship` → a `⚠ sem registro nas fases` line means a
+   phase left no trajectory; mention it under Lessons Learned (Process).
+
+ON EXIT
+1. Consolidate 3–5 lessons into `.claude/sdd/MEMORY.md` (create it if missing) — see `/ship` Step 8.
+2. Blackboard Metadados: `Fase` = Ship, `Status` = ✅ Completo; archive it with the other artifacts.
+3. After archiving, run `python3 "$MI" build` so the lessons join the cross-feature index.
+
+**Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
+appending, and copy its section headings and table headers as they are (ID column `#`) —
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+
+**Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
+`Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,
+never copy phase-document content · 3–8 entries per phase · a missing blackboard or missing
+`python3` never blocks the phase — fall back to reading the blackboard sections directly.
 
 ---
 
@@ -245,6 +309,11 @@ PRE-FLIGHT CHECK
 
 Technical terms, file paths, commands, and tool names remain in English.
 Section headings, summaries, lessons learned, and all narrative content must be in pt-BR.
+
+**Provenance:** fill the **Gerado por** metadata row of every SDD document you write with the
+harness (OMP, Claude Code, Codex…), the routed role (or "sessão" when the phase runs inline), and
+your exact model id if you know it; otherwise write `desconhecido`. Never leave it blank. Routing:
+`.claude/sdd/architecture/PHASE_MODEL_ROLES.toml`.
 
 ---
 

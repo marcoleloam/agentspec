@@ -1,0 +1,148 @@
+{
+  "schema": "agentspec/eval-receipt/v1",
+  "feature": "JEV_AGENT_SELECTION",
+  "commit": "4ff0c356edab815667b0255415041a21e457cec8",
+  "worktree_digest": "sha256:9071d10db83118896c7e23af983dfff433f42015bd118fa718d2dc086d7ed76e",
+  "contract_digest": "sha256:62bb43f3931ff55c745f5667b19e967a62dacf59f288383caea28b6ebcbac3cc",
+  "extras_digest": null,
+  "evaluated_at": "2026-09-26T20:23:40Z",
+  "runner_version": "1.0.0",
+  "jev": {
+    "model": "typesafe/jev-1.13",
+    "calibrated": false
+  },
+  "results": [
+    {
+      "eval_id": "phase_single",
+      "origin": "contract",
+      "verifies": [
+        "AT-002"
+      ],
+      "check_type": "deterministic",
+      "description": "/define numa spec de uma área produz decisão single auditável",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 198.598,
+      "evidence": {
+        "stdout": "{\"artifact\": \"DEFINE_EVAL_SINGLE.md\", \"consultations_unavailable\": false, \"scenario\": \"define_single\", \"specialists_mentioned\": [\"css-specialist\", \"react-developer\", \"ux-designer\"], \"variant\": \"single\"}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "phase_multi",
+      "origin": "contract",
+      "verifies": [
+        "AT-001"
+      ],
+      "check_type": "deterministic",
+      "description": "/design numa spec com duas áreas reais produz decisão multiagent auditável",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 496.328,
+      "evidence": {
+        "stdout": "{\"artifact\": \"DESIGN_EVAL_MULTI.md\", \"consultations_unavailable\": false, \"scenario\": \"design_multi\", \"specialists_mentioned\": [\"react-developer\"], \"variant\": \"multiagent\"}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "phase_locked",
+      "origin": "contract",
+      "verifies": [
+        "AT-009"
+      ],
+      "check_type": "deterministic",
+      "description": "/design-m preserva multiagent e registra segunda opinião sem lhe dar controle",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 329.72,
+      "evidence": {
+        "stdout": "{\"artifact\": \"DESIGN_EVAL_LOCKED.md\", \"consultations_unavailable\": false, \"scenario\": \"design_locked\", \"specialists_mentioned\": [\"a11y-specialist\", \"css-specialist\", \"react-developer\"], \"variant\": \"multiagent\"}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "phase_second_opinion",
+      "origin": "contract",
+      "verifies": [
+        "AT-014"
+      ],
+      "check_type": "deterministic",
+      "description": "/design automático registra a segunda opinião após a correção do snippet",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 329.541,
+      "evidence": {
+        "stdout": "{\"artifact\": \"DESIGN_EVAL_AUTO_SINGLE.md\", \"consultations_unavailable\": false, \"scenario\": \"design_second_opinion\", \"specialists_mentioned\": [\"a11y-specialist\", \"css-specialist\", \"react-developer\"], \"variant\": \"single\"}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "selector_regression",
+      "origin": "contract",
+      "verifies": [
+        "AT-003",
+        "AT-004",
+        "AT-005",
+        "AT-006",
+        "AT-007",
+        "AT-008",
+        "AT-010",
+        "AT-013"
+      ],
+      "check_type": "deterministic",
+      "description": "Fallbacks, timeout, normalização, limite de especialistas e kill switch do JEV opcional",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 2.842,
+      "evidence": {
+        "stdout": "........................................................................ [ 91%]\n.......                                                                  [100%]\n79 passed in 2.65s\n",
+        "stderr": ""
+      }
+    },
+    {
+      "eval_id": "rubric_quality",
+      "origin": "contract",
+      "verifies": [
+        "AT-011"
+      ],
+      "check_type": "deterministic",
+      "description": "Mede novamente Codex no corpus retrospectivo e compara com a regra antiga",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 114.905,
+      "evidence": {
+        "stdout": "{\"cases\": 46, \"label_provenance\": \"build-agent Claude; no independent human review\", \"label_sha256\": {\"agent_selection_holdout.json\": \"9eb8fb6dab68d705cf80575afcd41e640d13c63c13f4a615e2f52a7ee208034c\", \"agent_selection_labels.json\": \"ec6c596ec0044fa84c36cf6c7e2c1a40e702fb13d360c9a9fab1047b30e1344c\", \"agent_selection_prd_set.json\": \"4d38dec53fc67819e34215dfadba9a26479d4fcc76586b07a29e4db68310b3aa\"}, \"multiagent_cases\": 31, \"pass\": true, \"provider\": \"codex\", \"provider_models\": [\"gpt-6-astra\"], \"specialists_f1\": {\"llm\": 0.5392, \"old_rule\": 0.187}, \"variant_accuracy\": {\"llm\": 0.8913, \"old_rule\": 0.4565}, \"variant_correct\": {\"llm\": 41, \"old_rule\": 21}}\n",
+        "stderr": "L-design: multiagent ['frontend-architect', 'python-developer', 'genai-architect', 'ai-prompt-specialist']\n  AZURE_AI_FOUNDRY_ROTATION-design: multiagent ['genai-architect', 'ci-cd-specialist']\n  SYS_FACTORY-design: multiagent ['genai-architect', 'python-developer', 'code-reviewer', 'data-quality-analyst']\n  CONTRATOS_LIGHT-design: multiagent ['frontend-architect', 'schema-designer', 'genai-architect', 'ai-prompt-specialist']\n  MIGRACAO_VPS_GCP_PARIDADE-design: single ['gcp-data-architect', 'ci-cd-specialist', 'data-platform-engineer', 'qdrant-specialist']\n  PORTAL_CAPITALIZACAO-design: single ['frontend-architect', 'react-developer', 'css-specialist', 'ux-designer']\n  SORTEIOS_ALINHAMENTO_PRD-design: single ['frontend-architect', 'react-developer', 'ux-designer']\n  FORESEA_AI_INVESTIGATION_SUITE-design: single ['frontend-architect', 'ux-designer', 'react-developer', 'css-specialist']\n  PARTNERONE_FEED-design: multiagent ['frontend-architect', 'n8n-specialist', 'schema-designer', 'a11y-specialist']\n  ARQUITETURA_ALTERNATIVAS_RFP-design: single ['data-platform-engineer', 'genai-architect', 'ai-data-engineer', 'ci-cd-specialist']\n  MULTITENANT_INCLUSAO_INTEGRACOES-design: single ['frontend-architect', 'react-developer', 'ux-designer']\n  PORTAL_AGV_EXPANSAO_CATALOGO-design: single ['frontend-architect', 'react-developer', 'ux-designer']\n  FORESEA_CRITICIDADE-design: single ['frontend-architect', 'ux-designer', 'css-specialist', 'a11y-specialist']\n  FRONTEND_ECOSYSTEM-design: single ['kb-architect', 'frontend-architect', 'css-specialist', 'a11y-specialist']\n  KB_EVOLUTION-design: single ['kb-architect', 'kb-evolution-agent', 'ai-prompt-specialist']\n  H01-design: multiagent ['frontend-architect', 'genai-architect', 'python-developer', 'schema-designer']\n  H02-design: multiagent ['genai-architect', 'frontend-architect', 'ci-cd-specialist']\n  H03-design: multiagent ['genai-architect', 'ai-prompt-specialist', 'gcp-data-architect', 'frontend-architect']\n  H04-design: single ['frontend-architect', 'react-developer', 'ux-designer', 'css-specialist']\n  H05-design: multiagent ['frontend-architect', 'react-developer', 'a11y-specialist', 'schema-designer']\n  H06-design: multiagent ['frontend-architect', 'pipeline-architect', 'ai-prompt-specialist', 'data-quality-analyst']\n  H07-design: single ['frontend-architect', 'ux-designer', 'css-specialist', 'a11y-specialist']\n  H08-design: single ['frontend-architect', 'ux-designer', 'css-specialist', 'react-developer']\n  H09-design: multiagent ['python-developer', 'frontend-architect', 'ci-cd-specialist', 'a11y-specialist']\n  H10-design: single ['python-developer', 'genai-architect', 'ai-prompt-specialist', 'test-generator']\n  H11-design: multiagent ['genai-architect', 'ai-data-engineer', 'kb-architect', 'python-developer']\n  H12-design: single ['genai-architect', 'the-planner', 'ai-prompt-specialist']\n  H13-define: multiagent ['pipeline-architect', 'react-developer', 'ai-data-engineer', 'genai-architect']\n  H14-define: multiagent ['frontend-architect', 'ai-data-engineer', 'pipeline-architect', 'n8n-specialist']\n  H15-define: single ['frontend-architect', 'react-developer', 'ux-designer']\n  P01-define: multiagent ['genai-architect', 'ai-data-engineer', 'ai-prompt-specialist', 'ux-designer']\n  P02-define: multiagent ['frontend-architect', 'n8n-specialist', 'ai-prompt-specialist', 'schema-designer']\n  P03-define: single []\n  P04-define: multiagent ['ux-designer', 'schema-designer', 'pipeline-architect', 'data-quality-analyst']\n  P05-define: multiagent ['frontend-architect', 'data-contracts-engineer', 'pipeline-architect', 'genai-architect']\n  P06-define: multiagent ['genai-architect', 'ai-data-engineer', 'frontend-architect', 'ux-designer']\n  P07-define: single ['code-documenter', 'ux-designer']\n  P08-define: multiagent ['frontend-architect', 'ux-designer', 'schema-designer', 'data-contracts-engineer']\n  P09-define: multiagent ['frontend-architect', 'schema-designer', 'ux-designer', 'a11y-specialist']\n"
+      }
+    },
+    {
+      "eval_id": "distribution",
+      "origin": "contract",
+      "verifies": [
+        "AT-012"
+      ],
+      "check_type": "deterministic",
+      "description": "Testes e drift checks dos bundles no código atual",
+      "status": "pass",
+      "exit_code": 0,
+      "duration_sec": 11.477,
+      "evidence": {
+        "stdout": "........................................................................ [ 22%]\n....................................s................................... [ 45%]\n........................................................................ [ 67%]\n........................................................................ [ 90%]\n...............................                                          [100%]\n318 passed, 1 skipped in 9.60s\nphase routing: in sync with PHASE_MODEL_ROLES.toml\n[OK] agent-router is up to date (74 agents, hash 76afe2edd9f8)\nOK - .codex/ + AGENTS.md up to date (74 agents, 40 command skills)\nOK - plugin-grok/ + .grok/{agents,commands} up to date\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "required": [
+    "phase_single",
+    "phase_multi",
+    "phase_locked",
+    "phase_second_opinion",
+    "selector_regression",
+    "rubric_quality",
+    "distribution"
+  ],
+  "structural_errors": [],
+  "warnings": [],
+  "waivers": [],
+  "verdict": "PASS"
+}

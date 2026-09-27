@@ -169,6 +169,61 @@ Check `.gitignore` entries before judging — if a file is gitignored, it's prob
 
 ---
 
+## JEV for Graded Evals
+
+The `/eval` phase (post-build acceptance gate) uses a **different** model — TypeSafe's
+Jev — to grade the `graded` evals in a feature's `## Evals` contract. Jev is a
+"System One" model: it doesn't write prose, it answers typed yes/no and rubric
+questions about a `state` you hand it. It shares the Judge's OpenRouter key and
+ledger, but is a separate client (`scripts/jev_client.py`), separate budget, and
+separate CLI (`scripts/eval_runner.py`).
+
+| Setting | Value |
+|---|---|
+| Model | `typesafe/jev-1.13` (override with `JEV_MODEL`) |
+| Endpoints | primary `https://openrouter.ai/api/v1/systemone`, fallback `https://openrouter.ai/api/alpha/decisions` |
+| Auth | Same `OPENROUTER_API_KEY` as the Judge |
+| Budget | `JEV_BUDGET`, default **200 calls/day** (UTC), tracked in `<project>/.claude/storage/judge-ledger.jsonl` — the same ledger file and row schema the Judge uses, filtered to `model` values starting with `typesafe/` |
+| Python | `scripts/eval_runner.py` needs **Python ≥ 3.11** (`tomllib`) plus `pytest`, and exports its own interpreter to the evals. Run `make venv` once (creates `.venv/` from `requirements-dev.txt`) and set `AGENTSPEC_PYTHON` to `.venv/bin/python` — e.g. in `.claude/settings.local.json` → `"env"` so `/eval` and `/ship` pick it up |
+
+If you use oh-my-pi, the same trick from setup step 2 applies here too:
+
+```bash
+export OPENROUTER_API_KEY="$(omp token openrouter)"
+```
+
+### Calibrating Jev
+
+By default, Jev's answers are only **advisory** — every `graded` eval still
+escalates to `/judge` or a human. To let Jev decide on its own, calibrate it
+against a set of labelled cases:
+
+```bash
+python3.11 scripts/eval_runner.py calibrate cases.toml
+```
+
+`cases.toml` holds `[[case]]` tables, each with a `state`, a set of `questions`
+(same shape as an eval's `[[eval.questions]]`), and an `expected` verdict
+(`"pass"` or `"fail"`). The runner calls Jev for every case, classifies the
+answers, and writes `.claude/sdd/evals/JEV_CALIBRATION.json`.
+
+Calibration is **approved** — and only then does Jev's decision become
+authoritative for `/eval run` — when all three hold:
+
+| Metric | Threshold |
+|---|---|
+| `n` (total labelled cases) | ≥ **10** |
+| `coverage` (cases Jev actually decided, not escalated) | ≥ **50%** |
+| `agreement` (decided cases matching `expected`) | ≥ **80%** |
+
+Until a project has an approved calibration for the current `JEV_MODEL`, every
+`graded` eval keeps escalating to `/judge` or `attest` — the safe default. See
+[docs/concepts/post-build-evals.md](../concepts/post-build-evals.md) for the full
+`/eval` gate, including the three-way pass/fail/escalated classification and why
+Jev alone was never allowed to approve a case.
+
+---
+
 ## Roadmap
 
 V0 is intentionally minimal. Upcoming:

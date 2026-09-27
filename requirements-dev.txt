@@ -1,0 +1,3 @@
+# Dev/test dependencies for the root pytest suite and the /eval gate.
+# Installed into the project virtualenv by `make venv` (.venv/, gitignored).
+pytest>=8.3

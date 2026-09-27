@@ -1,0 +1,60 @@
+{
+  "attestations": [
+    {
+      "eval_id": "omp_design_routed",
+      "verdict": "pass",
+      "owner": "usuário (dono do AgentSpec)",
+      "evidence": "task(design-agent) resolvedModel=openai-codex/gpt-6-astra:max (=slow); Gerado por gpt-6-astra; /tmp/lpr/s-design",
+      "attested_at": "2026-09-24T22:11:42Z",
+      "recorded_via": "cli",
+      "commit": "2522695415aedeca080f434f8c7b9bb094dc884d",
+      "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contract_digest": "sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a"
+    },
+    {
+      "eval_id": "omp_ship_routed",
+      "verdict": "pass",
+      "owner": "usuário (dono do AgentSpec)",
+      "evidence": "verify antes; task(ship-agent) resolvedModel=xai-oauth/grok-4.6:xhigh (=smol); Gerado por grok-4.6; ressalva: sessão @plan não delegou (fallback inline, registrado)",
+      "attested_at": "2026-09-24T22:11:43Z",
+      "recorded_via": "cli",
+      "commit": "2522695415aedeca080f434f8c7b9bb094dc884d",
+      "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contract_digest": "sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a"
+    },
+    {
+      "eval_id": "omp_without_override",
+      "verdict": "pass",
+      "owner": "usuário (dono do AgentSpec)",
+      "evidence": "sem overrides: /design concluiu; resolvedModel=xai-oauth/grok-4.6:high; Gerado por grok-4.6; /tmp/lpr/s-noov",
+      "attested_at": "2026-09-24T22:11:43Z",
+      "recorded_via": "cli",
+      "commit": "2522695415aedeca080f434f8c7b9bb094dc884d",
+      "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contract_digest": "sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a"
+    },
+    {
+      "eval_id": "omp_interactive_session",
+      "verdict": "pass",
+      "owner": "usuário (dono do AgentSpec)",
+      "evidence": "omp --model @plan: 0 task calls, perguntas inline; Gerado por gpt-6-astra (sessão)",
+      "attested_at": "2026-09-24T22:11:43Z",
+      "recorded_via": "cli",
+      "commit": "2522695415aedeca080f434f8c7b9bb094dc884d",
+      "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contract_digest": "sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a"
+    },
+    {
+      "eval_id": "claude_code_design_subagent",
+      "verdict": "pass",
+      "owner": "usuário (dono do AgentSpec)",
+      "evidence": "Task agentspec:design-agent; subagent claude-opus-5-5; Gerado por claude-opus-5-5[1m] (via --plugin-dir; cache do marketplace desatualizado)",
+      "attested_at": "2026-09-24T22:11:43Z",
+      "recorded_via": "cli",
+      "commit": "2522695415aedeca080f434f8c7b9bb094dc884d",
+      "worktree_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contract_digest": "sha256:b030f8940483c9ab339160ac6b83f94fab8cf09332f4410d910cb0ef0933067a"
+    }
+  ],
+  "waivers": []
+}
