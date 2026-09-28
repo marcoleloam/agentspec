@@ -120,7 +120,7 @@ case $rc in
   0) python3 "$MI" brief {FEATURE} --phase design ;;  # nothing blocks
   1) exit 1 ;;   # 🔴 blocks: list them, ask the user, stop
   2) exit 2 ;;   # unreadable rows: fix the columns it names, re-run
-  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd not found) — continuing without gate/brief" ;;
+  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd/ not found) — continuing without gate/brief" ;;
 esac
 ```
 
@@ -240,7 +240,7 @@ Resolução cells of Q and A change in place), pointer + one sentence, pt-BR con
 
 ```bash
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
-if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd/: skip
 ```
 
 ```bash

@@ -16,11 +16,11 @@ Exit codes:
     2  gate, build: a blackboard has entry rows the parser cannot read — fix the table
        columns (see BLACKBOARD_TEMPLATE.md) instead of losing that memory silently
        (argparse also exits 2 on a bad command line)
-    3  memory unavailable: --root is not a directory (no .claude/sdd here). Not a
+    3  memory unavailable: --root is not a directory (no .claude/sdd/ here). Not a
        memory problem — callers continue without brief/gate. A caller that cannot
        even find this script must treat it the same way: "memory unavailable".
 
-All commands accept --root (default .claude/sdd). Contract:
+All commands accept --root (default .claude/sdd/). Contract:
 WORKFLOW_CONTRACTS.yaml → living_memory.
 """
 from __future__ import annotations
@@ -663,7 +663,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if not args.root.is_dir():
-        print(f"memory unavailable: {args.root} is not a directory (no .claude/sdd here) — "
+        print(f"memory unavailable: {args.root} is not a directory (no .claude/sdd/ here) — "
               "continue without the brief/gate", file=sys.stderr)
         return EXIT_UNAVAILABLE
     mem = collect(args.root)

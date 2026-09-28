@@ -232,7 +232,7 @@ archive and MEMORY.md are written, rebuild the cross-feature index so the next f
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd/: skip
 ```
 
 ---

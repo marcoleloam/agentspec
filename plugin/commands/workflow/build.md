@@ -93,7 +93,7 @@ case $rc in
   0) python3 "$MI" brief {FEATURE} --phase build ;;  # nothing blocks
   1) exit 1 ;;   # 🔴 blocks: list them, ask the user, stop
   2) exit 2 ;;   # unreadable rows: fix the columns it names, re-run
-  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd not found) — continuing without gate/brief" ;;
+  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd/ not found) — continuing without gate/brief" ;;
 esac
 ```
 

@@ -149,7 +149,7 @@ record the phase entries on `BLACKBOARD_{FEATURE}.md`, created from
 
 ```bash
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — define is not done"
-if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd/: skip
 ```
 
 The final message lists the Blackboard IDs this phase added, next to the DEFINE path.

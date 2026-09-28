@@ -668,7 +668,7 @@ eval:
   statuses: ["pass", "fail", "error", "escalated", "pending", "waived"]
 
   binding:
-    receipt: "commit + worktree_digest (git diff HEAD + untracked, excluding .claude/sdd and .claude/storage) + contract_digest + extras_digest"
+    receipt: "commit + worktree_digest (git diff HEAD + untracked, excluding .claude/sdd/ and .claude/storage) + contract_digest + extras_digest"
     attestations_and_waivers: "bound to the same commit + worktree + contract; stale ones become pending"
 
   anti_patterns:
@@ -894,7 +894,7 @@ living_memory:
   file: ".claude/sdd/features/BLACKBOARD_{FEATURE}.md"
   script: "${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py  (exact form — only this is filled in at load; then $AGENTSPEC_MEMORY_INDEX from the SessionStart hook; repo dev fallback: plugin-extras/scripts/memory-index.py)"
   template: ".claude/sdd/templates/BLACKBOARD_TEMPLATE.md  (Read it before creating a blackboard — the script reads only its sections and columns)"
-  exit_codes: "gate: 0 pass · 1 🔴 blocks · 2 unreadable blackboard rows (fix columns, re-run) · 3 memory unavailable (no .claude/sdd) — continue. build: 0 ok · 2 unreadable rows (index still written) · 3 memory unavailable — skip. A missing memory-index.py or python3 counts as unavailable"
+  exit_codes: "gate: 0 pass · 1 🔴 blocks · 2 unreadable blackboard rows (fix columns, re-run) · 3 memory unavailable (no .claude/sdd/) — continue. build: 0 ok · 2 unreadable rows (index still written) · 3 memory unavailable — skip. A missing memory-index.py or python3 counts as unavailable"
   index: ".claude/sdd/MEMORY_INDEX.md  (derived, gitignored, rebuilt by `memory-index.py build`)"
 
   entry_types:

@@ -53,7 +53,7 @@ QUIET: Result = (0, "", "")
 
 
 def find_root(start: Path) -> Path | None:
-    """.claude/sdd of the nearest ancestor of start (inclusive) that has .claude/sdd/features.
+    """.claude/sdd/ of the nearest ancestor of start (inclusive) that has .claude/sdd/features.
     Stops at the enclosing git repository root, so it never picks up an unrelated project."""
     for d in (start, *start.parents):
         if (d / ".claude" / "sdd" / "features").is_dir():
