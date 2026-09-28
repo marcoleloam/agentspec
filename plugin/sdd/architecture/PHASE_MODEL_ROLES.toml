@@ -11,7 +11,14 @@
 #   mode = "delegated" -> the command body delegates the phase to `agent`
 #                         (the only way the role applies automatically).
 #   mode = "session"   -> runs inline; `recommended_role` is what the user
-#                         should start the session with (omp --model @<role>).
+#                         should start the session with (omp --model @<role>),
+#                         `codex_effort` the effort to start Codex with
+#                         (codex -c model_reasoning_effort=<effort>).
+#   Delegated commands take the Codex effort of their agent.
+#
+# Cross-model review (--judge) is NOT routed here: scripts/judge.py calls
+# OpenRouter directly and picks its model from PHASE_MODEL_DEFAULTS / --model /
+# JUDGE_MODEL, so an OMP role would never be read.
 #
 # Apply:  python3 scripts/phase_routing.py --apply
 # Check:  python3 scripts/phase_routing.py --check      (part of `make check`)
@@ -77,18 +84,22 @@ codex_effort = "medium"
 [commands.brainstorm]
 mode = "session"
 recommended_role = "plan"
+codex_effort = "high"
 
 [commands.define]
 mode = "session"
 recommended_role = "plan"
+codex_effort = "high"
 
 [commands.define-m]
 mode = "session"
 recommended_role = "plan"
+codex_effort = "high"
 
 [commands.iterate]
 mode = "session"
 recommended_role = "plan"
+codex_effort = "high"
 
 [commands.design]
 mode = "delegated"
@@ -99,30 +110,29 @@ agent = "design-agent"
 [commands.design-m]
 mode = "session"
 recommended_role = "slow"
+codex_effort = "high"
 
 [commands.build]
 mode = "session"
 recommended_role = "default"
+codex_effort = "high"
 
 [commands.continue]
 mode = "session"
 recommended_role = "default"
+codex_effort = "high"
 
 [commands.work]
 mode = "session"
 recommended_role = "default"
+codex_effort = "medium"
 
 [commands.eval]
 mode = "session"
 recommended_role = "default"
+codex_effort = "medium"
 
 # Step 0 (eval_runner.py verify) runs in the session; Steps 1-8 are delegated.
 [commands.ship]
 mode = "delegated"
 agent = "ship-agent"
-
-# Cross-model review. judge.py still resolves its model via OpenRouter
-# (PHASE_MODEL_DEFAULTS / --model / JUDGE_MODEL). REVIEWER is an optional
-# custom OMP role; keep it on a different model family than plan/slow.
-[judge]
-omp_role = "REVIEWER"

@@ -103,7 +103,7 @@ escalation_rules:
 
 ```text
 PRE-SHIP VERIFICATION
-├─ [ ] eval_runner.py verify → OK / OK_LEGACY_WAIVED
+├─ [ ] eval_runner.py verify → OK / OK_LEGACY_RECEIPT / OK_LEGACY_WAIVED
 ├─ [ ] DEFINE document exists
 ├─ [ ] DESIGN document exists
 ├─ [ ] BUILD_REPORT exists
@@ -119,7 +119,7 @@ PRE-SHIP VERIFICATION
 **Process:**
 
 1. Create archive directory: `.claude/sdd/archive/{FEATURE}/`
-2. Copy all artifacts to archive
+2. Copy all artifacts to archive, including `EVAL_{FEATURE}.freeze.log` (features/), `EVAL_{FEATURE}.pre.json` and `EVAL_{FEATURE}.attestations.json` (reports/)
 3. Update status in archived documents to "Shipped"
 4. Remove from features/ and reports/
 
@@ -136,6 +136,8 @@ PRE-SHIP VERIFICATION
 ├── EVAL_REPORT_{FEATURE}.md            (rendered eval report)
 ├── EVAL_{FEATURE}.attestations.json    (if exists — human decisions and waivers)
 ├── EVALS_EXTRA_{FEATURE}.toml          (if exists — complementary evals)
+├── EVAL_{FEATURE}.freeze.log          (if exists — freeze ledger)
+├── EVAL_{FEATURE}.pre.json            (if exists — pre-build receipt)
 └── SHIPPED_{DATE}.md
 ```
 
@@ -284,7 +286,9 @@ MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path fi
 ```
 
 ON ENTRY
-1. `python3 "$MI" brief {FEATURE} --phase ship` → a `⚠ sem registro nas fases` line means a
+1. Brief: use the `Living Memory brief:` section of the delegation prompt when present
+   (`/ship` passes it; the hook only reaches the main session); otherwise run
+   `python3 "$MI" brief {FEATURE} --phase ship`. A `⚠ sem registro nas fases` line means a
    phase left no trajectory; mention it under Lessons Learned (Process).
 
 ON EXIT
@@ -294,7 +298,7 @@ ON EXIT
 
 **Template:** `Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
 appending, and copy its section headings and table headers as they are (ID column `#`) —
-`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read; exit 3 or a missing `$MI` means memory is unavailable — continue.
 
 **Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
 `Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,

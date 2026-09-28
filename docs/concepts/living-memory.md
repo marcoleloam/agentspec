@@ -49,6 +49,9 @@ Rows hold a pointer (`Onde Ler`) and one sentence of why. They never copy the ph
 | 🟡 Delegada ao {fase} | Passed on purpose to the next phase, which must close it as 🟢 citing a `D-###` |
 | 🟢 Resolvido | Closed. `Resolução` holds the answer or the decision that answers it |
 
+The status is the emoji the cell **starts** with, so `🟢 Resolvido (era 🔴)` counts as resolved.
+A cell with no leading emoji is read by its first word (`Aberto`, `Delegada`, `Resolvido`).
+
 ## The Script
 
 `memory-index.py` (shipped in the plugin's `scripts/`) does all of the aggregated reading.
@@ -71,10 +74,32 @@ would resolve to `./scripts/…` in a user project. That is why the second line 
 SessionStart hook writes `AGENTSPEC_MEMORY_INDEX` to `$CLAUDE_ENV_FILE`. The same hook exports
 `AGENTSPEC_SCRIPTS`, which `eval_runner.py`, `judge.py` and `status-dashboard.py` are called through.
 
-`gate` and `build` exit **2** when a blackboard has entry rows they cannot read (for example a
-table in a section the template does not have). They say which IDs were lost, and the fix
-is to use the sections and columns of `BLACKBOARD_TEMPLATE.md`. The ID column may be
-headed `#` or `ID`.
+| Exit | Meaning | What the caller does |
+|------|---------|----------------------|
+| `0` | OK (for `gate`: nothing blocks) | continue |
+| `1` | `gate` only: an open 🔴 question blocks the transition | list the 🔴, ask the user, stop |
+| `2` | `gate` / `build`: a blackboard has entry rows the parser cannot read | fix the rows it names, re-run |
+| `3` | memory unavailable: `--root` (`.claude/sdd`) does not exist | say so in one line, continue |
+
+Exit **2** names the lost IDs. It happens, for example, when a table sits in a section the
+template does not have. The fix is to use the sections and columns of `BLACKBOARD_TEMPLATE.md`.
+Only the ID column (headed `#` or `ID`, or else the first column) defines a row. An ID cited
+in `Substitui` or `Resolução` is a reference, not a row.
+
+A **missing script** is not exit 2. When none of the three `MI` paths exists, which is the
+normal case in a project where the plugin is not installed, `python3 "$MI"` itself fails with
+exit 2 ("can't open file"). That looks exactly like "unreadable rows". So the commands check
+`[ -f "$MI" ]` first and treat a missing script like exit 3, as "memory unavailable, continue":
+
+```bash
+rc=3; [ -f "$MI" ] && command -v python3 >/dev/null && { python3 "$MI" gate ORDERS_ETL --to design; rc=$?; }
+case $rc in
+  0) python3 "$MI" brief ORDERS_ETL --phase design ;;
+  1) exit 1 ;;   # 🔴 blocks: list them, ask the user, stop
+  2) exit 2 ;;   # unreadable rows: fix the columns it names, re-run
+  *) echo "Living Memory unavailable — continuing without gate/brief" ;;
+esac
+```
 
 ### What the brief shows, in order
 
@@ -102,13 +127,63 @@ makes those calls itself through `scripts/memory-hook.py`:
 |------|------|--------------|
 | `UserPromptSubmit` | the prompt is a phase command with a feature (`/design X`, `/agentspec:workflow:define …/BRAINSTORM_X.md`) | injects the `brief` as context |
 | `PreToolUse` (`Write`) | a new `features/DESIGN_{F}.md` is about to be created | runs `gate --to design`; a 🔴 or unreadable rows **block** the write |
-| `PostToolUse` (`Write\|Edit`) | any `BLACKBOARD_*.md` changes | rebuilds `MEMORY_INDEX.md`; unreadable rows go back to the agent |
+| `PostToolUse` (`Write\|Edit\|MultiEdit`) | any `BLACKBOARD_*.md` changes | rebuilds `MEMORY_INDEX.md`; unreadable rows go back to the agent |
 
-The commands still describe the same calls, so non-Claude harnesses (Codex, dsh) and
-the AgentSpec source repo keep working through the prompt alone. Editing an existing DESIGN
-is not gated, because `/iterate` is how a 🔴 gets resolved. The Design→Build gate stays
-prompt-driven, since Build writes no single file the hook could key on. Every hook exits 0
-on any unexpected error, so a broken memory never breaks a session.
+The prompt hook recognizes every way a phase command is typed. That covers `/design`,
+`/workflow:design`, `/agentspec:workflow:design` and the skill form
+`/agentspec:source-command-workflow-design`, plus `/continuar` and `/continue`. The feature
+can be a name in any case (`orders_etl` resolves to `ORDERS_ETL`) or a path to a phase
+document. `/build` and `/continuar` with no argument use the feature in `.claude/sdd/.active`,
+the pointer written by `/work` and `/build`. A prompt that names no feature, or whose feature
+has no memory yet, injects nothing.
+
+The project is the nearest ancestor with `.claude/sdd/features`. For the write hooks the
+search starts at the file being written. For the prompt hook it starts at the session `cwd`.
+It stops at the enclosing git root. A session started in a subdirectory is still gated.
+
+Editing an existing DESIGN is not gated, because `/iterate` is how a 🔴 gets resolved. The
+Design→Build gate stays prompt-driven, since Build writes no single file the hook could key
+on. Every hook exits 0 with no output on any unexpected error, so a broken memory never
+breaks a session. The two intended exceptions are the DESIGN block and the unreadable-row
+feedback. The hooks add about 20–25 ms to a phase-command prompt and nothing measurable to
+any other prompt, since the interpreter starts either way (~30 ms).
+
+### Known bypasses
+
+The hooks guard the common path. They are not a sandbox:
+
+- **A DESIGN created outside the `Write` tool** is not gated. That includes `Bash`
+  (`cat > DESIGN_X.md`) and a file copied in from elsewhere. Only the prompt-driven gate in
+  `/design` covers it.
+- **An existing DESIGN is never re-checked.** A 🔴 opened after the DESIGN was written does
+  not block edits to it. It blocks only `/build`, through the prompt-driven gate.
+- **Design→Build has no hook.** It relies on `/build` running `gate --to build`.
+- A phase started by a free-form request ("design the orders feature") gets no injected
+  brief, because the hook matches slash-command prompts only.
+
+## Harnesses Without Hooks (Codex, DeepSeek Harness)
+
+Codex and DeepSeek Harness do not run Claude Code hooks. Their commands and skills carry the
+same Markdown instructions, so Living Memory there is **prompt-driven only**, and it works
+only if the agent can find the script:
+
+| Works | Does not work |
+|-------|---------------|
+| The agent writes blackboard rows, as the command tells it to | No automatic brief: nothing is injected on `/design X` and similar prompts |
+| `brief`, `gate` and `build`, **if** the agent runs them and `$MI` resolves | No `PreToolUse` gate: a DESIGN can be written over an open 🔴 when the agent skips `gate` |
+| | No index rebuild after each blackboard edit |
+| | No SessionStart tail of the `.active` feature, and no `AGENTSPEC_MEMORY_INDEX` export |
+
+`$MI` resolves in the AgentSpec source repo, through `plugin-extras/scripts/memory-index.py`.
+In any other project, neither harness ships the script or fills in `${CLAUDE_PLUGIN_ROOT}`,
+so point it at a copy yourself:
+
+```bash
+export AGENTSPEC_MEMORY_INDEX=/path/to/agentspec/plugin-extras/scripts/memory-index.py
+```
+
+Without that, every memory call reports "Living Memory unavailable" and the phase continues.
+It does not block, and it does not remember.
 
 ## A Feature's Life
 
@@ -140,6 +215,9 @@ next feature Y → its brief includes X's decisions if they share a KB domain
   of Q and A entries change in place; everything else is append-only.
 - A missing blackboard, missing entries or a missing `python3` never blocks a phase. Local
   agent overrides that ignore the protocol still run.
+- The SessionStart hook runs on macOS `/bin/bash` 3.2. It exports `AGENTSPEC_SCRIPTS` and
+  `AGENTSPEC_MEMORY_INDEX` and prints the memory index **before** stack detection. It runs
+  detection in a subshell, so a detection failure loses only `.detected-stack.md`.
 - Set `AGENTSPEC_MEMORY_SILENT=1` to disable the SessionStart injection, including the tail.
   Set `AGENTSPEC_MEMORY_TAIL=N` to change how many entries it shows.
 
@@ -148,4 +226,6 @@ next feature Y → its brief includes X's decisions if they share a KB domain
 - Contract: `.claude/sdd/architecture/WORKFLOW_CONTRACTS.yaml` → `living_memory`
 - Template: `.claude/sdd/templates/BLACKBOARD_TEMPLATE.md`
 - Script: `plugin-extras/scripts/memory-index.py` (tests: `tests/test_memory_index.py`)
+- Hooks: `plugin-extras/scripts/memory-hook.py` (tests: `tests/test_memory_hook.py`),
+  SessionStart: `plugin-extras/scripts/init-workspace.sh` (tests: `tests/test_init_workspace.py`)
 - Related: [agent-overrides.md](agent-overrides.md), `/memory`, `/work`

@@ -7,6 +7,19 @@ description: "Archive completed feature with lessons learned (Phase 4)"
 
 Use this skill when the user asks to run the migrated source command `workflow-ship`.
 
+## Running in Codex
+
+This phase is **delegated**: spawn the `ship-agent` subagent as the command's Phase Routing section says. It runs on the session model with `model_reasoning_effort = "low"` from its TOML, so you do not change anything by hand.
+
+- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes.
+
 ## Command Template
 
 # Ship Command
@@ -60,17 +73,28 @@ The `/ship` command archives all feature artifacts and captures lessons learned.
 <!-- phase-routing: mode=delegated agent=ship-agent -->
 
 Steps 1–8 run in the **`ship-agent` subagent**, so they use the model routed to the
-ship phase (OMP: `task.agentModelOverrides` → `@smol`; Claude Code: `model: haiku`).
+ship phase (Claude Code: `model: haiku`; Codex: session model at
+`model_reasoning_effort=low`; OMP: `task.agentModelOverrides` → `@smol`).
 
 1. Run **Step 0 (Eval Gate) here in the main session first.** Stop if it does not
    return OK.
-2. Then delegate Steps 1–8 exactly once — Claude Code: Task tool,
-   `subagent_type: ship-agent` (plugin name `agentspec:ship-agent`); OMP: `task` tool,
-   agent `ship-agent`.
-3. Pass: the FEATURE name, the DEFINE path, and this instruction: "Fill the
-   **Gerado por** metadata row of SHIPPED with your harness, the routed role, and your
-   model id (or `desconhecido`)."
-4. If the subagent is unavailable, say so, run Steps 1–8 inline as a fallback, and
+2. Get the memory brief: if this turn already carries a
+   `=== Living Memory (injected by the AgentSpec hook …) ===` block, use that text as is;
+   otherwise run `python3 "$MI" brief {FEATURE} --phase ship` here (`$MI` resolved as in
+   Step 9) and keep its output. The hook injects it into the main session only.
+3. Then delegate Steps 1–8 exactly once:
+   - Claude Code: Task tool, `subagent_type: ship-agent` (plugin name `agentspec:ship-agent`).
+   - Codex: there is no Task tool. Spawn the `ship-agent` subagent by name
+     ("Use the ship-agent agent to …"); it runs on the session model with the effort
+     set in `.codex/agents/ship-agent.toml`.
+   - OMP: `task` tool, agent `ship-agent`.
+4. Put in the delegation prompt: the FEATURE name, the DEFINE path, the brief from step 2
+   verbatim under a `Living Memory brief:` heading (or `Living Memory brief: (vazio)`), and
+   this instruction: "The eval gate already passed and the brief is above — do not re-run
+   `brief`; report any `⚠ sem registro nas fases` line under Lessons Learned (Process).
+   Fill the **Gerado por** metadata row of SHIPPED with your harness, the routed role, and
+   your model id (or `desconhecido`)."
+5. If the subagent is unavailable, say so, run Steps 1–8 inline as a fallback, and
    record the session model in **Gerado por**.
 
 ---
@@ -85,7 +109,7 @@ Run the post-build eval gate **before** reading, copying, or deleting anything:
 "${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" verify {FEATURE}
 ```
 
-- Exit `0` (`OK` or `OK_LEGACY_WAIVED`) → continue to Step 1.
+- Exit `0` (`OK`, `OK_LEGACY_RECEIPT` or `OK_LEGACY_WAIVED`) → continue to Step 1.
 - Exit `1` → **STOP. Do not archive.** Show the code and message to the user:
 
 | Code | What to tell the user |
@@ -94,7 +118,11 @@ Run the post-build eval gate **before** reading, copying, or deleting anything:
 | `VERDICT_FAIL` | Evals failed or are pending: `/continuar {FEATURE}`, attest pending human evals, or record a named waiver |
 | `STALE_COMMIT` / `STALE_WORKTREE` | Code changed after `/eval` — rerun `/eval {FEATURE}` |
 | `STALE_CONTRACT` | The eval contract changed after `/eval` — rerun `/eval {FEATURE}` |
+| `REFROZEN_AFTER_RUN` | The contract was re-frozen after `/eval` — rerun `/eval {FEATURE}` |
 | `CONTRACT_TAMPERED` / `CONTRACT_NOT_FROZEN` | The `## Evals` block does not match its Evals Digest — fix it through `/iterate` |
+| `LEDGER_MISMATCH` / `FREEZE_LOG_BROKEN` | The Evals Digest or `EVAL_{FEATURE}.freeze.log` was edited outside `freeze` — restore from git, change the contract only through `/iterate` |
+| `INTEGRITY_MISMATCH` / `UNSEALED_RECEIPT` / `RECEIPT_INVALID` / `RECEIPT_INCOMPLETE` / `VERDICT_MISMATCH` / `UNBACKED_DECISION` | The receipt does not prove the gate (edited, incomplete, or a human decision without a matching attestation) — rerun `/eval {FEATURE}` |
+| `RERUN_FAIL` | (`verify --rerun`) a required deterministic eval no longer passes — `/continuar {FEATURE}` |
 | `LEGACY_NO_EVALS` | DESIGN predates evals — add them via `/iterate`, or record `eval_runner.py waive {FEATURE} --legacy --supervisor <name> --reason <why>` and rerun `/eval` |
 
 - Exit `2` → environment problem (Python < 3.11, not a git repo, missing DESIGN). Surface it; do not archive.
@@ -130,6 +158,8 @@ cp .claude/sdd/reports/EVAL_{FEATURE}.json .claude/sdd/archive/{FEATURE}/
 cp .claude/sdd/reports/EVAL_REPORT_{FEATURE}.md .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 cp .claude/sdd/reports/EVAL_{FEATURE}.attestations.json .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 cp .claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
+cp .claude/sdd/features/EVAL_{FEATURE}.freeze.log .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
+cp .claude/sdd/reports/EVAL_{FEATURE}.pre.json .claude/sdd/archive/{FEATURE}/ 2>/dev/null || true
 ```
 
 ### Step 4: Generate SHIPPED Document
@@ -169,6 +199,7 @@ rm -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md
 rm .claude/sdd/reports/BUILD_REPORT_{FEATURE}.md
 rm -f .claude/sdd/reports/EVAL_{FEATURE}.json .claude/sdd/reports/EVAL_REPORT_{FEATURE}.md
 rm -f .claude/sdd/reports/EVAL_{FEATURE}.attestations.json .claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml
+rm -f .claude/sdd/features/EVAL_{FEATURE}.freeze.log .claude/sdd/reports/EVAL_{FEATURE}.pre.json
 
 # Clear the active-feature pointer if it points to this feature (set by /work and /build)
 if [ -f .claude/sdd/.active ] && grep -q "^feature: {FEATURE}$" .claude/sdd/.active; then
@@ -220,7 +251,7 @@ archive and MEMORY.md are written, rebuild the cross-feature index so the next f
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" build
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
 ```
 
 ---

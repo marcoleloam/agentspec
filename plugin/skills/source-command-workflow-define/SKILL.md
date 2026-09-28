@@ -7,13 +7,26 @@ description: "Capture and validate requirements in one pass (Phase 1)"
 
 Use this skill when the user asks to run the migrated source command `workflow-define`.
 
+## Running in Codex
+
+This phase runs **in this session**, on the session model. Start the session with the recommended effort: `codex -c model_reasoning_effort=high` (or pick the effort with `/model` in the TUI before running the command).
+
+- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes.
+
 ## Command Template
 
 # Define Command
 
 <!-- phase-routing: mode=session role=plan -->
 > **Model routing:** this phase runs in the main session (it asks you questions).
-> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> Recommended — Claude Code: `/model opus` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: `omp --model @plan`. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Capture requirements and validate them in one pass (Phase 1)
@@ -36,10 +49,10 @@ Use this skill when the user asks to run the migrated source command `workflow-d
 /define docs/stakeholder-email.txt
 
 # With cross-model judge for spec quality verification (opt-in)
-/define BRAINSTORM_AUTH.md --judge                  # advisory, default openai/gpt-4o
+/define BRAINSTORM_AUTH.md --judge                  # advisory, phase default model (judge.py)
 /define BRAINSTORM_AUTH.md --judge=strict           # gated — FAIL blocks completion
-/define BRAINSTORM_AUTH.md --judge=anthropic/claude-opus-4  # custom model (advisory)
-/define BRAINSTORM_AUTH.md --judge=strict:openai/gpt-4o     # gated + custom model
+/define BRAINSTORM_AUTH.md --judge=<openrouter-slug>        # custom model (advisory)
+/define BRAINSTORM_AUTH.md --judge=strict:<openrouter-slug> # gated + custom model
 ```
 
 ---
@@ -88,7 +101,7 @@ Load the living memory (open/delegated questions + related features, ≤15 lines
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" brief {FEATURE} --phase define   # add --domains a,b when no blackboard exists yet
+[ -f "$MI" ] && python3 "$MI" brief {FEATURE} --phase define || echo "Living Memory unavailable — continuing without the brief"   # add --domains a,b when no blackboard exists yet
 ```
 
 ### Step 1b: Agent Selection
@@ -99,7 +112,7 @@ Decide the variant for this phase and the specialists to consult by applying the
 1. Read the rubric and the catalog: the agents in `${CLAUDE_PLUGIN_ROOT}/skills/agent-router/routing.json` outside
    the `workflow` and `domain` categories (the `agent-router` skill lists the same agents).
 2. Answer from the content of the document. Do not decide by counting the "Domínios KB" line
-   (that rule scored 0.46 variant accuracy; an LLM applying this rubric scored 0.85–0.89).
+   (that rule scored 0.46 variant accuracy; Codex applying this rubric scored 0.89, retrospective on 46 specs).
 3. Follow the decision:
    - `single` → continue with this command as written.
    - `multiagent` → continue with the `/define-m` process, consulting exactly the specialists you chose.
@@ -206,7 +219,7 @@ Resolução cells of Q and A change in place), pointer + one sentence, pt-BR con
 
 ```bash
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — define is not done"
-python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
 ```
 
 ### Step 7: Optional Judge Pass (`--judge`)
@@ -219,7 +232,7 @@ OpenRouter. Defaults are designed so most users never notice the flag exists.
 
 | Input | Mode | Model |
 |-------|------|-------|
-| `--judge` | advisory | phase default (openai/gpt-4o for define) |
+| `--judge` | advisory | phase default (`PHASE_MODEL_DEFAULTS["define"]` in `scripts/judge.py`) |
 | `--judge=strict` | gated | phase default |
 | `--judge=MODEL_SLUG` | advisory | MODEL_SLUG |
 | `--judge=strict:MODEL_SLUG` | gated | MODEL_SLUG |

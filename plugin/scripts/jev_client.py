@@ -16,6 +16,8 @@ Environment:
   OPENROUTER_API_KEY   Required for live calls.
   JEV_MODEL            Optional. Default: typesafe/jev-1.13
   JEV_BUDGET           Optional. Max Jev calls per UTC day. Default: 200
+                       (a non-integer value falls back to the default; a
+                       negative one means no calls)
 """
 from __future__ import annotations
 
@@ -23,6 +25,7 @@ import datetime as dt
 import json
 import os
 import socket
+import threading
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
@@ -99,15 +102,24 @@ class DecisionResult:
 # ── Request building ────────────────────────────────────────────────────────
 
 def truncate_state(state: Mapping[str, str], limit: int = MAX_STATE_CHARS) -> tuple[dict[str, str], bool]:
-    """Shrink every field proportionally so the total stays under ``limit``."""
+    """Shrink every field proportionally so the total stays under ``limit``.
+
+    Each field gets a share of ``limit`` proportional to its length; the
+    marker is paid out of that share, and skipped when the share is too small
+    to hold it — so truncation can never make a field (or the state) grow."""
     total = sum(len(v) for v in state.values())
     if total <= limit:
         return dict(state), False
     ratio = limit / total
     shrunk: dict[str, str] = {}
     for key, value in state.items():
-        keep = max(0, int(len(value) * ratio) - len(TRUNCATION_MARKER))
-        shrunk[key] = value if len(value) <= keep else value[:keep] + TRUNCATION_MARKER
+        share = int(len(value) * ratio)
+        if len(value) <= share:
+            shrunk[key] = value
+        elif share > len(TRUNCATION_MARKER):
+            shrunk[key] = value[:share - len(TRUNCATION_MARKER)] + TRUNCATION_MARKER
+        else:
+            shrunk[key] = value[:share]
     return shrunk, True
 
 
@@ -134,20 +146,39 @@ def build_body(
 # ── Response parsing ────────────────────────────────────────────────────────
 
 def load_answers(raw_answers: Mapping[str, Any]) -> dict[str, Answer]:
+    """Every shape problem — a ``None`` probability, a non-numeric rubric
+    level, a missing field — surfaces as ``JevError(PARSE)``, never as a raw
+    ``TypeError``/``ValueError`` that would escape the caller's handler."""
     answers: dict[str, Answer] = {}
     for qid, raw in raw_answers.items():
         if not isinstance(raw, Mapping) or "type" not in raw:
             raise JevError(f"malformed answer for {qid!r}: {raw!r}", "PARSE")
-        probabilities = raw.get("probabilities")
-        answers[qid] = Answer(
-            id=qid,
-            type=str(raw["type"]),
-            noul=_as_float(raw.get("noul")),
-            score=_as_float(raw.get("score")),
-            probabilities={str(k): float(v) for k, v in probabilities.items()} if isinstance(probabilities, Mapping) else None,
-            confidence=_as_float(raw.get("confidence")),
-        )
+        try:
+            answers[qid] = Answer(
+                id=str(qid),
+                type=str(raw["type"]),
+                noul=_as_float(raw.get("noul")),
+                score=_as_float(raw.get("score")),
+                probabilities=_probabilities(raw.get("probabilities")),
+                confidence=_as_float(raw.get("confidence")),
+            )
+        except (TypeError, ValueError, KeyError, AttributeError) as err:
+            raise JevError(f"malformed answer for {qid!r}: {type(err).__name__}: {err}"[:300], "PARSE") from err
     return answers
+
+
+def _probabilities(raw: Any) -> dict[str, float] | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, Mapping):
+        raise TypeError(f"probabilities must be an object, got {type(raw).__name__}")
+    parsed: dict[str, float] = {}
+    for level, value in raw.items():
+        int(str(level))  # rubric levels are ordinal indices; the classifier relies on it
+        if value is None or isinstance(value, bool):
+            raise TypeError(f"probability for level {level!r} is {value!r}")
+        parsed[str(level)] = float(value)
+    return parsed
 
 
 def parse_response(payload: Mapping[str, Any], truncated: bool = False, endpoint: str | None = None) -> DecisionResult:
@@ -176,6 +207,31 @@ def _as_float(value: Any) -> float | None:
 # ── Transport ───────────────────────────────────────────────────────────────
 
 def _post(url: str, body: Mapping[str, Any], api_key: str, timeout: float, opener: Callable[..., Any]) -> dict[str, Any]:
+    """POST with a wall-clock ceiling of ``timeout`` seconds.
+
+    urllib's ``timeout`` applies per socket operation, so a slow DNS lookup,
+    connect and trickling read can each take ``timeout``. The request runs on a
+    daemon thread and is abandoned (``UNAVAILABLE``) once the ceiling passes,
+    the same approach as ``jev_select.post_decisions``."""
+    box: dict[str, Any] = {}
+
+    def _run() -> None:
+        try:
+            box["value"] = _post_blocking(url, body, api_key, timeout, opener)
+        except BaseException as err:  # re-raised on the caller's thread
+            box["error"] = err
+
+    worker = threading.Thread(target=_run, name="jev-post", daemon=True)
+    worker.start()
+    worker.join(timeout)
+    if worker.is_alive():
+        raise JevError(f"wall-clock timeout ({timeout:g}s) calling {url}", "UNAVAILABLE")
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
+
+
+def _post_blocking(url: str, body: Mapping[str, Any], api_key: str, timeout: float, opener: Callable[..., Any]) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),
@@ -261,8 +317,18 @@ def jev_calls_today(ledger: Path) -> int:
     return count
 
 
+def configured_budget() -> int:
+    raw = os.environ.get("JEV_BUDGET", "").strip()
+    if not raw:
+        return DEFAULT_BUDGET
+    try:
+        return int(raw)
+    except ValueError:
+        return DEFAULT_BUDGET
+
+
 def budget_remaining(ledger: Path, budget: int | None = None) -> int:
-    limit = budget if budget is not None else int(os.environ.get("JEV_BUDGET", DEFAULT_BUDGET))
+    limit = budget if budget is not None else configured_budget()
     return max(0, limit - jev_calls_today(ledger))
 
 

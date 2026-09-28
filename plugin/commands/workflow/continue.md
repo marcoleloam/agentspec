@@ -7,7 +7,7 @@ description: Resume an incomplete or unsatisfactory build by analyzing the gap b
 
 <!-- phase-routing: mode=session role=default -->
 > **Model routing:** this phase runs in the main session (it orchestrates the specialist agents).
-> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> Recommended — Claude Code: your current `/model` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: your default model. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Resume an incomplete or unsatisfactory build — identify gaps and implement only what is missing, without restarting from zero.

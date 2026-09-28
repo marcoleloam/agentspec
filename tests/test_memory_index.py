@@ -84,6 +84,10 @@ def test_parse_table_without_rows_is_empty():
 @pytest.mark.parametrize("cell,expected", [
     ("🔴 Aberto", "open"), ("🟡 Delegada ao design", "delegated:design"),
     ("🟡 Delegada", "delegated"), ("🟢 Resolvido", "resolved"), ("?", ""),
+    # the leading emoji is the status; a later one is history, not state
+    ("🟢 Resolvido (era 🔴)", "resolved"), ("  **🟢 Resolvido** — antes 🔴 Aberto", "resolved"),
+    ("🟡 Delegada ao build (era 🔴)", "delegated:build"), ("🔴 Aberto (🟢 prevista)", "open"),
+    ("Aberto", "open"), ("Resolvido", "resolved"),
 ])
 def test_question_status(cell, expected):
     assert mi.question_status(cell) == expected
@@ -92,6 +96,7 @@ def test_question_status(cell, expected):
 @pytest.mark.parametrize("cell,expected", [
     ("⏳ Não validada", "pending"), ("✅ Validada", "validated"),
     ("❌ Derrubada", "refuted"), ("", "pending"),
+    ("✅ Validada (era ⏳)", "validated"), ("⏳ Não validada (❌ se volume > 1k)", "pending"),
 ])
 def test_assumption_status(cell, expected):
     assert mi.assumption_status(cell) == expected
@@ -459,3 +464,52 @@ def test_status_dashboard_reads_legacy_and_new_blackboards(tree, monkeypatch):
         assert dashboard.main() == 0
         html = (workdir / ".claude" / "sdd" / ".status" / "dashboard.html").read_text(encoding="utf-8")
         assert feature in html
+
+
+# --- review findings (LIVING_MEMORY @ b0f7bdd) -----------------------------------
+
+def test_resolved_question_citing_old_red_does_not_block(tree, capsys):
+    write_raw_blackboard(tree, "WAS_RED", (
+        "## Perguntas Abertas e Bloqueadores\n\n"
+        "| # | Fase | Pergunta | Status | Resolução |\n|---|---|---|---|---|\n"
+        "| Q-001 | define | Dono do dado? | 🟢 Resolvido (era 🔴) | time de vendas |\n"))
+    code, out = run(capsys, "gate", "WAS_RED", "--to", "design", root=tree)
+    assert code == 0 and "nenhuma pergunta" in out
+
+
+CITES_MISSING_ID = (
+    "## Log de Decisões\n\n"
+    "| # | Fase | Decisão | Substitui | Onde Ler |\n|---|---|---|---|---|\n"
+    "| D-001 | design | Parquet | D-009 | — |\n\n"
+    "## Perguntas Abertas e Bloqueadores\n\n"
+    "| # | Fase | Pergunta | Status | Resolução |\n|---|---|---|---|---|\n"
+    "| Q-001 | define | Formato? | 🟢 Resolvido | ver D-001 e Q-007 |\n"
+)
+
+
+def test_ids_cited_in_other_columns_are_not_rows(tree, capsys):
+    """Only the ID column defines a row: 'Substitui D-009' / 'Resolução … Q-007' are references."""
+    write_raw_blackboard(tree, "CITES", CITES_MISSING_ID)
+    mem = mi.collect(tree)
+    assert "CITES" not in mem.unreadable
+    assert {e.id for e in mem.entries if e.feature == "CITES"} == {"D-001", "Q-001"}
+    code, _ = run(capsys, "gate", "CITES", "--to", "design", root=tree)
+    assert code == 0
+
+
+def test_entry_rows_reads_only_the_id_column():
+    md = ("| # | Decisão | Substitui |\n|---|---|---|\n| D-001 | X | D-009 |\n\n"
+          "| Arquivo | Ref |\n|---|---|\n| a.py | D-004 |\n\n"
+          "| Etapa | ID |\n|---|---|\n| x | Q-002 |\n")
+    assert mi.entry_rows(md) == {"D-001", "Q-002"}
+
+
+@pytest.mark.parametrize("cmd", [["brief", "X", "--phase", "design"], ["gate", "X", "--to", "design"],
+                                 ["tail"], ["build"]])
+def test_missing_root_exits_3_memory_unavailable(tmp_path, capsys, cmd):
+    """Exit 3 ≠ exit 2: 'no memory here' must never be read as 'unreadable rows'."""
+    code = mi.main(["--root", str(tmp_path / "nope" / ".claude" / "sdd"), *cmd])
+    err = capsys.readouterr().err
+    assert code == 3
+    assert "memory unavailable" in err
+    assert not (tmp_path / "nope").exists()

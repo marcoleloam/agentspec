@@ -10,8 +10,15 @@ Usage:
     python3 memory-index.py tail  [FEATURE] [--n 5]              # FEATURE from .active
     python3 memory-index.py build [--verbose]                    # writes MEMORY_INDEX.md
 
-Exit 2 (gate, build) = a blackboard has entry rows the parser cannot read — fix the
-table columns (see BLACKBOARD_TEMPLATE.md) instead of losing that memory silently.
+Exit codes:
+    0  ok (gate: nothing blocks)
+    1  gate: an open 🔴 question blocks the transition
+    2  gate, build: a blackboard has entry rows the parser cannot read — fix the table
+       columns (see BLACKBOARD_TEMPLATE.md) instead of losing that memory silently
+       (argparse also exits 2 on a bad command line)
+    3  memory unavailable: --root is not a directory (no .claude/sdd here). Not a
+       memory problem — callers continue without brief/gate. A caller that cannot
+       even find this script must treat it the same way: "memory unavailable".
 
 All commands accept --root (default .claude/sdd). Contract:
 WORKFLOW_CONTRACTS.yaml → living_memory.
@@ -34,6 +41,12 @@ TEXT_WIDTH = 110
 NO_VALUE = {"", "—", "-", "n/a"}
 ID_RE = re.compile(r"^[A-Z]+-\d+$")
 ENTRY_ID_RE = re.compile(r"^([DAQM])-\d+$")
+ID_COLUMNS = ("#", "id")
+EXIT_UNAVAILABLE = 3
+QUESTION_ICON = {"🔴": "open", "🟡": "delegated", "🟢": "resolved"}
+QUESTION_WORD = (("abert", "open"), ("open", "open"), ("delegad", "delegated"),
+                 ("resolv", "resolved"), ("fechad", "resolved"), ("closed", "resolved"))
+ASSUMPTION_ICON = {"❌": "refuted", "⏳": "pending", "✅": "validated"}
 REF_RE = re.compile(r"\b[A-Z]-\d{3,}\b")
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 STATUS_ICON = {
@@ -151,18 +164,28 @@ def phase_of(value: str, default: str = "build") -> str:
     return default
 
 
+def lead(value: str) -> str:
+    """Status cell without leading markup/space: '**🟢 Resolvido** (era 🔴)' → '🟢 Resolvido (era 🔴)'."""
+    return clean(value).lstrip(" *_`")
+
+
 def question_status(value: str) -> str:
-    if "🔴" in value:
-        return "open"
-    if "🟡" in value:
-        target = phase_of(value, default="")
+    """The status is what the cell *starts* with — '🟢 Resolvido (era 🔴)' is resolved."""
+    head = lead(value)
+    status = QUESTION_ICON.get(head[:1], "")
+    if not status:
+        word = fold(head)
+        status = next((s for prefix, s in QUESTION_WORD if word.startswith(prefix)), "")
+    if status == "delegated":
+        target = phase_of(head, default="")
         return f"delegated:{target}" if target else "delegated"
-    if "🟢" in value:
-        return "resolved"
-    return ""
+    return status
 
 
 def assumption_status(value: str) -> str:
+    icon = ASSUMPTION_ICON.get(lead(value)[:1])
+    if icon:
+        return icon
     v = fold(value)
     if "❌" in value or "derrub" in v:
         return "refuted"
@@ -198,24 +221,35 @@ def metadata(md: str) -> dict[str, str]:
     return meta
 
 
-def entry_id_of(row: dict[str, str], kind: str) -> str:
-    """ID column is '#' in the template; accept 'ID' and, failing both, any cell holding one."""
-    value = cell(row, "#", "id")
-    if ID_RE.match(value):
-        return value
-    return next((v.strip() for v in row.values() if re.match(rf"^{kind}-\d+$", v.strip())), "")
+def id_column(header: list[str]) -> int:
+    """Index of the ID column: headed '#' (template) or 'ID'; otherwise the first column."""
+    return next((i for i, h in enumerate(header) if h in ID_COLUMNS), 0)
+
+
+def entry_id_of(row: dict[str, str]) -> str:
+    """Only the ID column names a row — an ID cited in 'Substitui' or 'Resolução' does not."""
+    keys = list(row)
+    return clean(row[keys[id_column(keys)]]) if keys else ""
 
 
 def entry_rows(md: str) -> set[str]:
-    """IDs of every non-placeholder table row that looks like a D/A/Q/M entry, anywhere."""
+    """IDs in the ID column of every non-placeholder row that looks like a D/A/Q/M entry,
+    in any table of the document (so a table in an unknown section is noticed, not lost)."""
     found: set[str] = set()
+    header: list[str] | None = None
     for line in md.splitlines():
         if not line.lstrip().startswith("|"):
+            header = None
             continue
         cells = [clean(c) for c in split_row(line)]
-        if any(c.startswith("{") for c in cells):
+        if header is None:
+            header = [fold(c) for c in cells]
             continue
-        found.update(c for c in cells if ENTRY_ID_RE.match(c))
+        if all(set(c) <= set("-: ") for c in cells) or any(c.startswith("{") for c in cells):
+            continue
+        i = id_column(header)
+        if i < len(cells) and ENTRY_ID_RE.match(cells[i]):
+            found.add(cells[i])
     return found
 
 
@@ -243,7 +277,7 @@ def blackboard_entries(path: Path, root: Path, feature: str, mem: Memory) -> lis
         raw_heading, body = section(md, heading)
         anchor = f"{where_file}#{slug(raw_heading)}" if raw_heading else where_file
         for row in parse_table(body):
-            entry_id = entry_id_of(row, kind)
+            entry_id = entry_id_of(row)
             text = cell(row, *text_keys)
             if not ID_RE.match(entry_id) or is_placeholder(text):
                 mem.skipped += 1
@@ -586,6 +620,29 @@ def active_feature(root: Path) -> str:
     return m.group(1).strip() if m else ""
 
 
+def gate_report(mem: Memory, feature: str, to: str) -> tuple[int, list[str]]:
+    """(exit code, lines) for `gate`: 0 pass · 1 🔴 blocks · 2 unreadable rows."""
+    warning = unreadable_warning(mem, feature)
+    if warning:
+        return 2, [f"⛔ {feature}: o blackboard tem linhas ilegíveis — o gate não consegue "
+                   f"verificar perguntas 🔴 para {to}.", warning,
+                   "Corrija as colunas e rode o gate de novo."]
+    blocked = open_questions(mem, feature)
+    if not blocked:
+        return 0, [f"✅ {feature}: nenhuma pergunta 🔴 aberta — pode seguir para {to}."]
+    return 1, ([f"⛔ {feature}: {len(blocked)} pergunta(s) 🔴 aberta(s) bloqueiam a transição para {to}:"]
+               + [line_for(e) for e in blocked]
+               + ["Pergunte ao usuário: uma 🔴 só fecha com a resposta dele (marque 🟢 com a resposta em "
+                  "Resolução) ou via /iterate — nunca por premissa sua, nem em execução não interativa."])
+
+
+def write_index(root: Path, mem: Memory) -> tuple[Path, list[str]]:
+    """Write MEMORY_INDEX.md; return its path and the unreadable-row warnings (non-empty → exit 2)."""
+    target = root / "MEMORY_INDEX.md"
+    target.write_text(index_markdown(mem), encoding="utf-8")
+    return target, [unreadable_warning(mem, f) for f in sorted(mem.unreadable)]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="memory-index.py", description=__doc__.splitlines()[0])
     ap.add_argument("--root", default=".claude/sdd", type=Path)
@@ -605,41 +662,30 @@ def main(argv: list[str] | None = None) -> int:
     bl.add_argument("--verbose", action="store_true")
     args = ap.parse_args(argv)
 
+    if not args.root.is_dir():
+        print(f"memory unavailable: {args.root} is not a directory (no .claude/sdd here) — "
+              "continue without the brief/gate", file=sys.stderr)
+        return EXIT_UNAVAILABLE
     mem = collect(args.root)
     if args.cmd == "brief":
         extra = {d.strip() for d in args.domains.split(",") if d.strip()}
         print("\n".join(brief(mem, args.feature, args.phase, args.max, extra)))
         return 0
     if args.cmd == "gate":
-        warning = unreadable_warning(mem, args.feature)
-        if warning:
-            print(f"⛔ {args.feature}: o blackboard tem linhas ilegíveis — o gate não consegue "
-                  f"verificar perguntas 🔴 para {args.to}.")
-            print(warning)
-            print("Corrija as colunas e rode o gate de novo.")
-            return 2
-        blocked = open_questions(mem, args.feature)
-        if not blocked:
-            print(f"✅ {args.feature}: nenhuma pergunta 🔴 aberta — pode seguir para {args.to}.")
-            return 0
-        print(f"⛔ {args.feature}: {len(blocked)} pergunta(s) 🔴 aberta(s) bloqueiam a transição para {args.to}:")
-        print("\n".join(line_for(e) for e in blocked))
-        print("Pergunte ao usuário: uma 🔴 só fecha com a resposta dele (marque 🟢 com a resposta em "
-              "Resolução) ou via /iterate — nunca por premissa sua, nem em execução não interativa.")
-        return 1
+        code, lines = gate_report(mem, args.feature, args.to)
+        print("\n".join(lines))
+        return code
     if args.cmd == "tail":
         feature = args.feature or active_feature(args.root)
         lines = tail(mem, feature, args.n) if feature else []
         if lines:
             print("\n".join(lines))
         return 0
-    target = args.root / "MEMORY_INDEX.md"
-    target.write_text(index_markdown(mem), encoding="utf-8")
+    target, warnings = write_index(args.root, mem)
     if args.verbose:
         counts = ", ".join(f"{k}={v}" for k, v in sorted(mem.sources.items()))
         print(f"entries={len(mem.entries)} skipped={mem.skipped} {counts}", file=sys.stderr)
     print(target)
-    warnings = [unreadable_warning(mem, f) for f in sorted(mem.unreadable)]
     if warnings:
         print("\n".join(warnings), file=sys.stderr)
         return 2

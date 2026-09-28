@@ -43,6 +43,15 @@ class ExecutorStopped(RunStopped):
     """Codex refused to work for account reasons (login, usage limit)."""
 
 
+class Context7Unavailable(RunStopped):
+    """Context7 is down or refusing (quota/auth) for B/C: stop the round instead of recording `unavailable`.
+
+    Recording would let a quota exhaustion silently turn the rest of B and C
+    into "D with a preamble"; aborting leaves the pair unrecorded, so
+    ``--resume`` retries it once the key or the service is back.
+    """
+
+
 def build_prompt(task: Task, arm: Arm, retry_feedback: str | None = None) -> str:
     parts = [p for p in (ARM_PREAMBLE[arm.letter], task.prompt, COMMON_RULES) if p]
     if retry_feedback:
@@ -96,9 +105,7 @@ def run_pair(task: Task, arm: Arm, ctx: RunContext) -> Record:
             codex_runner.ensure_codex_home(cfg)
             probe = context7_probe.probe(cfg, arm_dir, env=codex_runner.agent_env(cfg, arm))
             if not probe.ok:
-                rec.outcome, rec.reason = "unavailable", f"context7 preflight failed: {probe.detail[-200:]}"
-                ctx.log(f"{tag} → unavailable (preflight)")
-                return rec
+                raise Context7Unavailable(f"{tag}: context7 preflight failed: {probe.detail[-200:]}")
         out = codex_runner.run_attempt(build_prompt(task, arm, retry_feedback), arm_dir, cfg, arm)
         rec.attempts = attempt
         rec.latency_s = round(rec.latency_s + out.latency_s, 2)
@@ -118,18 +125,17 @@ def run_pair(task: Task, arm: Arm, ctx: RunContext) -> Record:
             rec.outcome, rec.contamination_reasons = "contaminated", list(verdict.reasons)
             ctx.log(f"{tag} → contaminated: {verdict.reasons[0]}")
             return rec
+        if arm.uses_context7 and (verdict.context7_unavailable or verdict.mcp_missing or verdict.context7_refused):
+            why = ("context7 MCP not available in the session" if verdict.mcp_missing else
+                   f"context7 refused {verdict.context7_refused} call(s) (quota/auth)" if verdict.context7_refused
+                   else "every context7 call failed on transport")
+            raise Context7Unavailable(f"{tag}: {why}")
         if out.timed_out or not t.ended:
             why = "wall-clock timeout" if out.timed_out else (
                 f"turn failed: {t.error_message[:160]}" if t.failed
                 else f"no turn.completed event (exit {out.exit_code})")
             rec.outcome, rec.reason = "timeout", why
             ctx.log(f"{tag} → timeout ({why})")
-            return rec
-        if arm.uses_context7 and (verdict.context7_unavailable or verdict.mcp_missing):
-            why = "context7 MCP not available in the session" if verdict.mcp_missing else \
-                "every context7 call failed on transport or was refused (quota/auth)"
-            rec.outcome, rec.reason = "unavailable", why
-            ctx.log(f"{tag} → unavailable (context7 transport)")
             return rec
 
         last_snapshot = ctx.store.evalws_path(task.id, arm.letter, attempt)

@@ -7,7 +7,7 @@ description: Update any phase document when requirements or design change (Cross
 
 <!-- phase-routing: mode=session role=plan -->
 > **Model routing:** this phase runs in the main session (it asks you questions).
-> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> Recommended — Claude Code: `/model opus` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: `omp --model @plan`. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Update any phase document when requirements or design changes (Cross-Phase)
@@ -126,7 +126,7 @@ change resolves (🟢) or raises (🔴 blocks the next `/design` or `/build`).
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" build
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
 ```
 
 Full rules: `WORKFLOW_CONTRACTS.yaml` → `living_memory`. Append-only (only the Status / Resolução cells of Q and A change in place), pointer + one sentence, pt-BR content.

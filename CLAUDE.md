@@ -8,7 +8,7 @@
 
 **What is AgentSpec?** A Claude Code plugin that provides structured AI-assisted development through a 5-phase SDD workflow, with 74 agents (data engineering + frontend), 43 commands, 39 KB domains, and 10 distributed skills (14 in-repo; 4 are contributor-only).
 
-**Current Status:** v3.7.0 — Rubric-based agent selection (the phase LLM applies `AGENT_SELECTION_RUBRIC.md`; JEV as opt-in second opinion) and the KB × Context7 benchmark (`scripts/kb_bench/`). Builds on v3.6.0 — Living Memory: the feature BLACKBOARD is the trajectory memory from Brainstorm to Ship, read back by `memory-index.py` (≤15-line brief on phase entry, 🔴 gate, SessionStart tail, cross-feature index) and enforced by plugin hooks. Builds on v3.5.0 (LLM phase routing, `/eval` gate) and v3.3.0 (blackboard coordination, `/work`, file-based memory).
+**Current Status:** v3.8.0 — Hardening release: `/eval` receipts sealed and recomputed, re-freeze ledger, Living Memory gate false positives fixed, KB bench anti-ceiling rule, Grok removed. Builds on v3.7.0 — Rubric-based agent selection (the phase LLM applies `AGENT_SELECTION_RUBRIC.md`; JEV as opt-in second opinion) and the KB × Context7 benchmark (`scripts/kb_bench/`). Builds on v3.6.0 — Living Memory: the feature BLACKBOARD is the trajectory memory from Brainstorm to Ship, read back by `memory-index.py` (≤15-line brief on phase entry, 🔴 gate, SessionStart tail, cross-feature index) and enforced by plugin hooks. Builds on v3.5.0 (LLM phase routing, `/eval` gate) and v3.3.0 (blackboard coordination, `/work`, file-based memory).
 
 ---
 
@@ -200,6 +200,7 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | Living Memory (Blackboard Brainstorm → Ship) | Shipped 2026-09-25 | `memory-index.py` brief/gate/tail/index over BLACKBOARD, archive and MEMORY.md; plugin hooks (`memory-hook.py`) inject the brief, gate new DESIGNs on 🔴, rebuild the index; 🔴 closes only with the user's answer |
 | KB × Context7 benchmark | Shipped 2026-09-27 | `scripts/kb_bench/`: 4 knowledge arms on the same tasks, sandbox isolation, blind human queue; first run (Grok) says retire the KB, with a ceiling effect — executor now Codex (token budget, `CONTEXT7_API_KEY`); round 2 needs real tasks |
 | Removed Grok Build distribution | Done 2026-09-27 | plugin-grok/, .grok/, generator, make targets and CI steps removed; the bench and the agent-selection baseline run on Codex; supported harnesses are Claude Code, Codex and DeepSeek Harness |
+| Post-ship review hardening (3.8.0) | Done 2026-09-28 | Review of the 5 features at b0f7bdd: sealed `/eval` receipts + freeze ledger, Living Memory gate/hook fixes (bash 3.2, 🔴 parsing, subdir root), phase-routing Codex guidance + checks, KB bench anti-ceiling + isolation canaries, JEV parse hardening |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 
@@ -307,8 +308,8 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 
 ## Version
 
-- **Version:** 3.7.0
-- **Status:** Release — rubric-based agent selection for `/define` and `/design` (JEV as opt-in second opinion) and the contributor-only KB × Context7 benchmark (`scripts/kb_bench/`). Builds on 3.6.0 (Living Memory) and 3.5.0 (LLM phase routing, `/eval` gate). 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
+- **Version:** 3.8.0
+- **Status:** Release — hardening of the 3.5–3.7 features after a post-ship review (sealed `/eval` receipts, freeze ledger, Living Memory gate fixes, KB bench anti-ceiling rule) and Grok removal. Builds on 3.7.0: rubric-based agent selection for `/define` and `/design` (JEV as opt-in second opinion) and the contributor-only KB × Context7 benchmark (`scripts/kb_bench/`). Builds on 3.6.0 (Living Memory) and 3.5.0 (LLM phase routing, `/eval` gate). 74 agents, 39 KB domains, 50 distributed skills, 40 commands.
 - **Upstream Base:** luanmorenommaciel/agentspec @ d577ec5 (2026-07-15)
 - **Last Sync:** 2026-07-27 (wave 1 — additive only; thin-executor refactor deferred)
-- **Last Updated:** 2026-09-27
+- **Last Updated:** 2026-09-28

@@ -10,7 +10,7 @@ from kb_bench.config import ARM_LETTERS, STRATA, BenchConfig, ConfigError, load_
 from kb_bench.evals import discriminates
 from kb_bench.human_queue import HumanQueue
 from kb_bench.loop import RunContext, RunStopped, plan, run_plan
-from kb_bench.report import write_report
+from kb_bench.report import PROTOCOL, write_report
 from kb_bench.store import RunStore, git_commit, git_dirty_paths, latest_run, new_run_id
 from kb_bench.tasks import Task, TaskError, load_tasks
 from kb_bench.workspace import WorkspaceError
@@ -122,6 +122,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"dry-run: {len(pairs)} (task, arm) pairs planned, seed {cfg.seed}; no model calls made")
         return 0 if res.ok else 1
 
+    no_key = [a for a in arms if cfg.arms[a].uses_context7] and not context7_probe.api_key_present()
+    if no_key:
+        print(f"{context7_probe.API_KEY_ENV} is required for arms B/C (round-2 protocol): the anonymous "
+              "quota runs out mid-round. Export the key, or run only --arm A --arm D.")
+        return 2
+
     if args.resume:
         root = cfg.results_root / args.resume
         if not root.is_dir():
@@ -134,6 +140,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         store = RunStore(cfg.results_root / new_run_id())
         store.write_json("plan.json", {"seed": cfg.seed, "arms": arms, "pairs": pairs})
 
+    prior_env = store.read_json("env.json")
+    # Resuming a run started under an older protocol keeps its (lower) protocol number.
+    protocol = PROTOCOL if prior_env is None else min(int(prior_env.get("protocol", 1) or 1), PROTOCOL)
     dirty_before = git_dirty_paths()
     coverage = store.read_json("coverage.json")
     if not args.skip_smoke:
@@ -149,7 +158,7 @@ def cmd_run(args: argparse.Namespace) -> int:
            "reasoning_effort": cfg.reasoning_effort or "model default", "seed": cfg.seed,
            "budget_tokens": cfg.budget_tokens, "home": str(cfg.home),
            "deny": [str(p) for p in cfg.deny_paths()], "context7_api_key": context7_probe.api_key_present(),
-           "smoke_skipped": bool(args.skip_smoke), "coverage_present": bool(coverage)}
+           "smoke_skipped": bool(args.skip_smoke), "coverage_present": bool(coverage), "protocol": protocol}
     store.write_json("env.json", env)
 
     ctx = RunContext(cfg=cfg, store=store, queue=HumanQueue(store.root), cli_version=env["cli_version"], log=_log)

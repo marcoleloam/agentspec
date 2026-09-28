@@ -77,7 +77,7 @@ Drive the SDD workflow phases.
 | `define-agent` | T2 | Sonnet | 1 | Capture requirements with clarity scoring |
 | `design-agent` | T2 | Opus | 2 | Create technical architecture with file manifest |
 | `build-agent` | T2 | Opus | 3 | Execute implementation with agent delegation |
-| `eval-agent` | T2 | Sonnet | 3.5 | Reexecute the eval contract via `eval_runner.py`; no Edit tool |
+| `eval-agent` | T2 | Sonnet | 3.5 | Reexecute the eval contract via `eval_runner.py`; no Write/Edit tool |
 | `ship-agent` | T2 | Sonnet | 4 | Archive with lessons learned |
 | `iterate-agent` | T2 | Sonnet | All | Update documents with cascade awareness |
 

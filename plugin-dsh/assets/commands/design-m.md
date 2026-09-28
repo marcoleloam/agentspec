@@ -7,7 +7,7 @@ description: Multi-agent architecture design with specialist validation (Phase 2
 
 <!-- phase-routing: mode=session role=slow -->
 > **Model routing:** this phase runs in the main session (it consults specialists in parallel, and a subagent cannot spawn subagents).
-> Recommended: start it with `omp --model @slow` (Claude Code: `/model opus`). Record the session model in the
+> Recommended — Claude Code: `/model opus` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: `omp --model @slow`. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Create architecture with specialist validation — catches cross-domain risks, incompatibilities, and version issues
@@ -125,8 +125,13 @@ Same protocol as `/design` (see its "Step 7: Save — Document + Blackboard" and
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" gate {FEATURE} --to design || exit 1   # 1 → 🔴 blocks · 2 → fix unreadable rows, re-run
-python3 "$MI" brief {FEATURE} --phase design
+rc=3; [ -f "$MI" ] && command -v python3 >/dev/null && { python3 "$MI" gate {FEATURE} --to design; rc=$?; }
+case $rc in
+  0) python3 "$MI" brief {FEATURE} --phase design ;;  # nothing blocks
+  1) exit 1 ;;   # 🔴 blocks: list them, ask the user, stop
+  2) exit 2 ;;   # unreadable rows: fix the columns it names, re-run
+  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd not found) — continuing without gate/brief" ;;
+esac
 ```
 
 A 🔴 closes only with the user's answer (🟢, answer in `Resolução`) or via `/iterate` — never
@@ -139,7 +144,7 @@ record the phase entries on `BLACKBOARD_{FEATURE}.md`, created from
 
 ```bash
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
-python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
 ```
 
 The final message lists the Blackboard IDs this phase added, next to the DESIGN path.

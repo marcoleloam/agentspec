@@ -6,6 +6,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-09-28
+
+Hardening release: fixes the findings of the post-ship review of the five 3.5–3.7 features,
+plus the Grok removal already on `main`.
+
+### Security
+
+- **`/eval` gate integrity** (`scripts/eval_runner.py` 1.1.0) — re-freezing a frozen contract
+  now requires `freeze --reason` (≥ 30 chars) and every digest change is appended to a
+  hash-chained ledger (`EVAL_{F}.freeze.log`); `verify` recomputes the verdict from `results`
+  against the contract's `required` list instead of trusting the stored `verdict`, checks an
+  integrity digest bound to commit, worktree, contract and ledger, and cross-checks human
+  passes and waivers against the attestations file. New verify codes (`INTEGRITY_MISMATCH`,
+  `VERDICT_MISMATCH`, `REFROZEN_AFTER_RUN`, `LEDGER_MISMATCH`, …) and `verify --rerun` to
+  re-execute deterministic evals. `validate` rejects `required = []` and ATs with no required
+  eval. The worktree digest now covers `.claude/sdd/templates` and `architecture`. Waivers and
+  attestations record the git email and refuse agent/model names as supervisor. `pre` persists
+  a PRE receipt. `eval-agent` loses `Write` (complementary evals go through `eval_runner.py
+  extra`). Archived receipts still verify (`OK_LEGACY_RECEIPT`). No secret key is used — the
+  docs state this detects edits, not a determined forger.
+
+### Fixed
+
+- **Living Memory gate** — a status cell like `🟢 Resolvido (era 🔴)` no longer blocks; only the
+  ID column defines a row, so IDs cited in other columns no longer make the gate exit 2; the
+  project root is derived from the written file, so the gate no longer switches off from a
+  subdirectory; the brief is injected for `/build` and `/continuar` without argument (via
+  `.active`), for `continuar`, lowercase names and `source-command-*` skills, and passed to the
+  delegated `design-agent`/`ship-agent`. `memory-index.py` exits 3 when memory is unavailable
+  and the workflow commands continue instead of reading it as unreadable rows.
+  `init-workspace.sh` no longer aborts under macOS `/bin/bash` 3.2 (no associative arrays;
+  script-path exports run before stack detection).
+- **Phase routing** — `--apply` no longer corrupts a command without an H1; non-table manifest
+  entries report an error instead of crashing; `--check` scans workflow commands and agents
+  for concrete model IDs and compares the `plugin/agents` mirror; unused `[judge]` removed.
+  Codex skills get a "Running in Codex" section (effort per phase, tool-name mapping) and the
+  docs add a per-phase table for Claude Code and Codex.
+- **KB bench decision rule** — a stratum where arm D solves ≥ 90% is `inconclusivo (teto)` and
+  a tie never recommends retiring the KB (`[decision]` in `bench.toml`). Smoke now proves from
+  arm D that `arms/a/kb/` and `results/` are unreadable; any completed read of another `/kb/`,
+  AgentSpec plugin or knowledge-skill path counts as contamination; Context7 unavailability
+  aborts the run (resume retries the pair) and B/C require `CONTEXT7_API_KEY`. Pre-protocol-2
+  runs (round 1, Grok) render with an "Inválida para decisão" banner — round 1 leaked
+  isolation and hit the Context7 quota, so it does not support retiring the KB.
+- **JEV / agent selection** — `jev_client` turns malformed answers (e.g. a `None` probability)
+  into `JevError(PARSE)` instead of crashing `/eval`, never grows a field when truncating,
+  parses `JEV_BUDGET` defensively and has a wall-clock ceiling per request. The rubric evidence
+  cites the Codex receipt (0.89 / 0.54); `check_agent_selection_quality.py` derives counts from
+  the corpus and fails with reproduction steps when it is missing; `eval_llm_baseline.py` gains
+  a `claude` provider and runs Codex under a read-deny permission profile.
+
 ### Changed
 
 - **KB bench runs on Codex** — `scripts/kb_bench/` now drives `codex exec --json` instead of

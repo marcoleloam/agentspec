@@ -18,9 +18,10 @@ that, `WORKFLOW_CONTRACTS.yaml` and the agent frontmatter disagreed on 4 of 6 ph
 
 - each workflow **agent** → an OMP role (`omp_role`), a Claude Code alias
   (`claude_model`, written to the agent frontmatter), and a Codex effort
-  (`codex_effort`, read by `scripts/generate-codex-plugin.py`);
-- each workflow **command** → a mode: `session` (runs inline) or `delegated` (runs in
-  its phase agent).
+  (`codex_effort`, written to `.codex/agents/<name>.toml` by `scripts/generate-codex-plugin.py`);
+- each workflow **command** → a mode: `session` (runs inline, with a `recommended_role`
+  and a `codex_effort` to start the session with) or `delegated` (runs in its phase agent,
+  which carries the effort).
 
 | Phase / command | Mode | OMP role | Claude Code | Why |
 |-----------------|------|----------|-------------|-----|
@@ -30,10 +31,56 @@ that, `WORKFLOW_CONTRACTS.yaml` and the agent frontmatter disagreed on 4 of 6 ph
 | `/build`, `/continuar`, `/work` | session | `default` | current model | The orchestrator delegates to specialists, which keep their own `model:` |
 | `/eval` | session | `default` | current model | Asks owners for attestations; independence comes from `eval_runner.py` + JEV |
 | `/ship` | **delegated** → `ship-agent` (Step 0 `verify` stays in the session) | `smol` | `haiku` | Archiving and summarizing is cheap work |
-| `--judge` | external (OpenRouter) | `REVIEWER` (optional) | — | Keep reviews on a different model family than `plan`/`slow` |
+| `--judge` | external (OpenRouter) | not routed | — | `scripts/judge.py` calls OpenRouter and picks its model from `PHASE_MODEL_DEFAULTS` / `--model` / `JUDGE_MODEL` |
 
 Each workflow command carries one marker that `--check` verifies, for example
 `<!-- phase-routing: mode=delegated agent=design-agent -->`.
+
+The manifest has no `[judge]` table any more. It used to declare `omp_role = "REVIEWER"`,
+but nothing read it: `judge.py` never goes through OMP, so the role could not select the
+judge's model. Wiring it would mean translating an OMP role into an OpenRouter slug, which
+is not a safe one-line change. `--check` now rejects unknown top-level tables.
+
+## Per-Phase Table: Claude Code and Codex
+
+**Automatic** means the harness switches without you doing anything. **Manual** means you
+set it before running the command.
+
+| Phase | Claude Code | Codex |
+|-------|-------------|-------|
+| `/brainstorm`, `/define`, `/define-m`, `/iterate` | Manual: `/model opus` | Manual: `codex -c model_reasoning_effort=high` |
+| `/design` | **Automatic**: delegates to `design-agent` (`opus`) | **Automatic**: spawns the `design-agent` subagent (effort `high`, session model) |
+| `/design-m` | Manual: `/model opus` | Manual: `codex -c model_reasoning_effort=high` |
+| `/build`, `/continuar` | Current model; specialists keep their own `model:` | Manual: `codex -c model_reasoning_effort=high`; specialists keep their TOML effort |
+| `/work` | Current model | Manual: `codex -c model_reasoning_effort=medium` |
+| `/eval` | Current model | Manual: `codex -c model_reasoning_effort=medium` |
+| `/ship` | **Automatic**: Step 0 in the session, Steps 1–8 in `ship-agent` (`haiku`) | **Automatic**: Step 0 in the session, then the `ship-agent` subagent (effort `low`) |
+
+In Codex "automatic" requires the agent TOMLs to be installed (`.codex/agents/` in the
+project or `~/.codex/agents/`). The plugin install does not deliver them; see
+[Codex CLI](../reference/codex-cli.md).
+
+## Using It in Codex
+
+Codex keeps **one model per session**. The phase can change only the **reasoning effort**:
+
+- **Session phases** run on whatever effort the session started with. Start Codex with
+  the phase's effort, e.g. `codex -c model_reasoning_effort=high` before `/brainstorm`, or
+  pick the effort with `/model` in the TUI. Each workflow command's header and its
+  generated skill state the effort from the manifest.
+- **Delegated phases** (`/design`, `/ship`) spawn the phase subagent. It inherits the
+  session model and applies the `model_reasoning_effort` from its TOML. The generator never
+  writes `model =`: Codex model IDs depend on the account, so pinning them would break.
+- **Tool names.** Command bodies are written for Claude Code and copied verbatim into
+  `.codex/skills/source-command-*/SKILL.md`. They mention the Task tool, `subagent_type`,
+  the OMP `task` tool, `AskUserQuestion`, `TodoWrite` and `/model <alias>`. None of these
+  exist in Codex. Each generated skill that uses them starts with a **Running in Codex**
+  section that translates them: spawn the subagent by name, ask in chat, keep the
+  checklist in the plan, and ignore alias and role lines. The delegation blocks in
+  `/design` and `/ship` also carry an explicit Codex bullet.
+
+The effort in the command text is checked: `--check` fails when a routed command does not
+contain `model_reasoning_effort=<its effort>`.
 
 ## Using It in OMP
 
@@ -60,7 +107,20 @@ Make sure `plan`, `slow`, `smol`, and `default` exist in your `modelRoles`. For
 session phases, start OMP on the recommended role, e.g. `omp --model @plan` before
 `/brainstorm`.
 
-Verified behavior (OMP v18.2.11, 2026-09-23):
+**Current role mapping.** Grok is no longer supported. The expected setup maps every
+role to the same OpenAI Codex model through the `openai-codex` provider and varies only the
+effort suffix: `smol` → `:low`, `plan` → `:high`, `slow` → `:max`. The concrete model ID
+lives only in `~/.omp/agent/config.yml`. Since the model is the same everywhere, only the
+effort differs between phases, just like in Codex.
+
+> **Re-attestation needed.** The LLM_PHASE_ROUTING acceptance tests AT-002 (`/ship` runs
+> `ship-agent` on `@smol`) and AT-003 (without overrides the phase still finishes and
+> **Gerado por** shows the real model) were attested on 2026-09-24 **with Grok roles only**
+> (`EVAL_REPORT_LLM_PHASE_ROUTING.md`). They have not been re-run on the Codex-backed roles.
+> Until the owner re-runs them and records the new `resolvedModel`, treat both as
+> unverified for the current setup. Nobody has re-attested them.
+
+Verified behavior (OMP v18.2.11, 2026-09-23; the model-resolution points were observed with Grok roles):
 
 - OMP only discovers `agents/*.md` — not `agents/<category>/*.md`. The build therefore
   flattens `plugin/agents/` (see below).
@@ -77,6 +137,12 @@ Verified behavior (OMP v18.2.11, 2026-09-23):
 `/design` and `/ship` delegate through the Task tool to `design-agent` (`opus`) and
 `ship-agent` (`haiku`). For session phases, pick the model with `/model` before
 running the command.
+
+**Living Memory across delegation.** The `UserPromptSubmit` hook injects the memory brief
+into the **main session**, and a subagent does not see it. So `/design` runs the 🔴 gate in
+the main session (the subagent cannot ask the user) and then passes the brief verbatim in
+the delegation prompt under `Living Memory brief:`. `/ship` does the same after Step 0.
+The phase agents use that section and run `memory-index.py brief` only when it is missing.
 
 ## Flattened Plugin Agents
 
@@ -104,10 +170,18 @@ make build                 # regenerates plugin/ and Codex (make dsh for DSH)
 make check                 # fails on any drift (also in CI)
 ```
 
-`--check` fails when: the manifest is invalid or contains a concrete model ID; an
-agent or command is missing on either side; an agent's `model:` differs from
-`claude_model`; a command's marker differs from its mode; `WORKFLOW_CONTRACTS.yaml`
-regains a Claude-alias `model:` line; or `plugin/agents/` has subdirectories.
+`--check` fails when:
+
+- the manifest is invalid, has an unknown top-level table, or contains a concrete model ID;
+- an agent or command is missing on either side;
+- an agent's `model:` differs from `claude_model`, in `.claude/agents/workflow/` or in the
+  generated `plugin/agents/` mirror (the mirror check is skipped when `plugin/` is absent);
+- a workflow command or agent quotes a concrete model ID such as `gpt-4o` or
+  `claude-opus-4`. Use a role, an alias, or `<openrouter-slug>`. If a line really must
+  quote an ID, end it with `<!-- allow-model-id -->`; no current source needs this;
+- a command's marker differs from its mode, or its text lacks `model_reasoning_effort=<effort>`;
+- `WORKFLOW_CONTRACTS.yaml` regains a Claude-alias `model:` line;
+- `plugin/agents/` has subdirectories.
 
 ## Limits
 

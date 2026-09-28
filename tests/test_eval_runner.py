@@ -209,11 +209,15 @@ def test_at005_stale_contract(tmp_path, capsys):
     )
     assert text != design_path.read_text(encoding="utf-8")
     design_path.write_text(text, encoding="utf-8")
-    # Deliberately left uncommitted: .claude/sdd/ is excluded from the
+    # Deliberately left uncommitted: .claude/sdd/features/ is excluded from the
     # worktree digest (Decision 3), so re-freezing here changes the contract
     # digest without moving HEAD or the worktree digest — isolating
-    # STALE_CONTRACT from STALE_COMMIT/STALE_WORKTREE.
-    assert eval_runner.main(["--root", str(root), "freeze", "BASIC6"]) == 0
+    # STALE_CONTRACT from STALE_COMMIT/STALE_WORKTREE. A re-freeze needs a
+    # recorded reason (the /iterate path).
+    assert eval_runner.main([
+        "--root", str(root), "freeze", "BASIC6",
+        "--reason", "descrição do eval_1 revisada via /iterate após review",
+    ]) == 0
 
     capsys.readouterr()
     assert eval_runner.main(["--root", str(root), "verify", "BASIC6", "--json"]) == 1
@@ -787,3 +791,495 @@ class TestCanonicalDigest:
     def test_stable_across_repeated_calls(self):
         data = tomllib.loads('[[eval]]\nid = "e1"\nverifies = ["AT-001", "AT-002"]\n')
         assert eval_runner.canonical_digest(data) == eval_runner.canonical_digest(data)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Review fixes (POST_BUILD_EVALS review at b0f7bdd)
+# ═════════════════════════════════════════════════════════════════════════════
+
+ARCHIVE = Path(__file__).resolve().parent.parent / ".claude" / "sdd" / "archive"
+REASON = "eval_1 afrouxado após review com o time de dados"
+
+
+def run_cli(root: Path, *args: str) -> int:
+    return eval_runner.main(["--root", str(root), *args])
+
+
+def verify_json(root: Path, name: str, capsys, *extra: str) -> dict:
+    capsys.readouterr()
+    run_cli(root, "verify", name, "--json", *extra)
+    return json.loads(capsys.readouterr().out)
+
+
+def design_path(root: Path, name: str) -> Path:
+    return root / ".claude" / "sdd" / "features" / f"DESIGN_{name}.md"
+
+
+def edit_design(root: Path, name: str, old: str, new: str) -> None:
+    path = design_path(root, name)
+    text = path.read_text(encoding="utf-8")
+    assert old in text
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def loosen_eval_1(root: Path, name: str) -> None:
+    edit_design(root, name, 'grep -qx "hello agentspec" greeting.txt || { echo "content mismatch" >&2; exit 1; }',
+                "true  # loosened")
+
+
+def freeze_log(root: Path, name: str) -> list[dict]:
+    path = root / ".claude" / "sdd" / "features" / f"EVAL_{name}.freeze.log"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def reports_dir(root: Path) -> Path:
+    return root / ".claude" / "sdd" / "reports"
+
+
+def write_receipt(root: Path, name: str, receipt: dict, *, seal: bool) -> None:
+    receipt = dict(receipt)
+    receipt.pop("integrity", None)
+    if seal:
+        receipt["integrity"] = {"algorithm": eval_runner.INTEGRITY_ALGORITHM, "digest": eval_runner.integrity_digest(receipt)}
+    (reports_dir(root) / f"EVAL_{name}.json").write_text(json.dumps(receipt), encoding="utf-8")
+
+
+# ── Finding 1: re-freeze needs a reason and lands in an append-only ledger ──
+
+def test_refreeze_refused_without_reason(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "REFREEZE1")
+    assert run_cli(root, "freeze", "REFREEZE1") == 0
+    frozen = eval_runner.read_frozen_digest(design_path(root, "REFREEZE1").read_text(encoding="utf-8"))
+
+    loosen_eval_1(root, "REFREEZE1")
+    capsys.readouterr()
+    assert run_cli(root, "freeze", "REFREEZE1") == 1
+    assert "REFREEZE_NEEDS_REASON" in capsys.readouterr().out
+    assert run_cli(root, "freeze", "REFREEZE1", "--reason", "too short") == 1
+    # Refused freezes change nothing: the DESIGN keeps its digest, so run refuses.
+    assert eval_runner.read_frozen_digest(design_path(root, "REFREEZE1").read_text(encoding="utf-8")) == frozen
+    assert len(freeze_log(root, "REFREEZE1")) == 1
+    assert run_cli(root, "run", "REFREEZE1") == 1
+    assert any(e.startswith("CONTRACT_TAMPERED") for e in receipt_for(root, "REFREEZE1")["structural_errors"])
+
+    assert run_cli(root, "freeze", "REFREEZE1", "--reason", REASON) == 0
+    log = freeze_log(root, "REFREEZE1")
+    assert [e["kind"] for e in log] == ["initial", "refreeze"]
+    assert log[1]["old_digest"] == frozen and log[1]["reason"] == REASON
+    assert log[1]["git_user_email"] == "test@example.com"
+    assert log[1]["prev"] == eval_runner.canonical_digest(log[0])
+
+    # The loosened contract can pass, but the re-freeze is on the record.
+    assert run_cli(root, "run", "REFREEZE1") == 0
+    receipt = receipt_for(root, "REFREEZE1")
+    assert any(w.startswith("REFROZEN") and REASON in w for w in receipt["warnings"])
+    assert "REFROZEN" in report_for(root, "REFREEZE1")
+    assert receipt["freeze_ledger"]["entries"] == 2
+
+
+def test_idempotent_freeze_writes_nothing(tmp_path):
+    root = make_repo(tmp_path)
+    setup_basic(root, "REFREEZE2")
+    assert run_cli(root, "freeze", "REFREEZE2") == 0
+    assert run_cli(root, "freeze", "REFREEZE2") == 0
+    assert len(freeze_log(root, "REFREEZE2")) == 1
+
+
+def test_refrozen_after_run(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "REFREEZE3")
+    run_cli(root, "freeze", "REFREEZE3")
+    assert run_cli(root, "run", "REFREEZE3") == 0
+    original = design_path(root, "REFREEZE3").read_text(encoding="utf-8")
+
+    # A → B → A after the run: the contract digest is back where it was, but
+    # the ledger shows two freezes the receipt never saw.
+    loosen_eval_1(root, "REFREEZE3")
+    assert run_cli(root, "freeze", "REFREEZE3", "--reason", REASON) == 0
+    assert verify_json(root, "REFREEZE3", capsys)["code"] == "STALE_CONTRACT"
+    design_path(root, "REFREEZE3").write_text(original, encoding="utf-8")
+    assert run_cli(root, "freeze", "REFREEZE3", "--reason", "revertido: o afrouxamento não foi aprovado") == 0
+    assert verify_json(root, "REFREEZE3", capsys)["code"] == "REFROZEN_AFTER_RUN"
+
+    assert run_cli(root, "run", "REFREEZE3") == 0
+    assert verify_json(root, "REFREEZE3", capsys)["code"] == "OK"
+
+
+def test_ledger_mismatch_on_hand_edited_digest(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "LEDGER1")
+    run_cli(root, "freeze", "LEDGER1")
+    run_cli(root, "run", "LEDGER1")
+
+    # Bypass `freeze`: loosen the eval and write the matching digest by hand.
+    loosen_eval_1(root, "LEDGER1")
+    feature = eval_runner.load_feature(eval_runner.Paths(root, "LEDGER1"))
+    design_path(root, "LEDGER1").write_text(
+        eval_runner.write_frozen_digest(feature.design_text, feature.contract_digest), encoding="utf-8")
+
+    out = verify_json(root, "LEDGER1", capsys)
+    assert out["code"] == "LEDGER_MISMATCH"
+    assert run_cli(root, "run", "LEDGER1") == 1
+    assert any(e.startswith("LEDGER_MISMATCH") for e in receipt_for(root, "LEDGER1")["structural_errors"])
+
+
+def test_freeze_log_chain_broken(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "LEDGER2")
+    run_cli(root, "freeze", "LEDGER2")
+    loosen_eval_1(root, "LEDGER2")
+    run_cli(root, "freeze", "LEDGER2", "--reason", REASON)
+    run_cli(root, "run", "LEDGER2")
+
+    log_path = root / ".claude" / "sdd" / "features" / "EVAL_LEDGER2.freeze.log"
+    lines = log_path.read_text(encoding="utf-8").splitlines()
+    log_path.write_text(lines[1] + "\n", encoding="utf-8")  # drop the initial freeze
+    assert verify_json(root, "LEDGER2", capsys)["code"] == "FREEZE_LOG_BROKEN"
+    capsys.readouterr()
+    assert run_cli(root, "freeze", "LEDGER2", "--reason", REASON) == 1
+
+    log_path.write_text("not json\n", encoding="utf-8")
+    assert verify_json(root, "LEDGER2", capsys)["code"] == "FREEZE_LOG_BROKEN"
+
+
+# ── Finding 2: verify recomputes the verdict; receipts are sealed ───────────
+
+def test_forged_receipt_with_empty_results_rejected(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "FORGE1", satisfy_all=False)
+    run_cli(root, "freeze", "FORGE1")
+    feature = eval_runner.load_feature(eval_runner.Paths(root, "FORGE1"))
+    state = eval_runner.repo_state(feature)
+    forged = {
+        "schema": eval_runner.RECEIPT_SCHEMA, "feature": "FORGE1", **state.to_dict(),
+        "extras_digest": None, "evaluated_at": "2026-09-28T00:00:00Z", "runner_version": "1.0.0",
+        "jev": {"model": "x", "calibrated": False}, "results": [], "required": [],
+        "structural_errors": [], "warnings": [], "waivers": [], "verdict": "PASS",
+    }
+    reports_dir(root).mkdir(parents=True, exist_ok=True)
+
+    write_receipt(root, "FORGE1", forged, seal=False)
+    assert verify_json(root, "FORGE1", capsys)["code"] == "UNSEALED_RECEIPT"
+
+    forged["freeze_ledger"] = eval_runner.freeze_fingerprint(freeze_log(root, "FORGE1"))
+    write_receipt(root, "FORGE1", forged, seal=True)
+    out = verify_json(root, "FORGE1", capsys)
+    assert out["code"] == "RECEIPT_INCOMPLETE"
+    assert run_cli(root, "verify", "FORGE1") == 1
+
+
+def test_edited_verdict_breaks_the_seal(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "FORGE2", satisfy_all=False)
+    run_cli(root, "freeze", "FORGE2")
+    assert run_cli(root, "run", "FORGE2") == 1
+    receipt = receipt_for(root, "FORGE2")
+
+    receipt["verdict"] = "PASS"
+    (reports_dir(root) / "EVAL_FORGE2.json").write_text(json.dumps(receipt), encoding="utf-8")
+    assert verify_json(root, "FORGE2", capsys)["code"] == "INTEGRITY_MISMATCH"
+
+    # Re-sealing does not help: the results still show failures.
+    write_receipt(root, "FORGE2", receipt, seal=True)
+    assert verify_json(root, "FORGE2", capsys)["code"] == "VERDICT_MISMATCH"
+
+    # Flipping the statuses too is caught by the deterministic exit codes.
+    for r in receipt["results"]:
+        r["status"] = "pass"
+    write_receipt(root, "FORGE2", receipt, seal=True)
+    assert verify_json(root, "FORGE2", capsys)["code"] == "VERDICT_MISMATCH"
+
+    # A forger who also fakes exit codes is caught only by --rerun.
+    for r in receipt["results"]:
+        r["exit_code"] = 0
+    write_receipt(root, "FORGE2", receipt, seal=True)
+    assert verify_json(root, "FORGE2", capsys)["code"] == "OK"
+    out = verify_json(root, "FORGE2", capsys, "--rerun")
+    assert out["code"] == "RERUN_FAIL"
+    assert "eval_1" in out["detail"]
+
+
+def test_forged_human_pass_is_unbacked(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    install_feature(root, "FORGE3", CASES_DIR / "define_human.md", CASES_DIR / "design_human.md")
+    commit_all(root, "init forge3")
+    run_cli(root, "freeze", "FORGE3")
+    assert run_cli(root, "run", "FORGE3") == 1
+    receipt = receipt_for(root, "FORGE3")
+    receipt["results"][0].update({"status": "pass", "decided_by": "human", "human": {"owner": "Marco"}})
+    receipt["results"][0].pop("reason", None)
+    receipt["verdict"] = "PASS"
+    write_receipt(root, "FORGE3", receipt, seal=True)
+    assert verify_json(root, "FORGE3", capsys)["code"] == "UNBACKED_DECISION"
+
+
+def test_verify_rerun_sees_gitignored_inputs(tmp_path, capsys):
+    """Gitignored files are outside the worktree digest (documented): a change
+    to one is invisible to plain verify, and caught by verify --rerun."""
+    root = make_repo(tmp_path)
+    (root / ".gitignore").write_text("greeting.txt\n", encoding="utf-8")
+    setup_basic(root, "RERUN1")
+    run_cli(root, "freeze", "RERUN1")
+    assert run_cli(root, "run", "RERUN1") == 0
+    (root / "greeting.txt").write_text("changed\n", encoding="utf-8")
+    assert verify_json(root, "RERUN1", capsys)["code"] == "OK"
+    assert verify_json(root, "RERUN1", capsys, "--rerun")["code"] == "RERUN_FAIL"
+
+
+# ── Finding 3: an empty or partial [gate] required is rejected ──────────────
+
+def _with_gate(root: Path, name: str, required: str) -> None:
+    edit_design(root, name, "```toml\n", f"```toml\n[gate]\nrequired = {required}\n\n")
+
+
+def test_empty_required_rejected(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "GATE1", satisfy_all=False)
+    _with_gate(root, "GATE1", "[]")
+    assert run_cli(root, "validate", "GATE1") == 3
+    assert "EMPTY_REQUIRED" in capsys.readouterr().out
+    assert run_cli(root, "freeze", "GATE1") == 3
+
+
+def test_required_must_cover_every_at(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "GATE2")
+    _with_gate(root, "GATE2", '["eval_1"]')
+    assert run_cli(root, "validate", "GATE2") == 3
+    out = capsys.readouterr().out
+    assert "UNGATED_AT: AT-002" in out and "UNGATED_AT: AT-003" in out
+
+    edit_design(root, "GATE2", 'required = ["eval_1"]', 'required = ["eval_1", "eval_2", "eval_3"]')
+    assert run_cli(root, "validate", "GATE2") == 0
+
+
+# ── Finding 4: worktree digest covers templates/architecture, not workflow state ──
+
+def test_worktree_digest_scope(tmp_path):
+    root = make_repo(tmp_path)
+    sdd = root / ".claude" / "sdd"
+    for sub in ("templates", "architecture", "features", "reports", "archive"):
+        (sdd / sub).mkdir(parents=True)
+        (sdd / sub / "file.md").write_text("v1\n", encoding="utf-8")
+    (root / ".gitignore").write_text("ignored.txt\n", encoding="utf-8")
+    commit_all(root, "sdd tree")
+    base = eval_runner.worktree_digest(root)
+
+    for sub in ("features", "reports", "archive"):
+        (sdd / sub / "file.md").write_text("v2\n", encoding="utf-8")
+        (sdd / sub / "new.md").write_text("new\n", encoding="utf-8")
+    (sdd / "MEMORY.md").write_text("memory\n", encoding="utf-8")
+    (root / ".claude" / "storage").mkdir(parents=True)
+    (root / ".claude" / "storage" / "judge-ledger.jsonl").write_text("{}\n", encoding="utf-8")
+    (root / "ignored.txt").write_text("gitignored\n", encoding="utf-8")
+    assert eval_runner.worktree_digest(root) == base
+
+    for sub in ("templates", "architecture"):
+        (sdd / sub / "file.md").write_text("v2\n", encoding="utf-8")
+        changed = eval_runner.worktree_digest(root)
+        assert changed != base, sub
+        (sdd / sub / "file.md").write_text("v1\n", encoding="utf-8")
+    (sdd / "templates" / "NEW_TEMPLATE.md").write_text("untracked\n", encoding="utf-8")
+    assert eval_runner.worktree_digest(root) != base
+
+
+# ── Finding 5: waivers and attestations name a person ───────────────────────
+
+@pytest.mark.parametrize("who", ["build-agent", "eval-agent", "Codex", "Claude", "claude code", "GPT-5", "my-agent", "  "])
+def test_waiver_refuses_agent_supervisor(tmp_path, who):
+    root = make_repo(tmp_path)
+    setup_basic(root, "WAIVE1", satisfy_all=False)
+    run_cli(root, "freeze", "WAIVE1")
+    assert run_cli(root, "waive", "WAIVE1", "--eval", "eval_1", "--supervisor", who,
+                   "--reason", "o arquivo é gerado só no ambiente de produção") == 2
+
+
+def test_deterministic_waiver_needs_reason_and_records_email(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "WAIVE2", satisfy_all=False)
+    (root / "config.json").write_text(json.dumps({"ready": True}), encoding="utf-8")
+    (root / "greet.sh").write_text("echo hi\n", encoding="utf-8")
+    commit_all(root, "partial")
+    run_cli(root, "freeze", "WAIVE2")
+    assert run_cli(root, "waive", "WAIVE2", "--eval", "eval_1", "--supervisor", "Marco", "--reason", "ok") == 2
+    assert "REASON_TOO_SHORT" in capsys.readouterr().err
+
+    assert run_cli(root, "waive", "WAIVE2", "--eval", "eval_1", "--supervisor", "Marco Monteiro",
+                   "--reason", "greeting.txt é gerado pelo deploy, não pelo build") == 0
+    ledger = json.loads((reports_dir(root) / "EVAL_WAIVE2.attestations.json").read_text(encoding="utf-8"))
+    assert ledger["waivers"][0]["recorded_by_email"] == "test@example.com"
+    assert run_cli(root, "run", "WAIVE2") == 0
+    receipt = receipt_for(root, "WAIVE2")
+    assert receipt["waivers"][0]["recorded_by_email"] == "test@example.com"
+    assert "test@example.com" in report_for(root, "WAIVE2")
+    assert verify_json(root, "WAIVE2", capsys)["code"] == "OK"
+
+
+def test_attest_refuses_agent_owner(tmp_path):
+    root = make_repo(tmp_path)
+    install_feature(root, "ATTEST1", CASES_DIR / "define_human.md", CASES_DIR / "design_human.md")
+    commit_all(root, "init attest1")
+    run_cli(root, "freeze", "ATTEST1")
+    assert run_cli(root, "attest", "ATTEST1", "--eval", "eval_h1", "--verdict", "pass",
+                   "--owner", "eval-agent", "--evidence", "x") == 2
+
+
+def test_legacy_waiver_needs_a_meaningful_reason(tmp_path):
+    root = make_repo(tmp_path)
+    install_feature(root, "LEGACY2", CASES_DIR / "define_legacy.md", CASES_DIR / "design_legacy.md")
+    commit_all(root, "init legacy2")
+    assert run_cli(root, "waive", "LEGACY2", "--legacy", "--supervisor", "Marco", "--reason", "legado") == 2
+
+
+# ── Finding 6: the PRE receipt is persisted and surfaced by run ─────────────
+
+def test_pre_receipt_persisted_and_reported(tmp_path):
+    root = make_repo(tmp_path)
+    setup_basic(root, "PRE1")
+    run_cli(root, "freeze", "PRE1")
+    assert run_cli(root, "run", "PRE1") == 0
+    receipt = receipt_for(root, "PRE1")
+    assert receipt["pre_check"] == {"present": False}
+    assert any(w.startswith("NO_PRE_RECEIPT") for w in receipt["warnings"])
+    assert "NO_PRE_RECEIPT" in report_for(root, "PRE1")
+
+    assert run_cli(root, "pre", "PRE1") == 0
+    pre = json.loads((reports_dir(root) / "EVAL_PRE1.pre.json").read_text(encoding="utf-8"))
+    assert pre["schema"] == eval_runner.PRE_SCHEMA and pre["outcome"] == "OK"
+    assert sorted(pre["already_passing"]) == ["eval_1", "eval_2", "eval_3"]
+    assert run_cli(root, "run", "PRE1") == 0
+    receipt = receipt_for(root, "PRE1")
+    assert receipt["pre_check"]["present"] is True
+    assert not any(w.startswith("NO_PRE_RECEIPT") for w in receipt["warnings"])
+    assert any(w.startswith("PRE_ALREADY_PASSING") for w in receipt["warnings"])
+
+
+def test_pre_receipt_records_blocked(tmp_path):
+    root = make_repo(tmp_path)
+    install_feature(root, "PRE2", CASES_DIR / "define_bash_error.md", CASES_DIR / "design_bash_error.md")
+    commit_all(root, "init pre2")
+    run_cli(root, "freeze", "PRE2")
+    assert run_cli(root, "pre", "PRE2") == 1
+    pre = json.loads((reports_dir(root) / "EVAL_PRE2.pre.json").read_text(encoding="utf-8"))
+    assert pre["outcome"] == "BLOCKED"
+
+
+# ── Finding 7: the eval phase adds complementary evals through the runner ───
+
+def test_extra_appends_validated_evals(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    setup_basic(root, "EXTRA1")
+    run_cli(root, "freeze", "EXTRA1")
+    good = tmp_path / "extra.toml"
+    good.write_text('[[eval]]\nid = "extra_a"\nverifies = ["AT-001"]\ncheck_type = "deterministic"\nrun = "true"\n', encoding="utf-8")
+    assert run_cli(root, "extra", "EXTRA1", "--file", str(good)) == 0
+    good.write_text('[[eval]]\nid = "extra_b"\ncheck_type = "deterministic"\nrun = "true"\n', encoding="utf-8")
+    assert run_cli(root, "extra", "EXTRA1", "--file", str(good)) == 0
+    extras = tomllib.loads((root / ".claude" / "sdd" / "features" / "EVALS_EXTRA_EXTRA1.toml").read_text(encoding="utf-8"))
+    assert [e["id"] for e in extras["eval"]] == ["extra_a", "extra_b"]
+
+    for bad in (
+        '[[eval]]\nid = "extra_a"\ncheck_type = "deterministic"\nrun = "true"\n',          # duplicate id
+        '[[eval]]\nid = "eval_1"\ncheck_type = "deterministic"\nrun = "true"\n',           # collides with contract
+        '[[eval]]\nid = "extra_h"\ncheck_type = "human"\nowner = "x"\ninstructions = "y"\n',  # human not allowed
+        '[gate]\nrequired = []\n',                                                         # cannot touch the gate
+    ):
+        good.write_text(bad, encoding="utf-8")
+        assert run_cli(root, "extra", "EXTRA1", "--file", str(good)) == 3, bad
+    assert run_cli(root, "run", "EXTRA1") == 0
+    assert {"extra_a", "extra_b"} <= set(receipt_for(root, "EXTRA1")["required"])
+
+
+def test_eval_agent_has_no_write_tool():
+    agent = (Path(__file__).resolve().parent.parent / ".claude" / "agents" / "workflow" / "eval-agent.md").read_text(encoding="utf-8")
+    tools_line = next(line for line in agent.splitlines() if line.startswith("tools:"))
+    assert "Write" not in tools_line.replace("TodoWrite", "")
+    assert "Edit" not in tools_line
+
+
+# ── Finding 8 (runner side): a malformed Jev answer never crashes /eval ─────
+
+def test_graded_malformed_jev_answer_escalates(tmp_path, monkeypatch):
+    root = make_repo(tmp_path)
+    install_feature(root, "GRADED5", CASES_DIR / "define_graded.md", CASES_DIR / "design_graded.md")
+    commit_all(root, "init graded5")
+    run_cli(root, "freeze", "GRADED5")
+    bad = {"quality": jev_client.Answer(id="quality", type="score", probabilities={"top": 0.9}, confidence=0.99)}
+    monkeypatch.setattr(eval_runner.jev_client, "decide", lambda *a, **k: jev_client.DecisionResult(model="m", answers=bad))
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test-dummy")
+    assert run_cli(root, "run", "GRADED5", "--escalate", "human") == 1
+    result = receipt_for(root, "GRADED5")["results"][0]
+    assert result["status"] == "pending"
+    assert result["jev"]["error"] == "PARSE"
+
+
+# ── Backward compatibility: receipts written by runner 1.0.0 ────────────────
+
+def test_legacy_receipt_still_verifies(tmp_path, capsys):
+    """A receipt from runner 1.0.0 (no seal, no freeze ledger) keeps verifying,
+    under an explicit code, as long as the DESIGN has no freeze ledger."""
+    root = make_repo(tmp_path)
+    setup_basic(root, "OLD1")
+    run_cli(root, "freeze", "OLD1")
+    run_cli(root, "run", "OLD1")
+    receipt = receipt_for(root, "OLD1")
+    for key in ("integrity", "freeze_ledger", "pre_check"):
+        receipt.pop(key)
+    receipt["runner_version"] = "1.0.0"
+    receipt["warnings"] = []
+    write_receipt(root, "OLD1", receipt, seal=False)
+    log_path = root / ".claude" / "sdd" / "features" / "EVAL_OLD1.freeze.log"
+    log_text = log_path.read_text(encoding="utf-8")
+
+    log_path.unlink()
+    out = verify_json(root, "OLD1", capsys)
+    assert out["code"] == "OK_LEGACY_RECEIPT"
+    assert run_cli(root, "verify", "OLD1") == 0
+
+    # Once a freeze ledger exists, only sealed receipts count.
+    log_path.write_text(log_text, encoding="utf-8")
+    assert verify_json(root, "OLD1", capsys)["code"] == "UNSEALED_RECEIPT"
+
+
+def test_legacy_waived_receipt_still_verifies(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    install_feature(root, "LEGACY3", CASES_DIR / "define_legacy.md", CASES_DIR / "design_legacy.md")
+    commit_all(root, "init legacy3")
+    run_cli(root, "waive", "LEGACY3", "--legacy", "--supervisor", "Marco", "--reason", "feature legada, anterior ao contrato de evals")
+    run_cli(root, "run", "LEGACY3")
+    receipt = receipt_for(root, "LEGACY3")
+    receipt.pop("integrity")
+    write_receipt(root, "LEGACY3", receipt, seal=False)
+    assert verify_json(root, "LEGACY3", capsys)["code"] == "OK_LEGACY_WAIVED"
+    (reports_dir(root) / "EVAL_LEGACY3.attestations.json").unlink()
+    assert verify_json(root, "LEGACY3", capsys)["code"] == "UNBACKED_DECISION"
+
+
+ARCHIVED_RECEIPTS = sorted(ARCHIVE.glob("*/EVAL_*[A-Z0-9].json"))
+
+
+@pytest.mark.parametrize("receipt_path", ARCHIVED_RECEIPTS, ids=lambda p: p.parent.name)
+def test_archived_receipts_remain_consistent(tmp_path, receipt_path):
+    """Every receipt already shipped still passes the new recomputation:
+    its results satisfy the gate of its own archived DESIGN, and every human
+    pass / waiver is backed by its archived attestations file."""
+    name = receipt_path.parent.name
+    root = make_repo(tmp_path)
+    install_feature(root, name, receipt_path.parent / f"DEFINE_{name}.md", receipt_path.parent / f"DESIGN_{name}.md")
+    reports_dir(root).mkdir(parents=True)
+    for suffix in (".json", ".attestations.json"):
+        src = receipt_path.parent / f"EVAL_{name}{suffix}"
+        if src.exists():
+            (reports_dir(root) / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    paths = eval_runner.Paths(root, name)
+    feature = eval_runner.load_feature(paths)
+    receipt, readable = eval_runner.load_receipt(paths)
+    assert readable and receipt is not None
+    assert eval_runner.seal_code(receipt, []) == "LEGACY"
+    assert receipt.get("contract_digest") == feature.contract_digest
+    assert eval_runner.receipt_consistency(feature, receipt, eval_runner.load_attestations(paths)) is None
+
+
+def test_archive_has_receipts():
+    assert len(ARCHIVED_RECEIPTS) >= 5

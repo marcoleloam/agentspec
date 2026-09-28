@@ -7,7 +7,7 @@ description: Explore ideas through collaborative dialogue before requirements ca
 
 <!-- phase-routing: mode=session role=plan -->
 > **Model routing:** this phase runs in the main session (it asks you questions).
-> Recommended: start it with `omp --model @plan` (Claude Code: `/model opus`). Record the session model in the
+> Recommended — Claude Code: `/model opus` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: `omp --model @plan`. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Collaborative exploration before requirements capture (Phase 0)
@@ -80,7 +80,7 @@ Load the living memory of related work (≤15 lines; open pointers only when rel
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" brief {FEATURE} --phase brainstorm --domains {candidate KB domains}
+[ -f "$MI" ] && python3 "$MI" brief {FEATURE} --phase brainstorm --domains {candidate KB domains} || echo "Living Memory unavailable — continuing without the brief"
 ```
 
 ### Step 2: Discovery Questions
@@ -164,7 +164,7 @@ Resolução cells of Q and A change in place), pointer + one sentence, pt-BR con
 
 ```bash
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — brainstorm is not done"
-python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
 ```
 
 ---

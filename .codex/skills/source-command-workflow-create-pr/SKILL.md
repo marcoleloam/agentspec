@@ -7,6 +7,17 @@ description: "Create pull request with conventional commits and structured descr
 
 Use this skill when the user asks to run the migrated source command `workflow-create-pr`.
 
+## Running in Codex
+
+- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes.
+
 ## Command Template
 
 # Create PR Command

@@ -18,9 +18,46 @@ report applies a decision rule fixed in advance and recommends, per stratum
 (library / conceptual / niche), `aposentar KB`, `substituir por B`,
 `enxugar (C)`, `manter A` or `inconclusivo`.
 
-Spec: `.claude/sdd/archive/KB_CONTEXT7_REFRESH/`. Round 1 (2026-09) ran on the
-Grok CLI; its results under `~/.kb-bench/results/` are not directly comparable
-with Codex runs (different model, harness and isolation).
+Two guards (protocol 2, `[decision]` in `bench.toml`) keep a too-easy task set
+from deciding "retire" by construction:
+
+- **Anti-ceiling.** If arm D (no knowledge) resolves ≥ `ceiling_rate` (90%) of
+  a stratum, the cell is `inconclusivo (teto)`, whatever A, B and C did.
+- **Ties never retire.** `aposentar KB` needs D to beat A by more than
+  `retire_margin`; a tie is `inconclusivo (empate)`.
+
+Spec: `.claude/sdd/archive/KB_CONTEXT7_REFRESH/`.
+
+## Round 1 — why it doesn't count
+
+Round 1 (2026-09-24, Grok CLI, `~/.kb-bench/results/20260924T*`) recommended
+retiring the KB, but it is **invalid for decision** and `REPORT.md` for those
+runs now opens with a banner saying so:
+
+1. **Isolation leak.** Arm D's recursive searches printed hits from
+   `arms/a/kb` and `arms/c/kb` (and could read other arms' results); the Grok
+   harness also listed the `data-engineering-guide` skill to every arm.
+2. **Context7 quota.** No API key: the anonymous quota answered "Monthly quota
+   exceeded", so B and C measured mostly the bare model.
+3. **Ceiling effect.** B, C and D solved ~100% of the synthetic tasks, and the
+   old rule turned a D = A tie into "aposentar KB".
+
+## Round 2 protocol
+
+- **Tasks:** ≥ 10 *real* tasks per stratum (`--tasks-dir`, kept outside git),
+  pre-filtered with an arm-D-only pilot so D resolves < 80% of each stratum.
+- **Repetitions:** 3 runs per (task, arm) pair (separate `run` invocations or
+  seeds), so each pair has a success rate, not a single coin flip.
+- **Analysis:** paired comparison per task — McNemar on pass/fail pairs, or a
+  paired bootstrap of the rate difference with a 95% interval — before reading
+  the recommendation table.
+- **Arm A with an updated KB:** refresh the domains under test (`/ingest-kb`)
+  before the round; otherwise A measures a stale KB against live docs.
+- **Context7 key mandatory:** `run` refuses B/C without `CONTEXT7_API_KEY`,
+  and a quota/auth refusal or an outage mid-round **aborts** the run (the pair
+  is not recorded; `--resume` retries it) instead of piling up `unavailable`.
+- **Human queue truly human:** the maintainer judges the blind items, not an
+  agent; record verdicts with `kb_bench human --approve/--reject`.
 
 ## Prerequisites
 
@@ -29,8 +66,9 @@ with Codex runs (different model, harness and isolation).
   binary with `export KB_BENCH_CODEX=/opt/homebrew/bin/codex`.
 - `npx` (Node) for `@upstash/context7-mcp`.
 - A Context7 API key in `CONTEXT7_API_KEY` (free at
-  <https://context7.com/dashboard>). Without it the anonymous quota answers
-  "Monthly quota exceeded" and `smoke` fails. The key is only ever read from
+  <https://context7.com/dashboard>) — mandatory: `run` refuses arms B/C
+  without it. Without it the anonymous quota answers "Monthly quota exceeded"
+  and `smoke` fails. The key is only ever read from
   the environment: never written to disk, never on a command line, never
   printed.
 - Python ≥ 3.11; `uv` recommended (creates the Python 3.12 eval venv).
@@ -92,9 +130,11 @@ codex exec --json --ephemeral --skip-git-repo-check --ignore-user-config \
 
 ## How isolation is proven
 
-- **Canaries.** `smoke` runs `cat <canary>` under the attempt's profile via
-  `codex sandbox` (no model) and expects "Operation not permitted", plus a
-  write in the arm folder that must succeed. The full smoke then asks
+- **Canaries.** `smoke` runs `cat` under arm D's profile via `codex sandbox`
+  (no model) on three canaries — the canary folder, a file inside
+  `arms/a/kb/` and one inside `results/` (the two round-1 leak paths) — and
+  expects "Operation not permitted" for each, plus a write in the arm folder
+  that must succeed. The full smoke then asks
   `codex exec` to read the canary once; Codex usually declines because it sees
   the policy — that passes, a leaked token aborts.
 - **Transcript.** The JSONL of every attempt is checked: a *completed* command
@@ -102,11 +142,16 @@ codex exec --json --ephemeral --skip-git-repo-check --ignore-user-config \
   completed file change under one, marks the pair `contaminated` (excluded);
   so do Context7 in arm A/D and any web search. Denied accesses are only
   counted (`kb_access_denied`).
+- **AT-004, literally.** Independently of the deny roots, a completed command
+  whose command line or output names a path with `/kb/` (or an AgentSpec
+  plugin folder, or a knowledge skill such as `skills/data-engineering-guide`)
+  outside the arm folder is `contaminated`. Refused or missing reads don't count.
 - **Context7 availability.** Before every B/C attempt the bench starts the
   same MCP server Codex would and checks its tools (no model). A Context7 call
-  whose result is a quota/auth refusal counts as unavailable, not as a call;
-  if every call in an attempt was refused or failed on transport, the pair is
-  `unavailable`. `smoke` probes the quota and the per-domain coverage by
+  whose result is a quota/auth refusal counts as unavailable, not as a call.
+  A failed preflight, any refused call, or an attempt whose every call failed
+  on transport **stops the run** (exit 3, pair not recorded, `--resume`
+  later): a quota exhaustion can't silently bias the rest of the round. `smoke` probes the quota and the per-domain coverage by
   calling `resolve-library-id` directly.
 
 ## Budget and cost
@@ -127,7 +172,7 @@ separate folder with the same layout and be added with `--tasks-dir <dir>`
 
 ```text
 scripts/kb_bench/
-├── bench.toml            defaults (model, limits, budget, deny globs, arms)
+├── bench.toml            defaults (model, limits, budget, deny globs, decision thresholds, arms)
 ├── cli.py                setup | teardown | validate | smoke | run | report | human
 ├── loop.py               attempt → isolation → evals → retry → human; budget / stop
 ├── codex_runner.py       codex exec argv, permission profile, isolated agent home

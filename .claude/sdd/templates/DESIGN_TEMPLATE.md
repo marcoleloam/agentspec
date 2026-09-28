@@ -263,8 +263,10 @@
 
 > Contrato de aceitação executável: pelo menos um eval por AT do DEFINE. Escrito antes do código,
 > congelado por `eval_runner.py freeze` (linha **Evals Digest**), checado pelo `/build` (`pre`)
-> e reexecutado pelo `/eval`. Mude este bloco só via `/iterate`.
+> e reexecutado pelo `/eval`. Mude este bloco só via `/iterate` — recongelar exige `freeze --reason`,
+> registrado em `EVAL_{FEATURE_NAME}.freeze.log`.
 >
+> - `[gate] required` (opcional; padrão = todos os evals): nunca vazio, e todo AT citado em `verifies` precisa de ao menos um eval exigido.
 > - `deterministic`: bash; exit 0 = passa. Para Python, use `"$AGENTSPEC_PYTHON"`.
 > - `graded`: critério subjetivo; `[eval.state]` = campo → comando bash; 2–5 perguntas, ≥ 1 `score`. Máximo 50% do contrato.
 > - `human`: comportamento que exige execução real de agente ou serviço externo; `owner` + `instructions`.

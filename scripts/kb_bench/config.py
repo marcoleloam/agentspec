@@ -52,6 +52,8 @@ class BenchConfig:
     context7_startup_timeout_s: int
     user_codex_home: Path
     arms: dict[str, Arm] = field(default_factory=dict)
+    ceiling_rate: float = 0.90     # D resolving ≥ this share of a stratum → "inconclusivo (teto)"
+    retire_margin: float = 0.0     # D must beat A by more than this to retire the KB; ties never do
 
     @property
     def arms_root(self) -> Path:
@@ -163,6 +165,11 @@ def load_config(path: Path | None = None) -> BenchConfig:
     bad_kb = [a.letter for a in arms.values() if a.kb not in {"repo", "lean", "none"}]
     if bad_kb:
         raise ConfigError(f"arms {bad_kb}: kb must be repo|lean|none")
+    decision = data.get("decision", {})
+    ceiling_rate = float(decision.get("ceiling_rate", 0.90))
+    retire_margin = float(decision.get("retire_margin", 0.0))
+    if not 0 < ceiling_rate <= 1 or not 0 <= retire_margin < 1:
+        raise ConfigError("[decision] ceiling_rate must be in (0, 1] and retire_margin in [0, 1)")
     return BenchConfig(
         model=os.environ.get("KB_BENCH_MODEL", run["model"]),
         reasoning_effort=str(run.get("reasoning_effort", "")),
@@ -182,4 +189,6 @@ def load_config(path: Path | None = None) -> BenchConfig:
         context7_startup_timeout_s=int(c7["startup_timeout_s"]),
         user_codex_home=_user_codex_home(),
         arms=arms,
+        ceiling_rate=ceiling_rate,
+        retire_margin=retire_margin,
     )

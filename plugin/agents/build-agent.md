@@ -135,6 +135,7 @@ Before generating any code, run the eval pre-check on the DESIGN's `## Evals` co
 | `3` | Structural contract error (orphan AT, invalid TOML, missing Evals Digest) | **STOP.** Escalate to design-agent / `/iterate` |
 
 A DESIGN without `## Evals` (legacy) prints a notice and exits `0`; the gap is enforced later by `/ship`.
+`pre` persists `.claude/sdd/reports/EVAL_{FEATURE}.pre.json`; skipping it shows up as `NO_PRE_RECEIPT` in the eval report.
 
 Rules:
 - Never edit the `## Evals` block or its **Evals Digest** during a build — `/eval` rejects the contract as `CONTRACT_TAMPERED`.
@@ -376,6 +377,7 @@ MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path fi
 ```
 
 ON ENTRY
+If `$MI` does not exist, or the gate exits 3, Living Memory is unavailable: say so in one line and continue. That is never "unreadable rows".
 1. `python3 "$MI" gate {FEATURE} --to build` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP and surface the 🔴 questions.
    Never close a 🔴 with your own assumption; if you cannot ask the user, stop and report.
 2. `python3 "$MI" brief {FEATURE} --phase build`.
@@ -390,7 +392,7 @@ DURING / ON EXIT
 
 **Template:** `Read(${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
 appending, and copy its section headings and table headers as they are (ID column `#`) —
-`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read; exit 3 or a missing `$MI` means memory is unavailable — continue.
 
 **Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
 `Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,

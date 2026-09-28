@@ -7,13 +7,26 @@ description: "Resume an incomplete or unsatisfactory build by analyzing the gap 
 
 Use this skill when the user asks to run the migrated source command `workflow-continue`.
 
+## Running in Codex
+
+This phase runs **in this session**, on the session model. Start the session with the recommended effort: `codex -c model_reasoning_effort=high` (or pick the effort with `/model` in the TUI before running the command).
+
+- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes.
+
 ## Command Template
 
 # Continuar Command
 
 <!-- phase-routing: mode=session role=default -->
 > **Model routing:** this phase runs in the main session (it orchestrates the specialist agents).
-> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> Recommended — Claude Code: your current `/model` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: your default model. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Resume an incomplete or unsatisfactory build — identify gaps and implement only what is missing, without restarting from zero.

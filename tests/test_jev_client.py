@@ -348,3 +348,65 @@ def test_live_decide():
         api_key=os.environ["OPENROUTER_API_KEY"],
     )
     assert "consistent" in result.answers
+
+
+# ── Review fixes: parse errors, truncation, budget, wall-clock ──────────────
+
+class TestParseHardening:
+    @pytest.mark.parametrize("probabilities", [
+        {"0": None, "1": 0.9},        # None probability (was a raw TypeError)
+        {"0": "high", "1": 0.9},      # non-numeric probability
+        {"top": 0.9, "bottom": 0.1},  # non-ordinal level (classifier needs int levels)
+        [0.1, 0.9],                   # not an object at all
+    ])
+    def test_malformed_probabilities_raise_parse(self, probabilities):
+        payload = {"answers": {"quality": {"type": "score", "score": 1.0, "probabilities": probabilities, "confidence": 0.9}}}
+        with pytest.raises(jev_client.JevError) as excinfo:
+            jev_client.parse_response(payload)
+        assert excinfo.value.code == "PARSE"
+
+    def test_decide_surfaces_parse_error_not_type_error(self):
+        payload = {"answers": {"quality": {"type": "score", "probabilities": {"0": None}}}}
+        with pytest.raises(jev_client.JevError) as excinfo:
+            jev_client.decide({"report": "x"}, [_question()], api_key="k", opener=_opener_sequence(payload))
+        assert excinfo.value.code == "PARSE"
+
+
+class TestTruncationNeverGrows:
+    def test_many_small_fields_stay_under_limit(self):
+        state = {f"f{i}": "x" * 10 for i in range(50)}  # 500 chars, shares of 2 < marker length
+        shrunk, truncated = jev_client.truncate_state(state, limit=100)
+        assert truncated is True
+        assert sum(len(v) for v in shrunk.values()) <= 100
+        assert all(len(shrunk[k]) <= len(state[k]) for k in state)
+        assert not any(v.endswith(jev_client.TRUNCATION_MARKER) for v in shrunk.values())
+
+    def test_marker_kept_when_share_is_large_enough(self):
+        state = {"big": "y" * 1000, "tiny": "z" * 20}
+        shrunk, _ = jev_client.truncate_state(state, limit=200)
+        assert shrunk["big"].endswith(jev_client.TRUNCATION_MARKER)
+        assert sum(len(v) for v in shrunk.values()) <= 200
+
+
+class TestBudgetParsing:
+    @pytest.mark.parametrize(("raw", "expected"), [("abc", 200), ("", 200), ("  7 ", 7), ("-5", 0), ("1.5", 200)])
+    def test_jev_budget_env_is_parsed_defensively(self, tmp_path, monkeypatch, raw, expected):
+        monkeypatch.setenv("JEV_BUDGET", raw)
+        assert jev_client.budget_remaining(tmp_path / "ledger.jsonl") == expected
+
+
+class TestWallClock:
+    def test_post_has_a_wall_clock_ceiling(self):
+        import time
+
+        def slow_opener(request, timeout=None):
+            time.sleep(2.0)  # each socket op within urllib's timeout, but too slow overall
+            return _FakeResponse(_load_fixture("pass.json"))
+
+        started = time.monotonic()
+        with pytest.raises(jev_client.JevError) as excinfo:
+            jev_client.decide({"report": "x"}, [_question()], api_key="k", timeout=0.2,
+                              endpoints=(jev_client.ENDPOINTS[0],), opener=slow_opener)
+        assert excinfo.value.code == "UNAVAILABLE"
+        assert "wall-clock" in str(excinfo.value)
+        assert time.monotonic() - started < 1.5

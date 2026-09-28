@@ -75,3 +75,35 @@ def test_non_workflow_agent_effort_still_maps_from_model(gen):
     toml = gen.build_agent_toml(fm, "body", "data-engineering")
     assert 'model_reasoning_effort = "medium"' in toml
     assert 'sandbox_mode = "read-only"' in toml
+
+
+def _render(gen, relative: str) -> str:
+    command = gen.COMMANDS_DIR / relative
+    text = command.read_text(encoding="utf-8")
+    return gen.build_command_skill(gen.parse_frontmatter(text), gen.strip_frontmatter(text), command)
+
+
+def test_delegated_workflow_skill_explains_codex_delegation(gen):
+    rendered = _render(gen, "workflow/design.md")
+    note = rendered.split("## Command Template", 1)[0]
+    assert "## Running in Codex" in note
+    assert "spawn the `design-agent` subagent" in note
+    assert 'model_reasoning_effort = "high"' in note
+    assert "do not exist in Codex" in note
+
+
+def test_session_workflow_skill_gives_codex_effort_from_manifest(gen):
+    for relative, effort in (("workflow/brainstorm.md", "high"), ("workflow/eval.md", "medium")):
+        note = _render(gen, relative).split("## Command Template", 1)[0]
+        assert f"codex -c model_reasoning_effort={effort}" in note
+        assert "session model" in note
+
+
+def test_non_workflow_skill_gets_tool_notes_only_when_needed(gen):
+    commands = [c for c in sorted(gen.COMMANDS_DIR.glob("*/*.md")) if c.parent.name != "workflow"]
+    with_tools = [c for c in commands if gen._CLAUDE_TOOL_RE.search(c.read_text(encoding="utf-8"))]
+    without = [c for c in commands if c not in with_tools]
+    for command in with_tools[:1] + without[:1]:
+        rendered = _render(gen, str(command.relative_to(gen.COMMANDS_DIR)))
+        assert ("## Running in Codex" in rendered) == (command in with_tools)
+        assert "model_reasoning_effort" not in rendered.split("## Command Template", 1)[0]

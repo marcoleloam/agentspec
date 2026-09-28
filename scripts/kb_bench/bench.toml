@@ -37,17 +37,38 @@ disabled_features = [
 # Read-denied to every shell command the agent runs (Codex permission profile,
 # value "none"). Resolved at runtime (globs → existing literal paths). The repo
 # root, the canary, the bench results and the other arms' folders are always
-# added.
+# added. Inventory of AgentSpec knowledge on the maintainer's machine
+# (2026-09-28): kb/ and skills/data-engineering-guide under ~/.claude, ~/.codex,
+# ~/.grok and ~/.omp. Round 1 arm D saw data-engineering-guide in the Grok
+# skill list. Besides the deny roots, isolation.py flags any completed read of a
+# path with /kb/ (or an AgentSpec plugin/skill folder) outside the arm (AT-004).
 deny_globs = [
   "~/.codex",                          # Codex state: AgentSpec plugin cache, sessions, skills, memories
   "~/.agents",                         # global skills Codex loads even with --ignore-user-config
   "~/.claude",                         # Claude Code: AgentSpec plugin cache/marketplace clone, transcripts
-  "~/.*/installed-plugins/*/kb",       # KB copies installed by any other agent CLI
+  "~/.grok",                           # retired Grok install: plugin-grok kb/ + skills, marketplace cache, sessions
+  "~/.omp",                            # OMP: plugins/cache/plugins/agentspec___*/{kb,skills}, agent sessions
+  "~/.agentspec",                      # AgentSpec global MEMORY.md (file-based memory)
+  "~/.*/installed-plugins",            # plugin installs (kb/ AND skills/, e.g. data-engineering-guide) of any agent CLI
+  "~/.*/plugins/cache/*agentspec*",    # plugin caches of any other agent CLI
+  "~/.*/plugins/marketplaces/agentspec",
+  "~/.*/marketplace-cache",
+  "~/.*/.tmp/marketplaces/agentspec",
   "~/.*/sessions",                     # session transcripts of any agent CLI (may quote KB files)
+  "~/.*/agent/sessions",
   "~/projetos/framework/agentspec",
   "~/.superconductor/worktrees/agentspec",
   "~/.super.engineering/worktrees/agentspec",
 ]
+
+[decision]
+# Anti-ceiling rule (REVIEW KB_CONTEXT7_REFRESH): when arm D (no knowledge)
+# resolves at least this share of a stratum's valid runs, the tasks are too easy
+# to separate the arms and the cell is "inconclusivo (teto)", whatever A/B/C did.
+ceiling_rate = 0.90
+# "aposentar KB" needs D to beat A's resolved rate by MORE than this margin.
+# A tie (|D - A| <= margin) is "inconclusivo (empate)" — never a retirement.
+retire_margin = 0.0
 
 [context7]
 command = "npx"

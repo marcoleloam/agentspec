@@ -610,8 +610,7 @@ eval:
     name: "eval-agent"
     file: "${CLAUDE_PLUGIN_ROOT}/agents/eval-agent.md"
     tools:
-      - Read
-      - Write   # only EVALS_EXTRA_{FEATURE}.toml
+      - Read    # no Write/Edit — complementary evals go through `eval_runner.py extra`
       - Grep
       - Glob
       - Bash
@@ -619,6 +618,7 @@ eval:
       - AskUserQuestion
 
   runner: "scripts/eval_runner.py"   # stdlib, Python >= 3.11; the verdict comes from here, never from the agent
+  runner_version: "1.1.0"
   jev_client: "scripts/jev_client.py"
 
   input:
@@ -626,11 +626,13 @@ eval:
       - ".claude/sdd/features/DEFINE_{FEATURE}.md"   # AT table
       - ".claude/sdd/features/DESIGN_{FEATURE}.md"   # ## Evals contract + Evals Digest
     optional:
-      - ".claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml"
+      - ".claude/sdd/features/EVALS_EXTRA_{FEATURE}.toml"        # written only by `eval_runner.py extra` (validated first)
+      - ".claude/sdd/features/EVAL_{FEATURE}.freeze.log"          # freeze ledger (hash-chained, append-only)
+      - ".claude/sdd/reports/EVAL_{FEATURE}.pre.json"             # PRE receipt from `pre` (missing → NO_PRE_RECEIPT)
       - ".claude/sdd/reports/EVAL_{FEATURE}.attestations.json"
 
   output:
-    receipt: ".claude/sdd/reports/EVAL_{FEATURE}.json"          # schema agentspec/eval-receipt/v1
+    receipt: ".claude/sdd/reports/EVAL_{FEATURE}.json"          # schema agentspec/eval-receipt/v1, sealed with an integrity digest
     report: ".claude/sdd/reports/EVAL_REPORT_{FEATURE}.md"      # rendered by the runner, pt-BR
     template: "${CLAUDE_PLUGIN_ROOT}/sdd/templates/EVAL_REPORT_TEMPLATE.md"
 
@@ -643,13 +645,17 @@ eval:
       - "Graded: named [eval.state] fields, 2-5 questions, >= 1 score question"
       - "Human: owner + instructions"
       - "Existence-only evals are warned (EXISTENCE_ONLY)"
-    freeze: "design-agent / iterate-agent run `eval_runner.py freeze`; digest = sha256 of canonical parsed TOML, stored in the DESIGN **Evals Digest** row"
+    freeze: "design-agent / iterate-agent run `eval_runner.py freeze`; digest = sha256 of canonical parsed TOML, stored in the DESIGN **Evals Digest** row and appended to the freeze ledger EVAL_{FEATURE}.freeze.log"
+    refreeze: "`freeze --reason \"<why>\"` (>= 30 chars) is required once a digest exists (REFREEZE_NEEDS_REASON otherwise); logged as a `refreeze` entry (reason, git email) and shown as a REFROZEN warning"
+    ledger: "The Evals Digest must match the last ledger entry (LEDGER_MISMATCH) and the ledger's hash chain must hold (FREEZE_LOG_BROKEN)"
+    extra: "`eval_runner.py extra` appends complementary evals to EVALS_EXTRA_{FEATURE}.toml after validating them; bound into the receipt as extras_digest"
     who_may_change: "Only /iterate (then re-freeze). Build and eval phases never touch it."
 
   gates:
-    pre_build: "`eval_runner.py pre` at build start — bash/interpreter error blocks; already-passing evals warn"
-    run: "`eval_runner.py run` — PASS iff every required eval is pass or waived and the contract digest matches"
-    ship: "`eval_runner.py verify` — receipt must be PASS and match current commit, worktree digest, and contract digest"
+    pre_build: "`eval_runner.py pre` at build start — bash/interpreter error blocks; already-passing evals warn; persists EVAL_{FEATURE}.pre.json"
+    run: "`eval_runner.py run` — PASS iff every required eval is pass or waived and the contract digest matches; the receipt is sealed with an integrity digest"
+    ship: "`eval_runner.py verify` — recomputes the verdict from the sealed receipt; it must be PASS and match current commit, worktree digest, contract digest and freeze ledger (INTEGRITY_MISMATCH, UNSEALED_RECEIPT, REFROZEN_AFTER_RUN, LEDGER_MISMATCH otherwise)"
+    ship_rerun: "`eval_runner.py verify --rerun` also re-executes every required deterministic eval (RERUN_FAIL)"
 
   jev:
     model: "typesafe/jev-1.13"
@@ -888,7 +894,7 @@ living_memory:
   file: ".claude/sdd/features/BLACKBOARD_{FEATURE}.md"
   script: "${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py  (exact form — only this is filled in at load; then $AGENTSPEC_MEMORY_INDEX from the SessionStart hook; repo dev fallback: plugin-extras/scripts/memory-index.py)"
   template: "${CLAUDE_PLUGIN_ROOT}/sdd/templates/BLACKBOARD_TEMPLATE.md  (Read it before creating a blackboard — the script reads only its sections and columns)"
-  exit_codes: "gate: 0 pass · 1 🔴 blocks · 2 unreadable blackboard rows (fix columns, re-run). build: 0 ok · 2 unreadable rows (index still written)"
+  exit_codes: "gate: 0 pass · 1 🔴 blocks · 2 unreadable blackboard rows (fix columns, re-run) · 3 memory unavailable (no .claude/sdd) — continue. build: 0 ok · 2 unreadable rows (index still written) · 3 memory unavailable — skip. A missing memory-index.py or python3 counts as unavailable"
   index: ".claude/sdd/MEMORY_INDEX.md  (derived, gitignored, rebuilt by `memory-index.py build`)"
 
   entry_types:
@@ -925,7 +931,7 @@ living_memory:
 
   gate:
     command: "memory-index.py gate {FEATURE} --to design|build"
-    exit_codes: {0: "proceed", 1: "blocked — list the 🔴 questions, ask the user, do not write the phase document", 2: "usage error"}
+    exit_codes: {0: "proceed", 1: "blocked — list the 🔴 questions, ask the user, do not write the phase document", 2: "unreadable blackboard rows — fix the columns it names, re-run", 3: "memory unavailable — say so in one line and continue"}
     not_gated: ["Brainstorm→Define", "Build→Ship (build already requires zero open blockers)"]
     no_python_fallback: "read 'Perguntas Abertas e Bloqueadores' and apply the same rule"
 

@@ -21,10 +21,10 @@ description: Create architecture and technical specification (Phase 2)
 /design .claude/sdd/features/DEFINE_SEARCH_API.md
 
 # With cross-model judge for architectural soundness (opt-in)
-/design DEFINE_AUTH.md --judge                  # advisory, default openai/gpt-4o
+/design DEFINE_AUTH.md --judge                  # advisory, phase default model (judge.py)
 /design DEFINE_AUTH.md --judge=strict           # gated — FAIL blocks completion
 /design DEFINE_AUTH.md --judge=openai/o3        # custom model (advisory)
-/design DEFINE_AUTH.md --judge=strict:openai/gpt-4o  # gated + custom model
+/design DEFINE_AUTH.md --judge=strict:<openrouter-slug>  # gated + custom model
 ```
 
 ---
@@ -60,17 +60,34 @@ The `/design` command combines what used to be Plan + Spec + ADRs into a single 
 <!-- phase-routing: mode=delegated agent=design-agent -->
 
 This phase runs in the **`design-agent` subagent**, so it uses the model routed to the
-design phase (OMP: `task.agentModelOverrides` → `@slow`; Claude Code: `model: opus`).
+design phase (Claude Code: `model: opus`; Codex: session model at
+`model_reasoning_effort=high`; OMP: `task.agentModelOverrides` → `@slow`).
 Do not do the design work in the main session.
 
-1. Delegate exactly once — Claude Code: Task tool, `subagent_type: design-agent`
-   (plugin name `agentspec:design-agent`); OMP: `task` tool, agent `design-agent`.
-2. Pass: the DEFINE path, the FEATURE name, and this instruction: "Fill the
+1. **In the main session first**, run the Step 1 gate block (`rc=3; … case $rc in …`).
+   Exit 1 → list the 🔴 questions, ask the user, and stop; do not delegate (the subagent
+   cannot ask the user). Exit 2 → fix the rows it names and re-run. Any other code →
+   Living Memory is unavailable: say so in one line and continue.
+2. Get the memory brief: if this turn already carries a
+   `=== Living Memory (injected by the AgentSpec hook …) ===` block, use that text as is;
+   otherwise keep the `brief` output the gate block printed on exit 0. The hook injects
+   the brief into the main session only, so the subagent never sees it unless you pass it.
+   If Living Memory is unavailable, pass `Living Memory brief: (indisponível)`.
+3. Delegate exactly once:
+   - Claude Code: Task tool, `subagent_type: design-agent` (plugin name `agentspec:design-agent`).
+   - Codex: there is no Task tool. Spawn the `design-agent` subagent by name
+     ("Use the design-agent agent to …"); it runs on the session model with the effort
+     set in `.codex/agents/design-agent.toml`.
+   - OMP: `task` tool, agent `design-agent`.
+4. Put in the delegation prompt: the DEFINE path, the FEATURE name, the brief from step 2
+   verbatim under a `Living Memory brief:` heading (or `Living Memory brief: (vazio)`), and
+   this instruction: "The brief is above — do not re-run `brief`; honor its decisions and
+   pending assumptions. Fill the
    **Gerado por** metadata row with your harness, the routed role, and your model id
    (or `desconhecido`)."
-3. When the subagent returns the DESIGN path, run Step 8 (`--judge`) here in the main
+5. When the subagent returns the DESIGN path, run Step 8 (`--judge`) here in the main
    session if the flag was given.
-4. If the subagent is unavailable, say so, run Steps 1–7 inline as a fallback, and
+6. If the subagent is unavailable, say so, run Steps 1–7 inline as a fallback, and
    record the session model in **Gerado por**.
 
 ---
@@ -98,8 +115,13 @@ with your own assumption, not even in a non-interactive run: if you cannot ask, 
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" gate {FEATURE} --to design || exit 1   # 1 → list the 🔴, ask the user, stop · 2 → fix unreadable rows, re-run
-python3 "$MI" brief {FEATURE} --phase design
+rc=3; [ -f "$MI" ] && command -v python3 >/dev/null && { python3 "$MI" gate {FEATURE} --to design; rc=$?; }
+case $rc in
+  0) python3 "$MI" brief {FEATURE} --phase design ;;  # nothing blocks
+  1) exit 1 ;;   # 🔴 blocks: list them, ask the user, stop
+  2) exit 2 ;;   # unreadable rows: fix the columns it names, re-run
+  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd not found) — continuing without gate/brief" ;;
+esac
 ```
 
 ### Step 1b: Agent Selection
@@ -110,7 +132,7 @@ Decide the variant for this phase and the specialists to consult by applying the
 1. Read the rubric and the catalog: the agents in `.claude/skills/agent-router/routing.json` outside
    the `workflow` and `domain` categories (the `agent-router` skill lists the same agents).
 2. Answer from the content of the document. Do not decide by counting the "Domínios KB" line
-   (that rule scored 0.46 variant accuracy; an LLM applying this rubric scored 0.85–0.89).
+   (that rule scored 0.46 variant accuracy; Codex applying this rubric scored 0.89, retrospective on 46 specs).
 3. Follow the decision:
    - `single` → continue with this command as written.
    - `multiagent` → continue with the `/design-m` process, consulting exactly the specialists you chose.
@@ -218,7 +240,7 @@ Resolução cells of Q and A change in place), pointer + one sentence, pt-BR con
 
 ```bash
 test -f .claude/sdd/features/BLACKBOARD_{FEATURE}.md || echo "⛔ BLACKBOARD_{FEATURE}.md missing — design is not done"
-python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to match the template
+if [ -f "$MI" ]; then python3 "$MI" build; else echo "Living Memory unavailable — MEMORY_INDEX.md not rebuilt"; fi   # exit 2 → rows it cannot read: fix sections/columns to match the template · exit 3 → no .claude/sdd: skip
 ```
 
 ```bash
@@ -227,6 +249,7 @@ python3 "$MI" build   # exit 2 → rows it cannot read: fix sections/columns to 
 ```
 
 Fix every `validate` error (exit 3) before freezing. `freeze` writes the **Evals Digest** metadata row.
+The first `freeze` also starts `EVAL_{FEATURE_NAME}.freeze.log`. Freeze once, after `validate` passes: re-freezing a changed contract requires `--reason "<why>"` (≥ 30 chars) and is recorded as a re-freeze.
 
 ### Step 8: Optional Judge Pass (`--judge`)
 
@@ -239,7 +262,7 @@ decisions.
 
 | Input | Mode | Model |
 |-------|------|-------|
-| `--judge` | advisory | phase default (openai/gpt-4o for design) |
+| `--judge` | advisory | phase default (`PHASE_MODEL_DEFAULTS["design"]` in `scripts/judge.py`) |
 | `--judge=strict` | gated | phase default |
 | `--judge=MODEL_SLUG` | advisory | MODEL_SLUG |
 | `--judge=strict:MODEL_SLUG` | gated | MODEL_SLUG |

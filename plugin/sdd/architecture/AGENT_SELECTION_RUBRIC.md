@@ -31,16 +31,23 @@ Every agent in `${CLAUDE_PLUGIN_ROOT}/skills/agent-router/routing.json` outside 
 2. Answer the rubric: one variant, up to 4 specialists, names exactly as in the catalog.
 3. Record the answer in the **Seleção de Agentes** section with one line of justification per decision.
 
-## Evidence (2026-09-25, 46 labeled specs — see BUILD_REPORT_JEV_AGENT_SELECTION.md)
+## Evidence (2026-09-25/26, 46 labeled specs — see `.claude/sdd/archive/JEV_AGENT_SELECTION/`)
 
 | Decider | Variant accuracy | Specialist F1 |
 |---------|------------------|---------------|
 | Old rule (3+ KB domains; top 4 by overlap) | 0.46 | 0.19 |
 | JEV v1.2 (`scripts/jev_select.py`) | 0.72 | 0.38 |
 | LLM with this rubric — Grok (`grok-4.7-build`)¹ | 0.85 | 0.47 |
-| LLM with this rubric — Codex (`gpt-6-astra`) | 0.89 | 0.52 |
+| LLM with this rubric — Codex (`gpt-6-astra`)² | 0.89 | 0.54 |
 
-Labels were written by the build agent (Claude); Claude itself was not measured as the decider.
+Labels were written by the build agent (Claude); Claude itself was not measured as the decider
+(`eval_llm_baseline.py --provider claude` exists but has not been run).
 
-¹ Historical round-1 measurement on a provider AgentSpec no longer supports; kept as evidence, not re-runnable
-(`eval_llm_baseline.py` now ships the Codex provider only).
+¹ Historical round-1 measurement on a provider AgentSpec no longer supports; kept as evidence, not re-runnable.
+
+² F1 0.5392 in the eval receipt (`EVAL_JEV_AGENT_SELECTION.json`, the value of record); an earlier run of the
+same command recorded 0.5426 in the BUILD_REPORT. Accuracy was 41/46 both times. Expect run-to-run variance of
+this order: the CLI answers are not deterministic.
+
+The label corpus is not versioned (it quotes client specs). Reproduction steps and the corpus hashes are in
+`scripts/check_agent_selection_quality.py`.

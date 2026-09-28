@@ -7,13 +7,26 @@ description: "Execute implementation with on-the-fly task generation (Phase 3)"
 
 Use this skill when the user asks to run the migrated source command `workflow-build`.
 
+## Running in Codex
+
+This phase runs **in this session**, on the session model. Start the session with the recommended effort: `codex -c model_reasoning_effort=high` (or pick the effort with `/model` in the TUI before running the command).
+
+- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes.
+
 ## Command Template
 
 # Build Command
 
 <!-- phase-routing: mode=session role=default -->
 > **Model routing:** this phase runs in the main session (it orchestrates the specialist agents).
-> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> Recommended — Claude Code: your current `/model` · Codex: `codex -c model_reasoning_effort=high` (same session model, only the effort changes) · OMP: your default model. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Execute implementation with on-the-fly task generation (Phase 3)
@@ -31,8 +44,8 @@ Use this skill when the user asks to run the migrated source command `workflow-b
 /build DESIGN_USER_AUTH.md
 
 # With cross-model judge for code correctness (opt-in, advisory for build)
-/build DESIGN_AUTH.md --judge                 # advisory, default openai/gpt-4o
-/build DESIGN_AUTH.md --judge=openai/codex-mini    # code-tuned model (cheaper)
+/build DESIGN_AUTH.md --judge                 # advisory, phase default model (judge.py)
+/build DESIGN_AUTH.md --judge=<openrouter-slug>   # e.g. a cheaper code-tuned model
 /build DESIGN_AUTH.md --judge=strict          # gated on BUILD_REPORT quality
 ```
 
@@ -94,8 +107,13 @@ with your own assumption, not even in a non-interactive run: if you cannot ask, 
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" gate {FEATURE} --to build || exit 1   # 1 → 🔴 blocks · 2 → fix unreadable rows, re-run
-python3 "$MI" brief {FEATURE} --phase build
+rc=3; [ -f "$MI" ] && command -v python3 >/dev/null && { python3 "$MI" gate {FEATURE} --to build; rc=$?; }
+case $rc in
+  0) python3 "$MI" brief {FEATURE} --phase build ;;  # nothing blocks
+  1) exit 1 ;;   # 🔴 blocks: list them, ask the user, stop
+  2) exit 2 ;;   # unreadable rows: fix the columns it names, re-run
+  *) echo "Living Memory unavailable (memory-index.py, python3 or .claude/sdd not found) — continuing without gate/brief" ;;
+esac
 ```
 
 The blackboard usually exists already (created in Brainstorm/Define): **extend it, never
@@ -111,6 +129,7 @@ and `Substitui` = the design decision it replaces. Run `python3 "$MI" build` at 
 - Exit `0` → proceed (record `ALREADY_PASSING` warnings in the BUILD_REPORT).
 - Exit `1` (an eval cannot run) or `3` (structural contract error) → **stop before writing code** and fix the DESIGN through `/iterate`.
 - Never edit the `## Evals` block or its **Evals Digest** during the build.
+- `pre` persists `.claude/sdd/reports/EVAL_{FEATURE}.pre.json`; skipping it shows up as `NO_PRE_RECEIPT` in the eval report.
 
 ### Step 2: Extract Tasks from File Manifest
 
@@ -170,14 +189,15 @@ correctness, IAM/RLS, data loss risks.
 
 | Input | Mode | Model |
 |-------|------|-------|
-| `--judge` | advisory | phase default (openai/gpt-4o for build) |
+| `--judge` | advisory | phase default (`PHASE_MODEL_DEFAULTS["build"]` in `scripts/judge.py`) |
 | `--judge=strict` | gated | phase default |
 | `--judge=MODEL_SLUG` | advisory | MODEL_SLUG |
 | `--judge=strict:MODEL_SLUG` | gated | MODEL_SLUG |
 
-**Note on model choice for /build:** `openai/codex-mini` is a strong,
-cheaper choice for pure-code review. Use `openai/gpt-4o` (the default)
-when the build touches architecture or spans multiple files.
+**Note on model choice for /build:** a cheaper code-tuned OpenRouter model is
+a fine `MODEL_SLUG` for pure-code review. Keep the phase default when the build
+touches architecture or spans multiple files. Model slugs live only in
+`scripts/judge.py` (`PHASE_MODEL_DEFAULTS`), never in this command.
 
 **Execution (after BUILD_REPORT is written):**
 

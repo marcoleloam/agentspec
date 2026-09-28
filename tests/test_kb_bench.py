@@ -19,7 +19,7 @@ from kb_bench.cli import main as cli_main
 from kb_bench.config import ARM_LETTERS, BENCH_DIR, BenchConfig, load_config
 from kb_bench.evals import discriminates
 from kb_bench.human_queue import HumanQueue
-from kb_bench.report import ArmScore, recommend, render
+from kb_bench.report import ArmScore, DecisionRule, decision_blockers, recommend, render
 from kb_bench.store import Record, RunStore
 from kb_bench.tasks import Eval, Task, TaskError, load_task, load_tasks
 from kb_bench.transcript import parse_jsonl
@@ -190,6 +190,7 @@ class TestIsolation:
         t = parse_jsonl((FIXTURES / "codex_context7_quota.jsonl").read_text())
         v = isolation.check(t, uses_context7=True, deny=(), cwd=tmp_path)
         assert v.context7_calls == 0 and v.context7_failed == 1 and v.context7_unavailable
+        assert v.context7_refused == 1
 
     def test_web_search_is_contamination(self, tmp_path):
         raw = _jsonl({"type": "item.completed", "item": {"id": "w", "type": "web_search", "query": "dbt"}})
@@ -199,6 +200,37 @@ class TestIsolation:
         raw = _jsonl({"type": "error", "message": "MCP client for `context7` failed to start: program not found"},
                      {"type": "turn.completed", "usage": {}})
         assert isolation.check(parse_jsonl(raw), uses_context7=True, deny=(), cwd=tmp_path).mcp_missing
+
+    def test_at004_grep_output_from_another_arm_kb_is_contamination(self, tmp_path):
+        # Round 1: arm D's recursive search printed hits from arms/a/kb and arms/c/kb.
+        arm = tmp_path / "arms" / "d"
+        out = f"{tmp_path}/arms/a/kb/patterns/one-big-table.md:82:| dbt materialization |\n"
+        raw = _jsonl(_cmd("/bin/zsh -lc 'rg -n materialization ..'", out, 0, "completed"))
+        v = isolation.check(parse_jsonl(raw), uses_context7=False, deny=(), cwd=arm)
+        assert v.contaminated and "AT-004" in v.reasons[0]
+
+    def test_at004_read_of_any_kb_outside_the_arm_is_contamination(self, tmp_path):
+        raw = _jsonl(_cmd("/bin/zsh -lc 'cat /opt/other/kb/dbt/index.md'", "# dbt\n", 0, "completed"))
+        v = isolation.check(parse_jsonl(raw), uses_context7=False, deny=(), cwd=tmp_path / "arm")
+        assert v.contaminated
+
+    def test_at004_plugin_skill_folder_is_contamination(self, tmp_path):
+        path = "/Users/tester/.omp/plugins/cache/plugins/agentspec___agentspec___3.7.0/skills/data-engineering-guide/SKILL.md"
+        raw = _jsonl(_cmd(f"/bin/zsh -lc 'cat {path}'", "---\nname: x\n", 0, "completed"))
+        assert isolation.check(parse_jsonl(raw), uses_context7=False, deny=(), cwd=tmp_path).contaminated
+
+    def test_at004_own_kb_and_refused_or_missing_reads_are_not(self, tmp_path):
+        arm = tmp_path / "arms" / "a"
+        raws = [
+            _cmd("/bin/zsh -lc 'cat kb/index.md ./kb/concepts/a.md'", "# kb\n", 0, "completed"),
+            _cmd(f"/bin/zsh -lc 'cat {arm}/kb/index.md'", "# kb\n", 0, "completed"),
+            _cmd("/bin/zsh -lc 'cat /x/kb/a.md'", "cat: /x/kb/a.md: No such file or directory\n", 1, "failed"),
+            _cmd("/bin/zsh -lc 'rg x /y'", "rg: /y/kb/a.md: Operation not permitted (os error 1)\n", 2, "completed"),
+            _cmd("/bin/zsh -lc 'find . -path \"*/kb/*\"'", "./kb/a.md\n", 0, "completed"),
+        ]
+        for raw in raws:
+            v = isolation.check(parse_jsonl(_jsonl(raw)), uses_context7=False, deny=(), cwd=arm)
+            assert not v.contaminated, raw
 
     def test_private_tmp_alias_matches(self):
         assert isolation.under(Path("/tmp/x/kb/a.md"), (Path("/private/tmp/x"),))
@@ -222,8 +254,42 @@ def _scores(**kw) -> dict[str, ArmScore]:
 
 
 class TestDecisionRule:
-    def test_d_matching_a_retires_kb(self):
-        assert recommend(_scores()) == "aposentar KB"
+    def test_d_tie_with_a_never_retires(self):
+        # AT-007 originally said a D = A tie retires the KB; the review showed that decides
+        # "retire" by construction under a ceiling effect. A tie is now inconclusive.
+        assert recommend(_scores()) == "inconclusivo (empate)"
+
+    def test_d_strictly_better_than_a_retires_kb(self):
+        assert recommend(_scores(A=ArmScore(6, 0, 3, 3))) == "aposentar KB"
+
+    def test_ceiling_is_inconclusive_regardless_of_other_arms(self):
+        top = ArmScore(10, 0, 9, 1)            # D solves 90% of the stratum
+        bad = ArmScore(10, 0, 2, 8)
+        for others in ({"A": bad, "B": bad, "C": bad}, {"A": top, "B": top, "C": top}):
+            assert recommend(_scores(D=top, **others)) == "inconclusivo (teto)"
+
+    def test_ceiling_threshold_is_configurable(self):
+        d = ArmScore(10, 0, 8, 2)              # 80%: below the default ceiling
+        a = ArmScore(10, 0, 6, 4)
+        assert recommend(_scores(A=a, D=d)) == "aposentar KB"
+        assert recommend(_scores(A=a, D=d), DecisionRule(ceiling_rate=0.8)) == "inconclusivo (teto)"
+
+    def test_retire_margin_turns_small_wins_into_ties(self):
+        a, d = ArmScore(10, 0, 6, 4), ArmScore(10, 0, 7, 3)
+        assert recommend(_scores(A=a, D=d)) == "aposentar KB"
+        assert recommend(_scores(A=a, D=d), DecisionRule(retire_margin=0.15)) == "inconclusivo (empate)"
+
+    def test_thresholds_come_from_bench_toml(self, tmp_path):
+        text = (BENCH_DIR / "bench.toml").read_text()
+        assert "ceiling_rate = 0.90" in text and "retire_margin = 0.0" in text
+        cfg = load_config()
+        assert (cfg.ceiling_rate, cfg.retire_margin) == (0.90, 0.0)
+        alt = tmp_path / "bench.toml"
+        alt.write_text(text.replace("ceiling_rate = 0.90", "ceiling_rate = 0.75"))
+        assert load_config(alt).ceiling_rate == 0.75
+        alt.write_text(text.replace("ceiling_rate = 0.90", "ceiling_rate = 1.5"))
+        with pytest.raises(Exception, match="ceiling_rate"):
+            load_config(alt)
 
     def test_b_matching_a_replaces(self):
         worse = ArmScore(6, 0, 2, 4)
@@ -482,21 +548,45 @@ class TestLoop:
         rec = self._run(cfg, monkeypatch, "leak", FAKE_DENY_PATH=str(cfg.arm_dir("A") / "kb" / "index.md"))
         assert rec.outcome == "contaminated"
 
-    def test_context7_preflight_failure_is_unavailable(self, cfg, fake_codex, state_dir, monkeypatch):
-        rec = self._run(cfg, monkeypatch, "solve", arm="B", FAKE_C7="down")
-        assert rec.outcome == "unavailable" and rec.attempts == 0 and not _execs(state_dir)
+    def test_context7_preflight_failure_aborts(self, cfg, fake_codex, state_dir, monkeypatch):
+        with pytest.raises(loop.Context7Unavailable, match="preflight"):
+            self._run(cfg, monkeypatch, "solve", arm="B", FAKE_C7="down")
+        assert not _execs(state_dir)
 
-    def test_context7_transport_failure_is_unavailable(self, cfg, fake_codex, monkeypatch):
-        rec = self._run(cfg, monkeypatch, "c7_down", arm="B")
-        assert rec.outcome == "unavailable"
+    def test_context7_transport_failure_aborts(self, cfg, fake_codex, monkeypatch):
+        with pytest.raises(loop.Context7Unavailable, match="transport"):
+            self._run(cfg, monkeypatch, "c7_down", arm="B")
 
-    def test_context7_quota_in_session_is_unavailable(self, cfg, fake_codex, monkeypatch):
-        rec = self._run(cfg, monkeypatch, "c7_quota", arm="C")
-        assert rec.outcome == "unavailable" and rec.context7_calls == 0
+    def test_context7_quota_in_session_aborts(self, cfg, fake_codex, monkeypatch):
+        with pytest.raises(loop.Context7Unavailable, match="quota"):
+            self._run(cfg, monkeypatch, "c7_quota", arm="C")
 
-    def test_context7_missing_in_session_is_unavailable(self, cfg, fake_codex, monkeypatch):
-        rec = self._run(cfg, monkeypatch, "mcp_missing", arm="B")
-        assert rec.outcome == "unavailable" and "not available" in rec.reason
+    def test_context7_missing_in_session_aborts(self, cfg, fake_codex, monkeypatch):
+        with pytest.raises(loop.Context7Unavailable, match="not available"):
+            self._run(cfg, monkeypatch, "mcp_missing", arm="B")
+
+    def test_quota_mid_run_stops_the_round_without_recording(self, cfg, fake_codex, monkeypatch):
+        """A quota exhaustion must not silently turn the rest of B/C into `unavailable` rows."""
+        monkeypatch.setenv("FAKE_SCENARIO", "c7_quota")
+        ctx = _ctx(cfg)
+        tasks = [_task(), Task(**{**_task().__dict__, "id": "unit-02-x"})]
+        pairs = [("unit-01-hello", "D"), ("unit-02-x", "C"), ("unit-01-hello", "B")]
+        monkeypatch.setenv("FAKE_SCENARIO", "solve")
+        loop.run_pair(tasks[0], cfg.arms["D"], ctx)  # D is unaffected by Context7
+        monkeypatch.setenv("FAKE_SCENARIO", "c7_quota")
+        with pytest.raises(loop.Context7Unavailable):
+            loop.run_plan(tasks, ["B", "C", "D"], ctx, pairs=pairs)
+        recorded = {(r.task, r.arm) for r in ctx.store.records()}
+        assert recorded == {("unit-01-hello", "D")}          # C not recorded → --resume retries it
+        assert all(r.outcome != "unavailable" for r in ctx.store.records())
+
+    def test_cli_run_requires_context7_key_for_b_and_c(self, cfg, fake_codex, eval_venv, state_dir, monkeypatch,
+                                                      capsys):
+        monkeypatch.setattr("kb_bench.cli.load_config", lambda _p=None: cfg)
+        monkeypatch.setattr("kb_bench.cli._validate", lambda *_a, **_k: 0)
+        assert cli_main(["run", "--task", "dbt-01-incremental-orders", "--arm", "B"]) == 2
+        assert "CONTEXT7_API_KEY is required" in capsys.readouterr().out
+        assert not _execs(state_dir) and not list(cfg.results_root.glob("*"))
 
     def test_context7_arm_counts_calls(self, cfg, fake_codex, monkeypatch):
         rec = self._run(cfg, monkeypatch, "c7", arm="C")
@@ -550,6 +640,26 @@ class TestSmoke:
         assert [c.name for c in res.checks if not c.ok] == ["context7 quota available"]
         assert not _execs(state_dir)
 
+    def test_sandbox_canary_covers_other_arm_kb_and_results(self, cfg, fake_codex):
+        check = setup_env.sandbox_canary(cfg)
+        assert check.ok and "arms/a/kb" in check.detail and "results" in check.detail
+        assert not list((cfg.arm_dir("A") / "kb").glob(".kbbench-canary*"))
+        assert not list(cfg.results_root.glob(".kbbench-canary*"))
+
+    @pytest.mark.parametrize("leaky", ["results", "arm_a"])
+    def test_sandbox_canary_fails_when_a_round1_leak_path_is_readable(self, cfg, fake_codex, monkeypatch, leaky):
+        real = BenchConfig.deny_paths
+        drop = cfg.results_root.resolve() if leaky == "results" else cfg.arm_dir("A").resolve()
+        monkeypatch.setattr(BenchConfig, "deny_paths",
+                            lambda self, arm=None: tuple(p for p in real(self, arm) if p != drop))
+        check = setup_env.sandbox_canary(cfg)
+        label = "results" if leaky == "results" else "arms/a/kb"
+        assert not check.ok and label in check.detail and "READ" in check.detail
+
+    def test_deny_globs_cover_known_knowledge_copies(self, cfg):
+        globs = set(cfg.deny_globs)
+        assert {"~/.grok", "~/.omp", "~/.*/installed-plugins", "~/.*/plugins/cache/*agentspec*"} <= globs
+
     def test_exec_canary_sees_the_denial(self, cfg, fake_codex, monkeypatch):
         monkeypatch.setenv("FAKE_SCENARIO", "canary_denied")
         check = setup_env.exec_canary(cfg)
@@ -593,6 +703,28 @@ class TestReport:
         assert "Só tarefas sintéticas" in text
         assert "amostra de 1 execução" in text
         assert "40 / 16" in text and "US$ não medido" in text
+
+    def test_round1_run_gets_invalid_banner(self, cfg):
+        store = RunStore(cfg.results_root / "run-grok")
+        store.write_json("env.json", {"grok_version": "grok 1.0.41", "model": "grok-4.7"})
+        for arm in ARM_LETTERS:
+            store.append(Record.from_dict({"run_id": "run-grok", "task": "dbt-01", "domain": "dbt",
+                                           "stratum": "library", "origin": "synthetic", "arm": arm,
+                                           "outcome": "pass_first", "attempts": 1, "model": "grok-4.7-build",
+                                           "cost_usd": 0.2}))
+        text = render(store, cfg)
+        assert "Inválida para decisão" in text and "rodada 1 (Grok CLI" in text and "Monthly quota" in text
+        assert "inconclusivo (teto)" in text and "(sem valor de decisão)" in text
+
+    def test_pre_protocol_codex_run_is_flagged_current_is_not(self):
+        assert decision_blockers({"cli_version": "codex-cli 0.157.0"}, [])
+        assert decision_blockers({"cli_version": "codex-cli 0.157.0", "protocol": 2}, []) == []
+
+    def test_current_run_has_no_banner(self, cfg):
+        store = RunStore(cfg.results_root / "run-new")
+        store.write_json("env.json", {"protocol": 2})
+        text = render(store, cfg)
+        assert "Inválida para decisão" not in text and "| Protocolo | 2" in text
 
     def test_old_records_still_load(self):
         old = {"run_id": "r", "task": "t", "domain": "dbt", "stratum": "library", "origin": "synthetic",

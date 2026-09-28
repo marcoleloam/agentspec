@@ -13,6 +13,7 @@ import secrets
 import shutil
 import subprocess
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from kb_bench import codex_runner, context7_probe, workspace
 from kb_bench.config import ARM_LETTERS, BENCH_DIR, BenchConfig, inside_git_repo
@@ -121,23 +122,45 @@ def _write_canary(cfg: BenchConfig) -> tuple[str, str]:
     return token, str(target)
 
 
+def _leak_canaries(cfg: BenchConfig) -> list[tuple[str, str, Path]]:
+    """Canaries where round 1 leaked: arm A's ``kb/`` and the bench results (other arms' transcripts)."""
+    out = []
+    for label, folder in (("arms/a/kb", cfg.arm_dir("A") / "kb"), ("results", cfg.results_root)):
+        folder.mkdir(parents=True, exist_ok=True)
+        token = f"KBBENCH-CANARY-{secrets.token_hex(6)}"
+        target = folder / ".kbbench-canary.txt"
+        target.write_text(token + "\n", encoding="utf-8")
+        out.append((label, token, target))
+    return out
+
+
 def sandbox_canary(cfg: BenchConfig) -> Check:
-    """No model: run ``cat`` on a deny path and a write in the arm folder under the attempt's profile."""
+    """No model: from arm D's profile, ``cat`` the canary, arm A's ``kb/`` and the results — all denied —
+    then write in the arm folder, which must succeed."""
     token, target = _write_canary(cfg)
     arm, arm_dir = cfg.arms["D"], cfg.arm_dir("D")
     workspace.reset_arm_dir(arm_dir, cfg)
     codex_runner.reset_agent_home(cfg)
-    code, out = codex_runner.sandbox_run(["cat", target], arm_dir, cfg, arm)
-    if token in out:
-        return Check("sandbox canary", False, "canary content was READ — permission profile not enforced")
-    if code == 0 or "Operation not permitted" not in out:
-        return Check("sandbox canary", False, f"expected 'Operation not permitted', got exit {code}: {out[-160:]}")
+    leaks = _leak_canaries(cfg)
+    try:
+        for label, tok, path in [("canary", token, Path(target)), *leaks]:
+            code, out = codex_runner.sandbox_run(["cat", str(path)], arm_dir, cfg, arm)
+            if tok in out:
+                return Check("sandbox canary", False,
+                             f"{label} canary was READ from arm D — permission profile not enforced")
+            if code == 0 or "Operation not permitted" not in out:
+                return Check("sandbox canary", False,
+                             f"{label}: expected 'Operation not permitted', got exit {code}: {out[-160:]}")
+    finally:
+        for _label, _tok, path in leaks:
+            path.unlink(missing_ok=True)
     probe = ".kbbench-write-probe"
     code, out = codex_runner.sandbox_run(["sh", "-c", f"echo ok > {probe} && cat {probe} && rm {probe}"],
                                          arm_dir, cfg, arm)
     if code != 0 or "ok" not in out:
         return Check("sandbox canary", False, f"arm folder not writable under the profile: {out[-160:]}")
-    return Check("sandbox canary", True, "deny path → Operation not permitted; arm folder writable")
+    return Check("sandbox canary", True,
+                 "canary, arms/a/kb and results → Operation not permitted from arm D; arm folder writable")
 
 
 def exec_canary(cfg: BenchConfig) -> Check:

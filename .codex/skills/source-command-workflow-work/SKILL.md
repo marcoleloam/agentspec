@@ -7,13 +7,26 @@ description: "Enter and stay anchored to an active feature so improvement reques
 
 Use this skill when the user asks to run the migrated source command `workflow-work`.
 
+## Running in Codex
+
+This phase runs **in this session**, on the session model. Start the session with the recommended effort: `codex -c model_reasoning_effort=medium` (or pick the effort with `/model` in the TUI before running the command).
+
+- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes.
+
 ## Command Template
 
 # Work Command
 
 <!-- phase-routing: mode=session role=default -->
 > **Model routing:** this phase runs in the main session (it anchors the session to the active feature).
-> Recommended: start it with your default OMP model (Claude Code: your current `/model`). Record the session model in the
+> Recommended — Claude Code: your current `/model` · Codex: `codex -c model_reasoning_effort=medium` (same session model, only the effort changes) · OMP: your default model. Record the session model in the
 > **Gerado por** metadata row of the documents it writes.
 
 > Enter a feature's working context and stay anchored to it. Once active, plain requests
@@ -91,7 +104,7 @@ living-memory brief instead of re-reading the whole blackboard:
 MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path filled in at load
 [ -f "$MI" ] || MI="${AGENTSPEC_MEMORY_INDEX:-}"                 # exported by the SessionStart hook
 [ -f "$MI" ] || MI="plugin-extras/scripts/memory-index.py"     # AgentSpec source repo
-python3 "$MI" brief {FEATURE} --phase {phase from .active}
+[ -f "$MI" ] && python3 "$MI" brief {FEATURE} --phase {phase from .active} || echo "Living Memory unavailable — continuing without the brief"
 ```
 
 Present a compact orientation (do NOT dump full files):

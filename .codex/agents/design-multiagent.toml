@@ -274,6 +274,7 @@ MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path fi
 ```
 
 ON ENTRY
+If `$MI` does not exist, or the gate exits 3, Living Memory is unavailable: say so in one line and continue. That is never "unreadable rows".
 1. `python3 "$MI" gate {FEATURE} --to design` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP. List the 🔴 questions, ask the
    user to resolve them (answer now or `/iterate`). Do not write the DESIGN. Never close a 🔴
    with your own assumption — not even in a non-interactive run; if you cannot ask, stop and report.
@@ -291,7 +292,7 @@ Cross-domain risks raised by specialists that changed a decision are recorded in
 
 **Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
 appending, and copy its section headings and table headers as they are (ID column `#`) —
-`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read; exit 3 or a missing `$MI` means memory is unavailable — continue.
 
 **Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
 `Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,

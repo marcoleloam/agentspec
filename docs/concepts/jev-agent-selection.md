@@ -18,12 +18,22 @@ On 46 labeled specs (template DEFINEs, specs written outside the template, and r
 | Old rule: 3+ KB domains → multiagent; top 4 by `kb_domains` overlap | 0.46 | 0.19 | — |
 | JEV v1.2 (`scripts/jev_select.py`, TypeSafe via OpenRouter) | 0.72 | 0.38 | ~1 s, ~US$ 0.00015 |
 | LLM applying the rubric — Grok `grok-4.7-build` (historical, provider retired) | 0.85 | 0.47 | ~85 s outside a session |
-| LLM applying the rubric — Codex `gpt-6-astra` | 0.89 | 0.52 | ~10 s outside a session |
+| LLM applying the rubric — Codex `gpt-6-astra` | 0.89 | 0.54¹ | ~10 s outside a session |
 
 The old rule breaks on documents without a "Domínios KB" line: it always answers `single` and finds no specialists.
 Inside `/define` and `/design` an LLM is already running the phase, so applying the rubric adds almost no cost.
-The full method, the caveats and the label hashes are in `.claude/sdd/reports/BUILD_REPORT_JEV_AGENT_SELECTION.md`.
-One caveat: the labels were written by Claude, and Claude itself was not measured as the decider.
+¹ 0.5392 in the eval receipt, 0.5426 in an earlier run recorded in the BUILD_REPORT: the CLI is not
+deterministic, so expect run-to-run variance of this order.
+
+The full method, the caveats and the label hashes are in
+`.claude/sdd/archive/JEV_AGENT_SELECTION/BUILD_REPORT_JEV_AGENT_SELECTION.md` (receipt:
+`EVAL_JEV_AGENT_SELECTION.json` in the same folder).
+One caveat: the labels were written by Claude, and Claude itself was not measured as the decider —
+`scripts/eval_llm_baseline.py --provider claude` can measure it, but that run has not been made.
+
+The 46 labels live outside git (`.claude/sdd/evals/`, git-ignored because they quote client specs). Without them
+`scripts/check_agent_selection_quality.py` stops with the reproduction steps; the expected sha256 of each file is
+in that script (`RECEIPT_SHA256`).
 
 | Command | Variant | Specialists |
 |---------|---------|-------------|

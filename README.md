@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-Compatible-black.svg)](docs/reference/codex-cli.md)
-[![Version](https://img.shields.io/badge/version-3.7.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.8.0-green.svg)](CHANGELOG.md)
 [![Agents](https://img.shields.io/badge/agents-73-orange.svg)](.claude/agents/)
 [![Commands](https://img.shields.io/badge/commands-42-blue.svg)](.claude/commands/)
 [![KB Domains](https://img.shields.io/badge/KB%20domains-39-blue.svg)](.claude/kb/)

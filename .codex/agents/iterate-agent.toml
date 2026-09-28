@@ -133,11 +133,11 @@ BRAINSTORM ────► DEFINE ────► DESIGN ────► CODE
 
 ```bash
 "${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" validate {FEATURE}
-"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" freeze {FEATURE}
+"${AGENTSPEC_PYTHON:-python3}" "${AGENTSPEC_SCRIPTS:-scripts}/eval_runner.py" freeze {FEATURE} --reason "{why the evals changed — at least 30 characters}"
 ```
 
 - Fix every `validate` error (exit 3) before freezing — an AT without an eval is `ORPHAN_AT`.
-- `freeze` rewrites the **Evals Digest**. Any existing `EVAL_{FEATURE}.json` is now stale: `/ship` will refuse with `STALE_CONTRACT` until `/eval` runs again. Tell the user.
+- `freeze` rewrites the **Evals Digest** and appends a `refreeze` entry (reason, git email) to `.claude/sdd/features/EVAL_{FEATURE}.freeze.log`. Without `--reason` it refuses with `REFREEZE_NEEDS_REASON`. Any existing `EVAL_{FEATURE}.json` is now stale: `/ship` will refuse with `STALE_CONTRACT` (or `REFROZEN_AFTER_RUN`) until `/eval` runs again. Tell the user; the re-freeze appears as a `REFROZEN` warning in the eval report.
 - Only the design-agent and the iterate-agent may run `freeze`.
 
 ### Capability 3: Version Tracking
@@ -241,7 +241,7 @@ ON EXIT (after the documents are updated)
 
 **Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
 appending, and copy its section headings and table headers as they are (ID column `#`) —
-`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read; exit 3 or a missing `$MI` means memory is unavailable — continue.
 
 **Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
 `Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,

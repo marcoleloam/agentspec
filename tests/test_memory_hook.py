@@ -46,6 +46,40 @@ def test_prompt_injects_brief_for_phase_command(project, monkeypatch, capsys, pr
     assert "Q-003" in out
 
 
+@pytest.mark.parametrize("prompt", [
+    "/continuar BLOCKED", "/agentspec:workflow:continue BLOCKED",
+    "/agentspec:source-command-workflow-design BLOCKED", "/source-command-workflow-design-m blocked",
+    "/design blocked", "/define .claude/sdd/features/BRAINSTORM_blocked.md",
+])
+def test_prompt_recognises_every_invocation_form(project, monkeypatch, capsys, prompt):
+    code, out, _ = fire(monkeypatch, capsys, "prompt", {"prompt": prompt, "cwd": str(project)})
+    assert code == 0
+    assert "Memória de BLOCKED" in out and "Q-003" in out
+
+
+@pytest.mark.parametrize("prompt", ["/build", "/continuar", "/agentspec:workflow:continue",
+                                    "/agentspec:source-command-workflow-build"])
+def test_prompt_without_feature_uses_active_for_build(project, monkeypatch, capsys, prompt):
+    """/build and /continuar act on .claude/sdd/.active (written by /work and /build)."""
+    code, out, _ = fire(monkeypatch, capsys, "prompt", {"prompt": prompt, "cwd": str(project)})
+    assert code == 0
+    assert "Memória de DEMO — entrando em build" in out
+
+
+def test_prompt_from_a_subdirectory_finds_the_project(project, monkeypatch, capsys):
+    sub = project / "src" / "pkg"
+    sub.mkdir(parents=True)
+    code, out, _ = fire(monkeypatch, capsys, "prompt", {"prompt": "/design BLOCKED", "cwd": str(sub)})
+    assert code == 0 and "Q-003" in out
+
+
+@pytest.mark.parametrize("prompt", ["/design add a login page", "/other:design BLOCKED",
+                                    "/brainstorm uma ideia qualquer"])
+def test_prompt_ignores_prose_and_foreign_namespaces(project, monkeypatch, capsys, prompt):
+    code, out, _ = fire(monkeypatch, capsys, "prompt", {"prompt": prompt, "cwd": str(project)})
+    assert code == 0 and out == ""
+
+
 @pytest.mark.parametrize("prompt", ["explain the design", "/status", "/design", "/review BLOCKED"])
 def test_prompt_ignores_non_phase_or_featureless_prompts(project, monkeypatch, capsys, prompt):
     code, out, _ = fire(monkeypatch, capsys, "prompt", {"prompt": prompt, "cwd": str(project)})
@@ -91,6 +125,21 @@ def test_pre_write_leaves_existing_design_alone(project, monkeypatch, capsys):
     assert code == 0
 
 
+def test_pre_write_gates_from_a_subdirectory_cwd(project, monkeypatch, capsys):
+    """The root comes from the file being written, not from the session cwd."""
+    sub = project / "src"
+    sub.mkdir()
+    event = {**design_event(project, "BLOCKED"), "cwd": str(sub)}
+    code, _, err = fire(monkeypatch, capsys, "pre-write", event)
+    assert code == 2 and "Q-003" in err
+
+
+def test_pre_write_gates_with_unrelated_cwd(project, tmp_path, monkeypatch, capsys):
+    event = {**design_event(project, "BLOCKED"), "cwd": str(tmp_path / "elsewhere")}
+    code, _, err = fire(monkeypatch, capsys, "pre-write", event)
+    assert code == 2 and "Q-003" in err
+
+
 def test_pre_write_ignores_other_files(project, monkeypatch, capsys):
     event = {"cwd": str(project), "tool_input": {"file_path": str(project / "src" / "DESIGN_X.md")}}
     code, _, _ = fire(monkeypatch, capsys, "pre-write", event)
@@ -117,6 +166,12 @@ def test_post_write_feeds_unreadable_rows_back(project, monkeypatch, capsys):
     assert "OFFTPL" in err and "fix them now" in err
 
 
+def test_post_write_rebuilds_the_files_project_not_the_cwd(project, tmp_path, monkeypatch, capsys):
+    event = {**blackboard_event(project, "DEMO"), "cwd": str(tmp_path / "elsewhere")}
+    code, _, _ = fire(monkeypatch, capsys, "post-write", event)
+    assert code == 0 and (sdd(project) / "MEMORY_INDEX.md").is_file()
+
+
 def test_post_write_ignores_non_blackboard(project, monkeypatch, capsys):
     event = {"cwd": str(project), "tool_input": {"file_path": str(project / "README.md")}}
     code, _, _ = fire(monkeypatch, capsys, "post-write", event)
@@ -134,6 +189,18 @@ def test_project_without_sdd_is_a_no_op(tmp_path, monkeypatch, capsys):
 def test_garbage_stdin_is_a_no_op(monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO("not json"))
     assert hook.main(["post-write"]) == 0
+
+
+@pytest.mark.parametrize("mode", ["prompt", "pre-write", "post-write"])
+def test_internal_error_is_silent_exit_0(project, monkeypatch, capsys, mode):
+    """Any exception inside a handler → exit 0 and no output at all."""
+    def boom(*_a, **_k):
+        raise RuntimeError("boom")
+    monkeypatch.setattr(hook, "load_index", boom)
+    events = {"prompt": {"prompt": "/design BLOCKED", "cwd": str(project)},
+              "pre-write": design_event(project, "BLOCKED"),
+              "post-write": blackboard_event(project, "DEMO")}
+    assert fire(monkeypatch, capsys, mode, events[mode]) == (0, "", "")
 
 
 def test_hooks_json_wires_every_mode():

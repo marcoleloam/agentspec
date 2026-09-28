@@ -1,10 +1,16 @@
 """Aggregate a run, apply the decision rule and render REPORT.md (pt-BR).
 
-Decision rule (DEFINE, fixed before the first run; DESIGN Decisão 6):
-  per stratum, arm X "satisfies" vs A when resolved_rate(X) >= resolved_rate(A)
-  and human_rate(X) <= human_rate(A), rates over valid (non-excluded) runs.
-  inconclusive  if any arm has excluded > 1/3 of its runs (or no runs)
-  D satisfies → aposentar KB · B → substituir por B · C → enxugar (C) · else manter A
+Decision rule (DEFINE, fixed before the first run; DESIGN Decisão 6; anti-ceiling
+and tie rules added after the KB_CONTEXT7_REFRESH review), per stratum, rates over
+valid (non-excluded) runs:
+  inconclusivo            any arm has excluded > 1/3 of its runs (or no runs)
+  inconclusivo (teto)     D (no knowledge) resolved ≥ decision.ceiling_rate — tasks too
+                          easy to separate the arms, whatever A/B/C did
+  aposentar KB            D beats A by more than decision.retire_margin and sends no more
+                          to human than A
+  inconclusivo (empate)   D ties A (within the margin) — a tie never retires the KB
+  substituir por B · enxugar (C)   B / C "satisfies" A: resolved ≥ A and human ≤ A
+  manter A                otherwise
 """
 from __future__ import annotations
 
@@ -20,7 +26,22 @@ from kb_bench.store import EXCLUDED, Record, RunStore
 STRATUM_LABEL = {"library": "Biblioteca", "conceptual": "Conceitual", "niche": "Nicho"}
 ARM_LABEL = {"A": "A — KB atual", "B": "B — Context7", "C": "C — KB enxuta + C7", "D": "D — nada"}
 INCONCLUSIVE = "inconclusivo"
+CEILING = "inconclusivo (teto)"
+TIE = "inconclusivo (empate)"
 MIN_SAMPLE_WARNING = 3
+# Runs written before this protocol lack the anti-ceiling rule, the AT-004 check and
+# the mid-run Context7 abort; their recommendations are shown but carry no decision value.
+PROTOCOL = 2
+
+
+@dataclass(frozen=True)
+class DecisionRule:
+    ceiling_rate: float = 0.90
+    retire_margin: float = 0.0
+
+    @classmethod
+    def from_config(cls, cfg: BenchConfig) -> DecisionRule:
+        return cls(cfg.ceiling_rate, cfg.retire_margin)
 
 
 @dataclass(frozen=True)
@@ -60,14 +81,23 @@ def satisfies(x: ArmScore, a: ArmScore) -> bool:
     return x.resolved_rate >= a.resolved_rate and x.human_rate <= a.human_rate
 
 
-def recommend(scores: dict[str, ArmScore]) -> str:
+def is_inconclusive(rec: str) -> bool:
+    return rec.startswith(INCONCLUSIVE)
+
+
+def recommend(scores: dict[str, ArmScore], rule: DecisionRule | None = None) -> str:
+    rule = rule or DecisionRule()
     if any(scores.get(k) is None for k in ARM_LETTERS):
         return INCONCLUSIVE
     if any(s.total == 0 or s.valid == 0 or s.excluded * 3 > s.total for s in scores.values()):
         return INCONCLUSIVE
-    a = scores["A"]
-    if satisfies(scores["D"], a):
+    a, d = scores["A"], scores["D"]
+    if d.resolved_rate >= rule.ceiling_rate:
+        return CEILING
+    if d.resolved_rate - a.resolved_rate > rule.retire_margin and d.human_rate <= a.human_rate:
         return "aposentar KB"
+    if abs(d.resolved_rate - a.resolved_rate) <= rule.retire_margin + 1e-12:
+        return TIE
     if satisfies(scores["B"], a):
         return "substituir por B"
     if satisfies(scores["C"], a):
@@ -75,11 +105,17 @@ def recommend(scores: dict[str, ArmScore]) -> str:
     return "manter A"
 
 
-def _justify(rec: str, scores: dict[str, ArmScore]) -> str:
+def _justify(rec: str, scores: dict[str, ArmScore], rule: DecisionRule) -> str:
     if rec == INCONCLUSIVE:
         bad = [k for k, s in scores.items() if s.total == 0 or s.valid == 0 or s.excluded * 3 > s.total]
         return f"exclusões acima de 1/3 (ou sem execuções) em: {', '.join(bad) or 'braços ausentes'}"
     a = scores["A"]
+    if rec == CEILING:
+        return (f"D, sem conhecimento nenhum, resolveu {scores['D'].resolved_rate:.0%} (teto "
+                f"{rule.ceiling_rate:.0%}): as tarefas não separam os braços — faltam tarefas mais difíceis")
+    if rec == TIE:
+        return (f"D empatou com A ({scores['D'].resolved_rate:.0%} × {a.resolved_rate:.0%}); empate não "
+                "aposenta a KB — faltam tarefas que separem os braços")
     pick = {"aposentar KB": "D", "substituir por B": "B", "enxugar (C)": "C"}.get(rec)
     if pick:
         s = scores[pick]
@@ -108,9 +144,26 @@ def group(records: list[Record]) -> dict[str, dict[str, list[Record]]]:
     return out
 
 
-def recommendations(records: list[Record]) -> dict[str, str]:
+def recommendations(records: list[Record], rule: DecisionRule | None = None) -> dict[str, str]:
     grouped = group(records)
-    return {s: recommend({a: score(grouped[s][a]) for a in ARM_LETTERS}) for s in STRATA if s in grouped}
+    return {s: recommend({a: score(grouped[s][a]) for a in ARM_LETTERS}, rule) for s in STRATA if s in grouped}
+
+
+def decision_blockers(env: dict, records: list[Record]) -> list[str]:
+    """Why this run's recommendations must not be used to decide (empty = usable)."""
+    reasons: list[str] = []
+    grok = bool(env.get("grok_version")) or str(env.get("model", "")).startswith("grok") or any(
+        (r.model or "").startswith("grok") for r in records)
+    if grok:
+        reasons += [
+            "rodada 1 (Grok CLI, 2026-09-24): vazamento de isolamento — o braço D leu `arms/a/kb` e "
+            "`arms/c/kb` por `grep -r` e via a skill `data-engineering-guide` na lista do harness",
+            "cota do Context7 esgotada (\"Monthly quota exceeded\") sem chave: B e C mediram quase só o modelo",
+        ]
+    if int(env.get("protocol", 1) or 1) < PROTOCOL:
+        reasons.append(f"gravada antes do protocolo {PROTOCOL} (sem regra anti-teto, sem checagem AT-004 "
+                       "literal, sem abortar quando o Context7 cai no meio da rodada)")
+    return reasons
 
 
 def render(store: RunStore, cfg: BenchConfig) -> str:
@@ -122,9 +175,15 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
     grouped = group(records)
     plan = store.read_json("plan.json") or {}
     expected = len(plan.get("pairs", [])) or len(records)
-    lines = [
-        f"# Relatório kb_bench — {store.run_id}",
-        "",
+    rule = DecisionRule.from_config(cfg)
+    blockers = decision_blockers(env, records)
+    lines = [f"# Relatório kb_bench — {store.run_id}", ""]
+    if blockers:
+        lines += ["> 🛑 **Inválida para decisão.** As recomendações abaixo são só registro histórico:", ">"]
+        lines += [f"> - {b}" for b in blockers]
+        lines += [">", "> Veja `scripts/kb_bench/README.md` (\"Round 1 — why it doesn't count\" e o protocolo "
+                  "da rodada 2).", ""]
+    lines += [
         "| Item | Valor |",
         "|------|-------|",
         f"| Commit | `{env.get('commit', '?')}` |",
@@ -132,6 +191,8 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
         (f"| Modelo pedido (esforço) | `{env.get('model', cfg.model or 'account default')}` "
          f"(`{env.get('reasoning_effort', cfg.reasoning_effort or 'model default')}`) |"),
         f"| Seed | `{env.get('seed', cfg.seed)}` |",
+        f"| Protocolo | {env.get('protocol', 1)} (teto D ≥ {rule.ceiling_rate:.0%}; margem p/ aposentar "
+        f"{rule.retire_margin:.0%}) |",
         f"| Execuções registradas | {len(records)} de {expected} planejadas |",
         (f"| Tokens (total / novos) | {sum(r.tokens or 0 for r in records):,} / "
          f"{sum(r.fresh_tokens or 0 for r in records):,} (orçamento {cfg.budget_tokens:,} novos) |"),
@@ -151,11 +212,12 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
         if stratum not in grouped:
             continue
         scores = {a: score(grouped[stratum][a]) for a in ARM_LETTERS}
-        rec = recommend(scores)
+        rec = recommend(scores, rule)
         smallest = min(s.valid for s in scores.values())
         warn = (f" ⚠️ amostra de {smallest} execução(ões) válida(s) por braço — só um sinal, não decida por isto"
-                if rec != INCONCLUSIVE and smallest < MIN_SAMPLE_WARNING else "")
-        lines.append(f"| {STRATUM_LABEL[stratum]} | **{rec}** | {_justify(rec, scores)}{warn} |")
+                if not is_inconclusive(rec) and smallest < MIN_SAMPLE_WARNING else "")
+        shown = f"**{rec}** (sem valor de decisão)" if blockers else f"**{rec}**"
+        lines.append(f"| {STRATUM_LABEL[stratum]} | {shown} | {_justify(rec, scores, rule)}{warn} |")
     lines.append("")
 
     lines += ["## Placar braço × estrato", "",
@@ -226,7 +288,7 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
         for origin in sorted(origins):
             sub = [r for r in records if r.origin == origin]
             lines.append(f"- `{origin}`: " + "; ".join(
-                f"{STRATUM_LABEL[s]} → {v}" for s, v in recommendations(sub).items()))
+                f"{STRATUM_LABEL[s]} → {v}" for s, v in recommendations(sub, rule).items()))
     lines.append("")
 
     first_inputs = [r.input_tokens_first for r in records if r.input_tokens_first]

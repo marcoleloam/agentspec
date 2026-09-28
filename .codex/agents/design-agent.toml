@@ -204,6 +204,7 @@ def handler(request):
 ```
 
 `freeze` writes the contract digest into the **Evals Digest** metadata row. Only the design-agent and the iterate-agent may run it; the build and eval phases must never touch the contract.
+The first `freeze` also starts `EVAL_{FEATURE}.freeze.log`. Freeze once, after `validate` passes: re-freezing a changed contract requires `--reason "<why>"` (≥ 30 chars) and is recorded as a re-freeze.
 
 ---
 
@@ -265,11 +266,14 @@ MI="${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"             # plugin: path fi
 ```
 
 ON ENTRY
+If `$MI` does not exist, or the gate exits 3, Living Memory is unavailable: say so in one line and continue. That is never "unreadable rows".
 1. `python3 "$MI" gate {FEATURE} --to design` → exit 2: fix the unreadable rows it lists, re-run · exit 1: STOP. List the 🔴 questions, ask the
    user to resolve them (answer now or `/iterate`). Do not write the DESIGN. Never close a 🔴
    with your own assumption — not even in a non-interactive run; if you cannot ask, stop and report.
-2. `python3 "$MI" brief {FEATURE} --phase design` → honor current decisions and pending
-   assumptions; check related-feature decisions before re-deciding the same thing.
+2. Brief: if the delegation prompt carries a `Living Memory brief:` section, use it (the
+   hook injects the brief into the main session only, so `/design` passes it to you);
+   otherwise run `python3 "$MI" brief {FEATURE} --phase design`. Honor current decisions and
+   pending assumptions; check related-feature decisions before re-deciding the same thing.
 
 ON EXIT (after writing DESIGN, before the Quality Gate)
 1. One `D-###` per inline decision, `Fase` = `design`: one-sentence why, rejected alternative,
@@ -280,7 +284,7 @@ ON EXIT (after writing DESIGN, before the Quality Gate)
 
 **Template:** `Read(.claude/sdd/templates/BLACKBOARD_TEMPLATE.md)` before creating or first
 appending, and copy its section headings and table headers as they are (ID column `#`) —
-`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read.
+`memory-index.py` reads only those; `gate`/`build` exit 2 on rows it cannot read; exit 3 or a missing `$MI` means memory is unavailable — continue.
 
 **Rules:** append-only (never rewrite or delete a row — supersede with a new one; only the `Status` /
 `Resolução` cells of Q and A change in place: 🟡→🟢, ⏳→✅/❌) · pointer + one sentence,

@@ -15,6 +15,9 @@ Codex 0.146.0 migrates Claude plugin commands to skills during installation, but
 silently skips generated skills larger than 4 KiB. This script therefore emits a
 native skill for every command. Native skills take precedence over migrated command
 skills with the same name, so command availability no longer depends on file size.
+Each skill that needs it gets a "Running in Codex" preamble: the phase's Codex effort
+(from PHASE_MODEL_ROLES.toml) and what Claude Code tool names (Task, AskUserQuestion,
+TodoWrite, /model) mean in Codex, since command bodies are copied verbatim.
 
 Field mapping (Claude frontmatter -> Codex TOML):
   name                 -> name
@@ -69,22 +72,66 @@ _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 EFFORT_BY_MODEL = {"opus": "high", "sonnet": "medium", "haiku": "low"}
 
 
-def load_phase_efforts() -> dict[str, str]:
-    """Workflow-agent efforts from PHASE_MODEL_ROLES.toml (scripts/phase_routing.py).
-
-    The manifest wins over EFFORT_BY_MODEL so agents whose frontmatter says
-    `inherit` (e.g. build-agent) still get an explicit Codex effort.
-    """
+def load_phase_routes():
+    """Agent and command routes from PHASE_MODEL_ROLES.toml (scripts/phase_routing.py)."""
     scripts_dir = str(Path(__file__).resolve().parent)
     if scripts_dir not in sys.path:
         sys.path.insert(0, scripts_dir)
     import phase_routing
 
-    agents, _ = phase_routing.load()
+    return phase_routing.load()
+
+
+def load_phase_efforts() -> dict[str, str]:
+    """Workflow-agent efforts from PHASE_MODEL_ROLES.toml.
+
+    The manifest wins over EFFORT_BY_MODEL so agents whose frontmatter says
+    `inherit` (e.g. build-agent) still get an explicit Codex effort.
+    """
+    agents, _ = load_phase_routes()
     return {name: route.codex_effort for name, route in agents.items() if route.codex_effort}
 
 
 PHASE_EFFORTS = load_phase_efforts()
+PHASE_COMMANDS = load_phase_routes()[1]
+
+# Claude Code tool names that appear in command bodies, and what they mean in Codex.
+CODEX_TOOL_NOTES = """- **Task tool / `Agent` tool / OMP `task` tool** do not exist in Codex. To delegate, spawn
+  the named subagent explicitly ("Use the <agent-name> agent to ..."); Codex loads it from
+  `.codex/agents/<name>.toml` or `~/.codex/agents/<name>.toml`. If it is not installed,
+  say so and run the step inline.
+- **`AskUserQuestion`** → ask the user in chat and wait for the answer.
+- **`TodoWrite`** → keep the checklist in your plan.
+- **`/model <alias>`** and **`omp --model @<role>`** lines are for Claude Code and OMP.
+  In Codex the model is always the session model; only the reasoning effort changes."""
+
+
+# A command body that mentions any of these gets the tool notes.
+_CLAUDE_TOOL_RE = re.compile(r"\b(Task tool|Agent tool|AskUserQuestion|TodoWrite|subagent_type)\b|`task` tool|/model ")
+
+
+def codex_note(command: Path, body: str) -> str:
+    """'Running in Codex' preamble: phase routing (workflow commands) + tool-name notes."""
+    route = PHASE_COMMANDS.get(command.stem) if command.parent.name == "workflow" else None
+    if route is None:
+        if not _CLAUDE_TOOL_RE.search(body):
+            return ""
+        return f"## Running in Codex\n\n{CODEX_TOOL_NOTES}\n\n"
+    effort = route.codex_effort
+    if route.mode == "delegated":
+        how = (
+            f"This phase is **delegated**: spawn the `{route.agent}` subagent as the command's "
+            f"Phase Routing section says. It runs on the session model with "
+            f"`model_reasoning_effort = \"{effort}\"` from its TOML, so you do not change "
+            f"anything by hand."
+        )
+    else:
+        how = (
+            "This phase runs **in this session**, on the session model. Start the session with "
+            f"the recommended effort: `codex -c model_reasoning_effort={effort}` (or pick the "
+            "effort with `/model` in the TUI before running the command)."
+        )
+    return f"## Running in Codex\n\n{how}\n\n{CODEX_TOOL_NOTES}\n\n"
 
 # Tools that imply the agent mutates the workspace.
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
@@ -207,6 +254,7 @@ def build_command_skill(fm: dict, body: str, command: Path) -> str:
         f"# {skill_name}\n\n"
         f"Use this skill when the user asks to run the migrated source command "
         f"`{command_id}`.\n\n"
+        f"{codex_note(command, body)}"
         "## Command Template\n\n"
         f"{body}\n"
     )

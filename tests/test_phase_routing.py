@@ -85,7 +85,11 @@ def repo(tmp_path: Path) -> Path:
     _write(tmp_path / pr.AGENTS_REL / "README.md", "# Workflow agents\n")
     _write(
         tmp_path / pr.COMMANDS_REL / "design.md",
-        COMMAND.format(stem="design", marker="\n<!-- phase-routing: mode=delegated agent=design-agent -->\n"),
+        COMMAND.format(
+            stem="design",
+            marker="\n<!-- phase-routing: mode=delegated agent=design-agent -->\n"
+            "Codex: session model at `model_reasoning_effort=high`.\n",
+        ),
     )
     _write(
         tmp_path / pr.COMMANDS_REL / "brainstorm.md",
@@ -118,6 +122,10 @@ def test_load_parses_routes(repo: Path) -> None:
         ('mode = "session"', 'mode = "forked"', "mode expected"),
         ("schema_version = 1", "schema_version = 2", "schema_version expected 1"),
         ('omp_role = "smol"', 'omp_role = "smol"  # was gpt-6-astra', "concrete model id"),
+        ('recommended_role = "plan"', 'recommended_role = "plan"\ncodex_effort = "max"', "commands.brainstorm.codex_effort"),
+        ("schema_version = 1", 'schema_version = 1\n[judge]\nomp_role = "REVIEWER"', "unknown top-level key 'judge'"),
+        ("[agents.ship-agent]", "[agents]\nfoo = 1\n\n[agents.ship-agent]", "agents.foo expected a table, found int"),
+        ("[commands.brainstorm]", "[commands]\nbar = \"x\"\n\n[commands.brainstorm]", "commands.bar expected a table, found str"),
     ],
 )
 def test_load_rejects_invalid_manifest(repo: Path, old: str, new: str, fragment: str) -> None:
@@ -126,6 +134,26 @@ def test_load_rejects_invalid_manifest(repo: Path, old: str, new: str, fragment:
     with pytest.raises(ValueError, match=None) as excinfo:
         pr.load(path)
     assert fragment in str(excinfo.value)
+
+
+def test_load_rejects_non_table_section(repo: Path) -> None:
+    path = repo / pr.MANIFEST_REL
+    path.write_text('schema_version = 1\nagents = 1\n\n[commands.brainstorm]\nmode = "session"\nrecommended_role = "plan"\n')
+    with pytest.raises(ValueError, match=r"\[agents\] expected a table, found int"):
+        pr.load(path)
+
+
+def test_check_reports_non_table_agent_instead_of_crashing(repo: Path) -> None:
+    path = repo / pr.MANIFEST_REL
+    path.write_text(path.read_text().replace("[agents.ship-agent]", "[agents]\nfoo = 1\n\n[agents.ship-agent]", 1))
+    errors = pr.check(repo)
+    assert len(errors) == 1 and "agents.foo expected a table, found int" in errors[0]
+
+
+def test_delegated_command_inherits_agent_codex_effort(repo: Path) -> None:
+    _, commands = pr.load(repo / pr.MANIFEST_REL)
+    assert commands["design"].codex_effort == "high"
+    assert commands["brainstorm"].codex_effort is None
 
 
 def test_load_rejects_invalid_toml(repo: Path) -> None:
@@ -198,6 +226,50 @@ def test_check_reports_nested_plugin_agents(repo: Path) -> None:
     assert any("plugin/agents/README.md: file expected absent" in e for e in errors)
 
 
+def test_check_reports_concrete_id_in_command_body(repo: Path) -> None:
+    design = repo / pr.COMMANDS_REL / "design.md"
+    design.write_text(
+        design.read_text()
+        + "/design X --judge=openai/gpt-4o   # default\n"
+        + "Quoted on purpose: claude-opus-4 <!-- allow-model-id -->\n"
+        + "Paths are fine: .claude-plugin/plugin.json, docs/reference/deepseek-harness.md\n"
+    )
+    errors = pr.check(repo)
+    assert len(errors) == 1
+    assert errors[0].startswith(".claude/commands/workflow/design.md:")
+    assert "concrete model id 'gpt-4o'" in errors[0]
+
+
+def test_check_reports_concrete_id_in_agent_body(repo: Path) -> None:
+    agent = repo / pr.AGENTS_REL / "design-agent.md"
+    agent.write_text(agent.read_text() + "\nPrefer gemini-3.5-pro for this.\n")
+    assert any("design-agent.md:" in e and "'gemini-3.5-pro'" in e for e in pr.check(repo))
+
+
+def test_check_reports_missing_codex_effort_guidance(repo: Path) -> None:
+    path = repo / pr.MANIFEST_REL
+    path.write_text(path.read_text().replace('recommended_role = "plan"', 'recommended_role = "plan"\ncodex_effort = "high"'))
+    errors = pr.check(repo)
+    assert errors == [
+        ".claude/commands/workflow/brainstorm.md: Codex guidance expected "
+        "`model_reasoning_effort=high`, found none"
+    ]
+    brainstorm = repo / pr.COMMANDS_REL / "brainstorm.md"
+    brainstorm.write_text(brainstorm.read_text() + "Codex: `codex -c model_reasoning_effort=high`\n")
+    assert pr.check(repo) == []
+
+
+def test_check_reports_plugin_mirror_model_drift(repo: Path) -> None:
+    mirror = repo / pr.PLUGIN_AGENTS_REL / "design-agent.md"
+    mirror.write_text(mirror.read_text().replace("model: opus", "model: sonnet"))
+    assert pr.check(repo) == ["plugin/agents/design-agent.md: model expected opus, found sonnet (run `make build`)"]
+
+
+def test_check_skips_plugin_mirror_when_plugin_absent(repo: Path) -> None:
+    shutil.rmtree(repo / "plugin")
+    assert pr.check(repo) == []
+
+
 def test_check_reports_invalid_manifest_as_single_error(repo: Path) -> None:
     (repo / pr.MANIFEST_REL).write_text("schema_version = 1\n")
     errors = pr.check(repo)
@@ -229,6 +301,26 @@ def test_apply_syncs_models_and_markers_idempotently(repo: Path) -> None:
     assert "# brainstorm Command\n\n<!-- phase-routing: mode=session role=plan -->" in brainstorm.read_text()
     assert design.read_text().count("phase-routing:") == 1
     assert pr.apply(repo) == []
+
+
+def test_apply_inserts_marker_after_frontmatter_when_no_h1(repo: Path) -> None:
+    brainstorm = repo / pr.COMMANDS_REL / "brainstorm.md"
+    brainstorm.write_text(
+        "---\nname: brainstorm\ndescription: x\n---\n\n```bash\n# not a heading\n```\nBody.\n"
+    )
+    assert [p.name for p in pr.apply(repo)] == ["brainstorm.md"]
+    text = brainstorm.read_text()
+    assert text.startswith("---\nname: brainstorm\ndescription: x\n---\n\n<!-- phase-routing: mode=session role=plan -->\n\n```bash\n# not a heading")
+    assert pr._frontmatter(text) == "name: brainstorm\ndescription: x"
+    assert pr.check(repo) == []
+    assert pr.apply(repo) == []
+
+
+def test_apply_inserts_marker_at_top_without_frontmatter_or_h1(repo: Path) -> None:
+    brainstorm = repo / pr.COMMANDS_REL / "brainstorm.md"
+    brainstorm.write_text("Body only.\n")
+    pr.apply(repo)
+    assert brainstorm.read_text() == "<!-- phase-routing: mode=session role=plan -->\n\nBody only.\n"
 
 
 def test_apply_touches_only_model_line(repo: Path) -> None:
@@ -275,6 +367,14 @@ def test_real_manifest_covers_workflow_sources() -> None:
     assert set(commands) == set(pr._workflow_command_files(REPO_ROOT))
     assert commands["design"].mode == "delegated" and commands["ship"].mode == "delegated"
     assert commands["brainstorm"].mode == "session" and commands["design-m"].mode == "session"
+    assert all(c.codex_effort for c in commands.values()), "every phase needs Codex guidance"
+
+
+def test_real_manifest_has_no_judge_role() -> None:
+    import tomllib
+
+    data = tomllib.loads((REPO_ROOT / pr.MANIFEST_REL).read_text())
+    assert "judge" not in data
 
 
 def test_real_sources_in_sync_except_generated_plugin(tmp_path: Path) -> None:

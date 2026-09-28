@@ -6,7 +6,8 @@
 # start. Runs on SessionStart — idempotent, silent on success.
 #
 # Prerequisites:
-#   - bash 3.2+ (uses ${BASH_SOURCE} and mapfile-free patterns)
+#   - bash 3.2+ (macOS /bin/bash): no associative arrays, no mapfile; empty
+#     arrays are expanded as ${a[@]+"${a[@]}"} so `set -u` does not abort
 #   - Standard POSIX utilities: mkdir, cat
 #   - Called with the project working directory as CWD
 #
@@ -278,6 +279,21 @@ detect_project_stack() {
 # Phase 3: Generate Context Hint File
 # ---------------------------------------------------------------------------
 
+# Print each argument once, in first-seen order. With a separator, items are
+# compared by the text before it ("/pipeline -- a" and "/pipeline -- b" collide).
+dedupe_lines() {
+    local sep="$1" item key seen=$'\n'
+    shift
+    for item in "$@"; do
+        key="$item"
+        [[ -n "$sep" ]] && key="${item%%"$sep"*}"
+        case "$seen" in
+            *$'\n'"$key"$'\n'*) ;;
+            *) seen="${seen}${key}"$'\n'; printf '%s\n' "$item" ;;
+        esac
+    done
+}
+
 generate_context_hint() {
     local output_file=".claude/sdd/.detected-stack.md"
 
@@ -292,34 +308,16 @@ generate_context_hint() {
 
     mkdir -p .claude/sdd
 
-    # Deduplicate arrays (preserving order)
-    local -a unique_kb=()
-    local -A seen_kb=()
-    for item in "${KB_DOMAINS[@]}"; do
-        if [[ -z "${seen_kb[$item]+x}" ]]; then
-            seen_kb[$item]=1
-            unique_kb+=("$item")
-        fi
-    done
-
-    local -a unique_agents=()
-    local -A seen_agents=()
-    for item in "${AGENTS[@]}"; do
-        if [[ -z "${seen_agents[$item]+x}" ]]; then
-            seen_agents[$item]=1
-            unique_agents+=("$item")
-        fi
-    done
-
-    local -a unique_cmds=()
-    local -A seen_cmds=()
-    for item in "${COMMANDS[@]}"; do
-        local cmd_key="${item%% -- *}"
-        if [[ -z "${seen_cmds[$cmd_key]+x}" ]]; then
-            seen_cmds[$cmd_key]=1
-            unique_cmds+=("$item")
-        fi
-    done
+    # Deduplicate (preserving order). Linear scan instead of `local -A`: associative
+    # arrays abort bash 3.2 (macOS /bin/bash) under `set -e`. Lists are a few items long.
+    local -a unique_kb=() unique_agents=() unique_cmds=()
+    local item
+    while IFS= read -r item; do [[ -n "$item" ]] && unique_kb+=("$item"); done \
+        < <(dedupe_lines "" ${KB_DOMAINS[@]+"${KB_DOMAINS[@]}"})
+    while IFS= read -r item; do [[ -n "$item" ]] && unique_agents+=("$item"); done \
+        < <(dedupe_lines "" ${AGENTS[@]+"${AGENTS[@]}"})
+    while IFS= read -r item; do [[ -n "$item" ]] && unique_cmds+=("$item"); done \
+        < <(dedupe_lines " -- " ${COMMANDS[@]+"${COMMANDS[@]}"})
 
     # Write the file
     {
@@ -333,17 +331,17 @@ generate_context_hint() {
         done
         echo ""
         echo "## Recommended KB Domains"
-        for domain in "${unique_kb[@]}"; do
+        for domain in ${unique_kb[@]+"${unique_kb[@]}"}; do
             echo "- \`${domain}\`"
         done
         echo ""
         echo "## Recommended Agents"
-        for agent in "${unique_agents[@]}"; do
+        for agent in ${unique_agents[@]+"${unique_agents[@]}"}; do
             echo "- \`${agent}\`"
         done
         echo ""
         echo "## Quick Commands"
-        for cmd in "${unique_cmds[@]}"; do
+        for cmd in ${unique_cmds[@]+"${unique_cmds[@]}"}; do
             echo "- \`${cmd}\`"
         done
     } > "$output_file"
@@ -470,8 +468,11 @@ EOF
 # Main
 # ---------------------------------------------------------------------------
 
+# Script paths and memory first: they are what later phases depend on, so a failure in
+# the best-effort stack detection below must never suppress them. Detection runs in a
+# subshell so even a `set -u`/`set -e` abort inside it only loses the hint file.
 init_workspace
 init_agent_overrides
-generate_context_hint
 export_script_paths
 surface_memory
+( generate_context_hint ) || true
