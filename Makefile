@@ -16,7 +16,7 @@
 SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
-.PHONY: help build test check lint clean generate codex grok grok-verify dsh dsh-verify plugin install-deps venv spec-lint spec-judge spec-venvs omp-roles phase-routing-apply kb-bench kb-bench-setup kb-bench-validate kb-bench-smoke kb-bench-report kb-bench-teardown
+.PHONY: help build test check lint clean generate codex dsh dsh-verify plugin install-deps venv spec-lint spec-judge spec-venvs omp-roles phase-routing-apply kb-bench kb-bench-setup kb-bench-validate kb-bench-smoke kb-bench-report kb-bench-teardown
 
 # Project interpreter: the .venv created by `make venv` when present, else python3.
 # Override per call: make test PYTHON=python3.12
@@ -50,7 +50,6 @@ check: ## Drift check — tests + generators in --check mode (fails on drift)
 	@$(PYTHON) scripts/generate-agent-router.py --check
 	@$(PYTHON) scripts/generate-codex-plugin.py --check
 	@$(PYTHON) scripts/generate-dsh-bundle.py --check
-	@$(PYTHON) scripts/generate-grok-plugin.py --check
 
 generate: ## Regenerate agent-router artifacts (SKILL.md + routing.json)
 	@$(PYTHON) scripts/generate-agent-router.py
@@ -63,16 +62,6 @@ phase-routing-apply: ## Sync workflow agent frontmatter + command markers from P
 
 codex: ## Regenerate Codex CLI agents and command skills from .claude/
 	@$(PYTHON) scripts/generate-codex-plugin.py
-
-grok: ## Regenerate the Grok Build plugin (plugin-grok/ + .grok/{agents,commands})
-	@$(PYTHON) scripts/generate-grok-plugin.py
-
-grok-verify: ## Validate plugin-grok/ with the Grok CLI (skips if grok is missing)
-	@if command -v grok >/dev/null 2>&1; then \
-		grok plugin validate plugin-grok; \
-	else \
-		echo "grok CLI not installed — skipping grok plugin validate"; \
-	fi
 
 dsh: ## Regenerate the DeepSeek Harness (dsh) bundle assets from .claude/
 	@$(PYTHON) scripts/generate-dsh-bundle.py
@@ -110,18 +99,18 @@ spec-venvs: ## Create/refresh the tools/ virtualenvs (spec-linter + spec-judge)
 	@echo "Done. Verify with: make spec-lint && make spec-judge"
 
 # ----------------------------------------------------------------------------
-# KB bench (KB_CONTEXT7_REFRESH) — KB vs Context7 on the Grok CLI
+# KB bench (KB_CONTEXT7_REFRESH) — KB vs Context7 on the Codex CLI
 # ----------------------------------------------------------------------------
 
 KB_BENCH := PYTHONPATH=scripts $(PYTHON) -m kb_bench
 
-kb-bench-setup: ## KB bench — arm folders, eval venv, trust arms B/C (asks first; ARGS=--yes)
+kb-bench-setup: ## KB bench — arm folders, eval venv, isolated Codex home (auth.json symlink)
 	@$(KB_BENCH) setup $(ARGS)
 
 kb-bench-validate: ## KB bench — check every task discriminates (fails on fixtures, passes on solution)
 	@$(KB_BENCH) validate $(ARGS)
 
-kb-bench-smoke: ## KB bench — preflight: grok, trust, MCP per arm, sandbox canary, Context7 coverage
+kb-bench-smoke: ## KB bench — preflight: codex + login, MCP per arm, sandbox canary, Context7 quota/coverage
 	@$(KB_BENCH) smoke $(ARGS)
 
 kb-bench: ## KB bench — full run (ARGS="--dry-run" | "--stratum library" | "--arm B" | "--resume ID")
@@ -130,7 +119,7 @@ kb-bench: ## KB bench — full run (ARGS="--dry-run" | "--stratum library" | "--
 kb-bench-report: ## KB bench — rebuild REPORT.md for the latest run (or RUN=<id>)
 	@$(KB_BENCH) report $(if $(RUN),--run $(RUN),)
 
-kb-bench-teardown: ## KB bench — remove the trust entries setup added (backup kept)
+kb-bench-teardown: ## KB bench — remove the isolated Codex home (results kept)
 	@$(KB_BENCH) teardown
 
 # ----------------------------------------------------------------------------

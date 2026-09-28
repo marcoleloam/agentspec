@@ -104,7 +104,7 @@ makes those calls itself through `scripts/memory-hook.py`:
 | `PreToolUse` (`Write`) | a new `features/DESIGN_{F}.md` is about to be created | runs `gate --to design`; a 🔴 or unreadable rows **block** the write |
 | `PostToolUse` (`Write\|Edit`) | any `BLACKBOARD_*.md` changes | rebuilds `MEMORY_INDEX.md`; unreadable rows go back to the agent |
 
-The commands still describe the same calls, so non-Claude harnesses (Codex, Grok, dsh) and
+The commands still describe the same calls, so non-Claude harnesses (Codex, dsh) and
 the AgentSpec source repo keep working through the prompt alone. Editing an existing DESIGN
 is not gated, because `/iterate` is how a 🔴 gets resolved. The Design→Build gate stays
 prompt-driven, since Build writes no single file the hook could key on. Every hook exits 0

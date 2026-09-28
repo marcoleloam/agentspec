@@ -6,13 +6,13 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from kb_bench import grok_runner, isolation, workspace
+from kb_bench import codex_runner, context7_probe, isolation, workspace
 from kb_bench.config import ARM_LETTERS, Arm, BenchConfig
 from kb_bench.evals import EvalResult, feedback, run_on_copy
 from kb_bench.human_queue import HumanQueue
 from kb_bench.store import Record, RunStore
 from kb_bench.tasks import Task
-from kb_bench.transcript import parse_ndjson
+from kb_bench.transcript import Transcript, parse_jsonl
 
 ARM_PREAMBLE = {
     "A": "Reference material for this domain is in ./kb/. Consult it before acting.",
@@ -26,11 +26,21 @@ COMMON_RULES = (
     "(other than the tools you were given). When the deliverable is complete, stop — the "
     "result will be checked automatically."
 )
-_MAX_TURN_MARKERS = ("max_turn", "max-turn", "turn_limit", "max_tokens")
+# A failed turn with one of these stops the whole run (resume later) instead of
+# burning every remaining pair: the account, not the task, is the problem.
+STOP_MARKERS = ("401", "unauthorized", "usage limit", "rate limit", "429", "quota", "insufficient")
 
 
-class BudgetExceeded(RuntimeError):
-    """Cumulative CLI-reported cost passed run.budget_usd."""
+class RunStopped(RuntimeError):
+    """The run must stop now; the current pair is not recorded, so --resume retries it."""
+
+
+class BudgetExceeded(RunStopped):
+    """Cumulative fresh tokens reported by Codex passed run.budget_tokens."""
+
+
+class ExecutorStopped(RunStopped):
+    """Codex refused to work for account reasons (login, usage limit)."""
 
 
 def build_prompt(task: Task, arm: Arm, retry_feedback: str | None = None) -> str:
@@ -54,23 +64,28 @@ class RunContext:
     cfg: BenchConfig
     store: RunStore
     queue: HumanQueue
-    grok_version: str
-    spent_usd: float = 0.0
+    cli_version: str
+    spent_tokens: int = 0
     log: Callable[[str], None] = field(default=lambda msg: print(msg, file=sys.stderr))
 
 
-def _add(a: float | None, b: float | None):
+def _add(a: int | None, b: int | None) -> int | None:
     if a is None:
         return b
     return a if b is None else a + b
+
+
+def _stop_if_account_problem(t: Transcript, tag: str) -> None:
+    if t.failed and any(m in t.error_message.lower() for m in STOP_MARKERS):
+        raise ExecutorStopped(f"{tag}: codex turn failed — {t.error_message[:200]}")
 
 
 def run_pair(task: Task, arm: Arm, ctx: RunContext) -> Record:
     cfg = ctx.cfg
     rec = Record(run_id=ctx.store.run_id, task=task.id, domain=task.domain, stratum=task.stratum,
                  origin=task.origin, arm=arm.letter, outcome="human", attempts=0,
-                 seed=cfg.seed, grok_version=ctx.grok_version)
-    deny = cfg.deny_paths()
+                 seed=cfg.seed, cli_version=ctx.cli_version, model=cfg.model or "account default")
+    deny = cfg.deny_paths(arm.letter)
     retry_feedback: str | None = None
     last_results: list[EvalResult] = []
     last_snapshot = None
@@ -78,22 +93,23 @@ def run_pair(task: Task, arm: Arm, ctx: RunContext) -> Record:
         arm_dir = workspace.prepare(arm, task, cfg, fresh=attempt == 1)
         tag = f"[{arm.letter}] {task.id} attempt {attempt}/{cfg.max_retries + 1}"
         if arm.uses_context7:
-            healthy, detail = grok_runner.mcp_doctor(arm_dir, sandbox=cfg.sandbox_profile)
-            if not healthy:
-                rec.outcome, rec.reason = "unavailable", f"context7 preflight failed: {detail[-200:]}"
+            codex_runner.ensure_codex_home(cfg)
+            probe = context7_probe.probe(cfg, arm_dir, env=codex_runner.agent_env(cfg, arm))
+            if not probe.ok:
+                rec.outcome, rec.reason = "unavailable", f"context7 preflight failed: {probe.detail[-200:]}"
                 ctx.log(f"{tag} → unavailable (preflight)")
                 return rec
-        out = grok_runner.run_attempt(build_prompt(task, arm, retry_feedback), arm_dir, cfg)
+        out = codex_runner.run_attempt(build_prompt(task, arm, retry_feedback), arm_dir, cfg, arm)
         rec.attempts = attempt
         rec.latency_s = round(rec.latency_s + out.latency_s, 2)
-        ctx.store.transcript_path(task.id, arm.letter, attempt).write_text(out.ndjson, encoding="utf-8")
-        t = parse_ndjson(out.ndjson)
+        ctx.store.transcript_path(task.id, arm.letter, attempt).write_text(out.jsonl, encoding="utf-8")
+        t = parse_jsonl(out.jsonl)
         rec.tokens = _add(rec.tokens, t.total_tokens)
-        rec.cost_usd = _add(rec.cost_usd, t.cost_usd)
+        rec.fresh_tokens = _add(rec.fresh_tokens, t.fresh_tokens)
         if attempt == 1:
             rec.input_tokens_first = t.input_tokens
-        rec.model = t.model or rec.model
-        ctx.spent_usd += t.cost_usd or 0.0
+        ctx.spent_tokens += t.fresh_tokens or 0
+        _stop_if_account_problem(t, tag)
 
         verdict = isolation.check(t, uses_context7=arm.uses_context7, deny=deny, cwd=arm_dir)
         rec.context7_calls += verdict.context7_calls
@@ -102,15 +118,16 @@ def run_pair(task: Task, arm: Arm, ctx: RunContext) -> Record:
             rec.outcome, rec.contamination_reasons = "contaminated", list(verdict.reasons)
             ctx.log(f"{tag} → contaminated: {verdict.reasons[0]}")
             return rec
-        if out.timed_out or not t.ended or any(m in (t.stop_reason or "") for m in _MAX_TURN_MARKERS):
+        if out.timed_out or not t.ended:
             why = "wall-clock timeout" if out.timed_out else (
-                f"stop_reason={t.stop_reason}" if t.ended else f"no end event (exit {out.exit_code})")
+                f"turn failed: {t.error_message[:160]}" if t.failed
+                else f"no turn.completed event (exit {out.exit_code})")
             rec.outcome, rec.reason = "timeout", why
             ctx.log(f"{tag} → timeout ({why})")
             return rec
         if arm.uses_context7 and (verdict.context7_unavailable or verdict.mcp_missing):
             why = "context7 MCP not available in the session" if verdict.mcp_missing else \
-                "every context7 call failed on transport"
+                "every context7 call failed on transport or was refused (quota/auth)"
             rec.outcome, rec.reason = "unavailable", why
             ctx.log(f"{tag} → unavailable (context7 transport)")
             return rec
@@ -146,10 +163,10 @@ def run_plan(tasks: list[Task], arms: list[str], ctx: RunContext, *,
     for i, (task_id, letter) in enumerate(todo, 1):
         if letter not in ARM_LETTERS:
             continue
-        ctx.log(f"── {i}/{len(todo)} · spent ${ctx.spent_usd:.2f}")
+        ctx.log(f"── {i}/{len(todo)} · spent {ctx.spent_tokens:,} fresh tokens")
         rec = run_pair(by_id[task_id], ctx.cfg.arms[letter], ctx)
         ctx.store.append(rec)
         records.append(rec)
-        if ctx.spent_usd > ctx.cfg.budget_usd:
-            raise BudgetExceeded(f"spent ${ctx.spent_usd:.2f} > budget ${ctx.cfg.budget_usd:.2f}")
+        if ctx.spent_tokens > ctx.cfg.budget_tokens:
+            raise BudgetExceeded(f"spent {ctx.spent_tokens:,} > budget {ctx.cfg.budget_tokens:,} fresh tokens")
     return records

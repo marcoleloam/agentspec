@@ -15,8 +15,6 @@ on:
       - '**/*.sh'
       - '.claude/agents/**'
       - '.claude/commands/**'
-      - 'plugin-grok/**'
-      - '.grok/**'
       - 'tools/spec-linter/**'
       - 'tools/spec-judge/**'
       - '.github/workflows/quality-checks.yml'
@@ -28,8 +26,6 @@ on:
       - '**/*.sh'
       - '.claude/agents/**'
       - '.claude/commands/**'
-      - 'plugin-grok/**'
-      - '.grok/**'
       - 'tools/spec-linter/**'
       - 'tools/spec-judge/**'
       - '.github/workflows/quality-checks.yml'
@@ -57,9 +53,6 @@ jobs:
 
       - name: Check Codex agents and command skills drift
         run: python3 scripts/generate-codex-plugin.py --check
-
-      - name: Check Grok plugin drift
-        run: python3 scripts/generate-grok-plugin.py --check
 
       # Rebuild the plugin mirror and fail if it differs from what is committed.
       # Note: upstream uses `git diff --exit-code`, which ignores *untracked*

@@ -198,7 +198,8 @@ Claude Code's native loader gives local overrides precedence over the plugin. Se
 | Post-build evals (/eval + JEV) | Shipped 2026-09-24 | New Phase 3.5 gate: `## Evals` TOML contract in DESIGN, frozen by digest, PRE-checked before /build, reexecuted by eval-agent via `eval_runner.py`; JEV grades `graded` evals, escalating to `/judge` or a human until calibrated; `/ship` requires a PASS receipt |
 | LLM phase routing | Done 2026-09-24 | `PHASE_MODEL_ROLES.toml` maps each SDD phase to an OMP model role (+ Claude alias, Codex effort); `/design` and `/ship` delegate to their phase agent; `make omp-roles` prints `task.agentModelOverrides`; `plugin/agents/` flattened so OMP discovers agents; **Gerado por** provenance row in SDD docs |
 | Living Memory (Blackboard Brainstorm → Ship) | Shipped 2026-09-25 | `memory-index.py` brief/gate/tail/index over BLACKBOARD, archive and MEMORY.md; plugin hooks (`memory-hook.py`) inject the brief, gate new DESIGNs on 🔴, rebuild the index; 🔴 closes only with the user's answer |
-| KB × Context7 benchmark | Shipped 2026-09-27 | `scripts/kb_bench/`: 4 knowledge arms on the same tasks, sandbox isolation, blind human queue; first run says retire the KB, with a ceiling effect — round 2 needs real tasks and a non-Grok executor |
+| KB × Context7 benchmark | Shipped 2026-09-27 | `scripts/kb_bench/`: 4 knowledge arms on the same tasks, sandbox isolation, blind human queue; first run (Grok) says retire the KB, with a ceiling effect — executor now Codex (token budget, `CONTEXT7_API_KEY`); round 2 needs real tasks |
+| Removed Grok Build distribution | Done 2026-09-27 | plugin-grok/, .grok/, generator, make targets and CI steps removed; the bench and the agent-selection baseline run on Codex; supported harnesses are Claude Code, Codex and DeepSeek Harness |
 | Migrate to plugin global install | Planned | Use local-first overrides to drop per-project cp pattern |
 | Add telemetry | Planned | Local usage tracking |
 

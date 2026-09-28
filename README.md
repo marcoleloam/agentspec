@@ -11,7 +11,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-Compatible-black.svg)](docs/reference/codex-cli.md)
-[![Grok Build](https://img.shields.io/badge/Grok%20Build-Compatible-black.svg)](docs/reference/grok-harness.md)
 [![Version](https://img.shields.io/badge/version-3.7.0-green.svg)](CHANGELOG.md)
 [![Agents](https://img.shields.io/badge/agents-73-orange.svg)](.claude/agents/)
 [![Commands](https://img.shields.io/badge/commands-42-blue.svg)](.claude/commands/)
@@ -30,7 +29,7 @@ AI-assisted development without structure produces inconsistent results: halluci
 
 ## The Solution
 
-AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code, OpenAI Codex, Grok Build, and DeepSeek Harness — a 5-phase workflow backed by 39 knowledge base domains, 73 specialized agents, 42 commands, and native skills. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
+AgentSpec brings **Spec-Driven Development (SDD)** to Claude Code, OpenAI Codex, and DeepSeek Harness — a 5-phase workflow backed by 39 knowledge base domains, 73 specialized agents, 42 commands, and native skills. Every decision is captured in formal documents. Every phase has a quality gate. Nothing gets lost.
 
 ```text
 /brainstorm  →  /define  →  /design  →  /build  →  /ship
@@ -79,19 +78,6 @@ $agentspec:source-command-workflow-design
 $agentspec:source-command-workflow-build
 $agentspec:source-command-workflow-ship
 ```
-
-### Grok Build
-
-```bash
-make grok
-grok plugin marketplace add .
-grok plugin install agentspec --trust
-grok plugin enable agentspec
-```
-
-Slash commands keep their names (`/brainstorm`, `/define`, `/design`, `/build`, `/ship`).
-See the [Grok Build guide](docs/reference/grok-harness.md) for GitHub install, name
-collisions (`/memory`, `/status`, `/review`), and regeneration.
 
 ### DeepSeek Harness
 
@@ -250,14 +236,9 @@ agentspec/
 ├── .codex/
 │   ├── agents/             # 73 generated Codex subagent TOMLs
 │   └── skills/             # 39 generated native command skills
-├── .grok/
-│   ├── agents/             # 73 generated Grok agents (dogfood)
-│   └── commands/           # 39 flattened Grok slash commands (dogfood)
-├── .grok-plugin/           # Grok marketplace index -> plugin-grok/
 ├── plugin/                 # Distributable Claude + Codex plugin
 │   ├── .claude-plugin/     # Claude manifest
 │   └── .codex-plugin/      # Codex manifest
-├── plugin-grok/            # Distributable Grok Build plugin
 ├── plugin-dsh/             # DeepSeek Harness bundle
 ├── plugin-extras/          # Plugin-only content (skills, hooks, init scripts)
 │
@@ -307,6 +288,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 **[Documentation](docs/) | [Contributing](CONTRIBUTING.md) | [Changelog](CHANGELOG.md)**
 
-Built for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenAI Codex](docs/reference/codex-cli.md), [Grok Build](docs/reference/grok-harness.md), and [DeepSeek Harness](docs/reference/deepseek-harness.md)
+Built for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [OpenAI Codex](docs/reference/codex-cli.md), and [DeepSeek Harness](docs/reference/deepseek-harness.md)
 
 </div>

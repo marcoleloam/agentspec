@@ -17,8 +17,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 UNFILLED = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT:?-")
-TREES = [".claude/agents", ".claude/commands", "plugin/agents", "plugin/commands", "plugin/skills",
-         "plugin-grok/agents", "plugin-grok/commands"]
+TREES = [".claude/agents", ".claude/commands", "plugin/agents", "plugin/commands", "plugin/skills"]
 
 
 def text_files(tree: str):

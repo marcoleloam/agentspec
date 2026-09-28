@@ -37,7 +37,10 @@ Every agent in `${CLAUDE_PLUGIN_ROOT}/skills/agent-router/routing.json` outside 
 |---------|------------------|---------------|
 | Old rule (3+ KB domains; top 4 by overlap) | 0.46 | 0.19 |
 | JEV v1.2 (`scripts/jev_select.py`) | 0.72 | 0.38 |
-| LLM with this rubric — Grok (`grok-4.7-build`) | 0.85 | 0.47 |
+| LLM with this rubric — Grok (`grok-4.7-build`)¹ | 0.85 | 0.47 |
 | LLM with this rubric — Codex (`gpt-6-astra`) | 0.89 | 0.52 |
 
 Labels were written by the build agent (Claude); Claude itself was not measured as the decider.
+
+¹ Historical round-1 measurement on a provider AgentSpec no longer supports; kept as evidence, not re-runnable
+(`eval_llm_baseline.py` now ships the Codex provider only).

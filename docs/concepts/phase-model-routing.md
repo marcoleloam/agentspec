@@ -100,7 +100,7 @@ Every SDD document (BRAINSTORM, DEFINE, DESIGN, BUILD_REPORT, SHIPPED) carries a
 ```bash
 $EDITOR .claude/sdd/architecture/PHASE_MODEL_ROLES.toml
 make phase-routing-apply   # rewrites agent `model:` lines and command markers
-make build                 # regenerates plugin/, Codex, Grok, DSH
+make build                 # regenerates plugin/ and Codex (make dsh for DSH)
 make check                 # fails on any drift (also in CI)
 ```
 

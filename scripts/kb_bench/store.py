@@ -3,9 +3,9 @@
 Layout:
   runs.jsonl        one Record per (task, arm), append-only
   plan.json         shuffled execution plan + seed
-  env.json          grok version, model, commit, host facts
+  env.json          codex version, model, commit, host facts
   coverage.json     Context7 coverage per domain (from smoke)
-  transcripts/      raw NDJSON per attempt
+  transcripts/      raw Codex JSONL per attempt
   evalws/           workspace snapshots the evals ran on
   human/            blind review queue (see human_queue.py)
   REPORT.md         rendered by report.py
@@ -36,9 +36,9 @@ class Record:
     arm: str
     outcome: str
     attempts: int
-    tokens: int | None = None
+    tokens: int | None = None            # input + output, every attempt
+    fresh_tokens: int | None = None      # tokens minus cached input — what the budget counts
     input_tokens_first: int | None = None
-    cost_usd: float | None = None
     latency_s: float = 0.0
     model: str | None = None
     context7_calls: int = 0
@@ -48,7 +48,7 @@ class Record:
     reason: str = ""
     human_id: str | None = None
     seed: int | None = None
-    grok_version: str | None = None
+    cli_version: str | None = None
 
     def __post_init__(self) -> None:
         if self.outcome not in OUTCOMES:
@@ -101,7 +101,7 @@ class RunStore:
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
     def transcript_path(self, task: str, arm: str, attempt: int) -> Path:
-        return self.root / "transcripts" / f"{task}__{arm}__{attempt}.ndjson"
+        return self.root / "transcripts" / f"{task}__{arm}__{attempt}.jsonl"
 
     def evalws_path(self, task: str, arm: str, attempt: int) -> Path:
         return self.root / "evalws" / f"{task}__{arm}__{attempt}"

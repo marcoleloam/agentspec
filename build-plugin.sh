@@ -77,7 +77,7 @@ for dir in agents commands skills kb; do
     fi
 done
 
-# Flatten plugin/agents: OMP (like Grok) only discovers agents/*.md, not
+# Flatten plugin/agents: OMP only discovers agents/*.md, not
 # agents/<category>/*.md. The .claude/agents/<category>/ source layout stays.
 # README.md and _template.md are docs, not agents, so they are not shipped.
 AGENT_CATEGORIES=()

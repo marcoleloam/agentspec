@@ -17,7 +17,7 @@ On 46 labeled specs (template DEFINEs, specs written outside the template, and r
 |---------|------------------|---------------|----------------|
 | Old rule: 3+ KB domains → multiagent; top 4 by `kb_domains` overlap | 0.46 | 0.19 | — |
 | JEV v1.2 (`scripts/jev_select.py`, TypeSafe via OpenRouter) | 0.72 | 0.38 | ~1 s, ~US$ 0.00015 |
-| LLM applying the rubric — Grok `grok-4.7-build` | 0.85 | 0.47 | ~85 s outside a session |
+| LLM applying the rubric — Grok `grok-4.7-build` (historical, provider retired) | 0.85 | 0.47 | ~85 s outside a session |
 | LLM applying the rubric — Codex `gpt-6-astra` | 0.89 | 0.52 | ~10 s outside a session |
 
 The old rule breaks on documents without a "Domínios KB" line: it always answers `single` and finds no specialists.
@@ -86,7 +86,7 @@ Two tools share the labeled-set format of `tests/fixtures/agent_selection/labels
 # JEV against the old rule
 python3 scripts/jev_select.py --eval labels.json
 
-# An LLM applying the shipped rubric (Codex or Grok headless, via your subscription)
+# An LLM applying the shipped rubric (Codex headless, via your subscription)
 python3 scripts/eval_llm_baseline.py --provider codex --labels labels.json
 ```
 

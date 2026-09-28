@@ -128,12 +128,16 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
         "| Item | Valor |",
         "|------|-------|",
         f"| Commit | `{env.get('commit', '?')}` |",
-        f"| Grok CLI | `{env.get('grok_version', '?')}` |",
-        (f"| Modelo pedido / efetivo | `{env.get('model', cfg.model)}` / "
-         f"`{', '.join(sorted({r.model for r in records if r.model})) or '?'}` |"),
+        f"| Codex CLI | `{env.get('cli_version', '?')}` |",
+        (f"| Modelo pedido (esforço) | `{env.get('model', cfg.model or 'account default')}` "
+         f"(`{env.get('reasoning_effort', cfg.reasoning_effort or 'model default')}`) |"),
         f"| Seed | `{env.get('seed', cfg.seed)}` |",
         f"| Execuções registradas | {len(records)} de {expected} planejadas |",
-        f"| Custo reportado pela CLI | US$ {sum(r.cost_usd or 0 for r in records):.2f} |",
+        (f"| Tokens (total / novos) | {sum(r.tokens or 0 for r in records):,} / "
+         f"{sum(r.fresh_tokens or 0 for r in records):,} (orçamento {cfg.budget_tokens:,} novos) |"),
+        "",
+        ("> **Custo em US$ não medido.** A Codex CLI com login ChatGPT não reporta custo nem o modelo efetivo; "
+         "o orçamento conta tokens novos (entrada fora do cache + saída) e o modelo é o pedido."),
         "",
         ("> **Indicativo, não estatístico.** Cerca de 6 tarefas por estrato e braço: uma tarefa muda a taxa "
          "em ~17 pp. Use o placar como sinal de direção, não como prova."),
@@ -156,8 +160,8 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
 
     lines += ["## Placar braço × estrato", "",
               ("| Estrato | Braço | Total | Válidos | 1ª | Retry | Humano | Excl. (u/t/c) | Resolvidas | Humano % "
-               "| Tokens (mediana) | Latência s (mediana) | Chamadas C7 | KB negada |"),
-              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+               "| Tokens (mediana) | Tokens novos (mediana) | Latência s (mediana) | Chamadas C7 | KB negada |"),
+              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for stratum in STRATA:
         for arm in ARM_LETTERS:
             rs = grouped.get(stratum, {}).get(arm, [])
@@ -168,7 +172,8 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
             lines.append(
                 f"| {STRATUM_LABEL[stratum]} | {ARM_LABEL[arm]} | {s.total} | {s.valid} | {s.pass_first} | "
                 f"{s.pass_retry} | {s.human} | {excl} | {s.resolved_rate:.0%} | {s.human_rate:.0%} | "
-                f"{_median([r.tokens for r in rs])} | {_median([r.latency_s for r in rs])} | "
+                f"{_median([r.tokens for r in rs])} | {_median([r.fresh_tokens for r in rs])} | "
+                f"{_median([r.latency_s for r in rs])} | "
                 f"{sum(r.context7_calls for r in rs)} | {sum(r.kb_access_denied for r in rs)} |"
             )
     lines.append("")
@@ -189,7 +194,7 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
     denied = defaultdict(int)
     for r in records:
         denied[r.arm] += r.kb_access_denied
-    lines.append("- Tentativas de ler KB negadas pelo sandbox: "
+    lines.append("- Tentativas de ler KB negadas pelo perfil de permissões: "
                  + ", ".join(f"{a}={denied[a]}" for a in ARM_LETTERS) + ".")
     lines.append("")
 
@@ -229,7 +234,8 @@ def render(store: RunStore, cfg: BenchConfig) -> str:
                 for d in sorted({r.domain for r in records})}
     lines += ["## Custo de base e tamanho das KBs", "",
               (f"- Tokens de entrada da 1ª chamada (mediana, todos os braços): {_median(first_inputs)}. "
-               "Inclui skills, agents e hooks globais do Grok, constantes entre braços."),
+               "Com HOME e CODEX_HOME isolados, é só o prompt de sistema e as ferramentas da Codex, "
+               "constantes entre braços."),
               "", "| Domínio | Palavras KB (A) | Palavras KB enxuta (C) |", "|---|---|---|"]
     lines += [f"| {d} | {a:,} | {c:,} |" for d, (a, c) in kb_words.items()]
     dirty = env.get("git_dirty_new") or []

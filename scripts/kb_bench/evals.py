@@ -18,7 +18,7 @@ from pathlib import Path
 from kb_bench.config import BENCH_DIR, SCRIPTS_DIR, BenchConfig
 from kb_bench.tasks import Task
 
-_IGNORED = shutil.ignore_patterns(".grok", "__pycache__", ".DS_Store")
+_IGNORED = shutil.ignore_patterns("__pycache__", ".DS_Store")
 _OUTPUT_LIMIT = 2000
 
 

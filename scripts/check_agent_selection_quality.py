@@ -72,7 +72,7 @@ def measure(cases: list[dict], answers: dict, provider: str) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--provider", choices=("codex", "grok"), required=True)
+    parser.add_argument("--provider", choices=("codex",), required=True)
     parser.add_argument("--answers", type=Path, help="Score saved baseline answers without calling a model")
     args = parser.parse_args()
     missing = [str(path) for path in LABELS if not path.is_file()]

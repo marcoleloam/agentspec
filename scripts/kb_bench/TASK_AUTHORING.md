@@ -8,7 +8,7 @@ nothing); only the knowledge source differs.
 ## Hard rule — do not read the KB
 
 When writing **tasks, fixtures, solutions or evals**, never open anything under
-`.claude/kb/`, `plugin/kb/`, `plugin-grok/kb/` or `scripts/kb_bench/kb_lean/`.
+`.claude/kb/`, `plugin/kb/` or `scripts/kb_bench/kb_lean/`.
 Author from business intent and **current official documentation** (your own
 knowledge of the upstream docs). Tasks derived from KB content would bias the
 benchmark toward the KB arm. Record the source in `authored_from`.
@@ -80,7 +80,8 @@ Evals run in order on the same copy, so a `dbt parse` eval can precede
    anything the prompt spells out verbatim.
 2. **Name the contract, not the method.** The prompt fixes file paths and
    identifiers so evals are deterministic; it never says which API to use.
-3. **Solvable in ≤ 30 agent turns** without network installs (the agent cannot
+3. **Solvable in about 30 tool calls** (well inside `attempt_timeout_s`; Codex has no
+   turn cap) without network installs (the agent cannot
    pip/npm install; it may run `python3` but not dbt/airflow/spark).
 4. **3–6 evals**, each with a clear name. At least one must fail on the
    fixtures alone, and all must pass on fixtures + solution.

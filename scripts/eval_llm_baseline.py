@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """LLM baseline for JEV agent selection — same cases, same inputs, a coding-agent CLI decides.
 
-Asks a subscription-backed coding-agent CLI (Codex or Grok, headless, structured
+Asks a subscription-backed coding-agent CLI (Codex, headless, structured
 output) the question jev_select.py asks JEV: which variant a phase should run and
 which specialists matter. The model sees exactly what JEV sees — phase, spec
 summary and the wide specialist pool — and nothing else. The rubric text comes
@@ -11,7 +11,7 @@ scratch directory so the agent cannot read the label files.
 
 Usage:
   python3 scripts/eval_llm_baseline.py --provider codex --labels a.json b.json
-  python3 scripts/eval_llm_baseline.py --provider grok  --labels a.json --workers 4
+  python3 scripts/eval_llm_baseline.py --provider codex --labels a.json --scratch /tmp/run2 --workers 4
 
 Answers are cached per case in the scratch dir (``<provider>.jsonl``) so an
 interrupted run resumes instead of re-asking.
@@ -88,19 +88,7 @@ def ask_codex(prompt: str, scratch: Path) -> dict[str, Any]:
         out.unlink(missing_ok=True)
 
 
-def ask_grok(prompt: str, scratch: Path) -> dict[str, Any]:
-    proc = subprocess.run(
-        ["grok", "-p", prompt, "--json-schema", json.dumps(SCHEMA), "--permission-mode", "plan"],
-        cwd=scratch, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=TIMEOUT_S, check=True,
-    )
-    envelope = json.loads(proc.stdout)
-    if isinstance(envelope.get("structuredOutput"), dict):
-        return envelope["structuredOutput"]
-    # Multi-turn runs can repeat the JSON in "text"; take the first object.
-    return json.JSONDecoder().raw_decode(envelope["text"].strip())[0]
-
-
-PROVIDERS = {"codex": ask_codex, "grok": ask_grok}
+PROVIDERS = {"codex": ask_codex}
 
 
 def run_case(provider: str, case: dict[str, Any], pool: list[js.Candidate], scratch: Path) -> dict[str, Any]:
@@ -125,7 +113,7 @@ def run_case(provider: str, case: dict[str, Any], pool: list[js.Candidate], scra
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Codex/Grok baseline for JEV agent selection")
+    ap = argparse.ArgumentParser(description="Codex baseline for JEV agent selection")
     ap.add_argument("--provider", choices=sorted(PROVIDERS), required=True)
     ap.add_argument("--labels", nargs="+", required=True, help="Labels JSON files (jev_select --eval format)")
     ap.add_argument("--scratch", default="/tmp/llm-baseline", help="Empty working dir for the CLI (and answer cache)")

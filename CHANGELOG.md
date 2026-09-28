@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **KB bench runs on Codex** — `scripts/kb_bench/` now drives `codex exec --json` instead of
+  the Grok CLI (`codex_runner.py` replaces `grok_runner.py`). Isolation moved to a Codex
+  permission profile (`":root"="read"`, arm folder writable, deny roots `"none"`) plus an
+  isolated `HOME`/`CODEX_HOME` that only symlinks `~/.codex/auth.json`; the deny list now also
+  covers other arms' folders, results and `~/.codex`/`~/.agents`/`~/.claude`. Context7 is added
+  per arm as an MCP override and needs `CONTEXT7_API_KEY` (forwarded by name, never written);
+  a "quota exceeded" reply now counts as unavailable, not as a successful call. Codex reports
+  tokens, not dollars, so `budget_usd` became `budget_tokens`; `max_turns` and folder trust
+  are gone (setup no longer takes `--yes`). Round 1 (Grok) results are not directly comparable.
+
+### Removed
+
+- **Grok Build distribution** — `plugin-grok/`, `.grok/{agents,commands}`, `.grok-plugin/`,
+  `scripts/generate-grok-plugin.py` (and its tests), `docs/reference/grok-harness.md`, the
+  `make grok` / `make grok-verify` targets and the Grok plugin validation and drift steps in CI.
+  AgentSpec now targets Claude Code, OpenAI Codex and DeepSeek Harness.
+- `scripts/eval_llm_baseline.py` and `scripts/check_agent_selection_quality.py` drop the `grok`
+  provider; Codex is the only headless baseline. The round-1 Grok measurement (0.85 / 0.47) stays
+  in `AGENT_SELECTION_RUBRIC.md` as historical evidence.
+
 ## [3.7.0] - 2026-09-27
 
 ### Added

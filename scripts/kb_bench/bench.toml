@@ -1,13 +1,20 @@
-# kb_bench default configuration. Override the home with KB_BENCH_HOME and the
-# model with KB_BENCH_MODEL. See DESIGN_KB_CONTEXT7_REFRESH.md (Padrão 5).
+# kb_bench default configuration. Override the home with KB_BENCH_HOME, the
+# model with KB_BENCH_MODEL and the Codex binary with KB_BENCH_CODEX.
+# See DESIGN_KB_CONTEXT7_REFRESH.md (Padrão 5) and README.md.
 
 [run]
-model = "grok-4.7"
-max_turns = 30
-attempt_timeout_s = 1800       # 600 s cut live grok-4.7 attempts mid-work (dbt-01, 2026-09-24)
+# Pinned so the account default cannot drift mid-run. gpt-6-astra is what
+# `codex exec` picked by default on 2026-09-27 (codex-cli 0.157.0, ChatGPT
+# login, header "model: gpt-6-astra"). Empty string = let the account decide.
+model = "gpt-6-astra"
+reasoning_effort = ""          # empty = model default; else low | medium | high
+attempt_timeout_s = 1800       # hard stop per attempt (Codex has no max-turns flag)
 max_retries = 2
 seed = 20260923
-budget_usd = 60.0          # abort the run when the CLI-reported cost passes this (raised from 30: full run projects ~US$ 39, 2026-09-24)
+# Abort the run when the fresh tokens reported by Codex pass this. Fresh =
+# (input - cached input) + output, summed over every turn of every attempt.
+# Codex on a ChatGPT login reports no USD cost, so the budget is in tokens.
+budget_tokens = 25_000_000
 retry_feedback_bytes = 4096
 eval_timeout_s = 120
 
@@ -15,22 +22,37 @@ eval_timeout_s = 120
 home = "~/.kb-bench"       # must live outside any git repository
 repo_kb = ".claude/kb"
 
+[codex]
+profile = "kbbench"        # permission profile name passed with -c permissions.<profile>
+# Features that could leak knowledge or change the agent between arms
+# (subagents, connectors, plugins, browser, memories). Unknown names make
+# Codex exit, which `smoke` reports.
+disabled_features = [
+  "multi_agent", "apps", "plugins", "remote_plugin", "browser_use",
+  "browser_use_external", "computer_use", "in_app_browser", "image_generation",
+  "memories", "tool_suggest",
+]
+
 [sandbox]
-profile = "kbbench"
-# Resolved at runtime (the sandbox takes literal paths, not globs). The repo
-# root and the canary folder are always added.
+# Read-denied to every shell command the agent runs (Codex permission profile,
+# value "none"). Resolved at runtime (globs → existing literal paths). The repo
+# root, the canary, the bench results and the other arms' folders are always
+# added.
 deny_globs = [
-  "~/.grok/installed-plugins/*/kb",
-  "~/.claude/plugins/cache/agentspec",
+  "~/.codex",                          # Codex state: AgentSpec plugin cache, sessions, skills, memories
+  "~/.agents",                         # global skills Codex loads even with --ignore-user-config
+  "~/.claude",                         # Claude Code: AgentSpec plugin cache/marketplace clone, transcripts
+  "~/.*/installed-plugins/*/kb",       # KB copies installed by any other agent CLI
+  "~/.*/sessions",                     # session transcripts of any agent CLI (may quote KB files)
   "~/projetos/framework/agentspec",
   "~/.superconductor/worktrees/agentspec",
   "~/.super.engineering/worktrees/agentspec",
 ]
 
 [context7]
-package = "@upstash/context7-mcp"
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]   # the key goes in CONTEXT7_API_KEY (env only)
 startup_timeout_s = 90
-disabled_global_mcps = ["wiki-sysmanager", "azure-devops-oauth", "azure-devops-sebrae"]
 
 [arms.A]
 kb = "repo"

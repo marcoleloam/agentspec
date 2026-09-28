@@ -1,31 +1,24 @@
 """Environment lifecycle: setup, teardown and the pre-run smoke checks.
 
-Only ``setup``/``teardown`` touch user-global state, and only one file:
-``~/.grok/trusted_folders.toml`` (arms B and C must be trusted for their
-project-scoped Context7 MCP to start). Every change is backed up first and
-recorded in ``KB_BENCH_HOME/state.json`` so teardown removes exactly what
-setup added.
+Nothing here touches user-global state. ``setup`` creates folders under
+``KB_BENCH_HOME``, the eval venv and the isolated agent home whose only link
+to the user is a symlink to ``~/.codex/auth.json`` (no credential copy).
+``teardown`` removes that agent home, moving a refreshed ``auth.json`` back to
+the user's Codex home first. Results are never touched.
 """
 from __future__ import annotations
 
-import datetime as dt
-import json
-import os
 import re
 import secrets
 import shutil
 import subprocess
-import time
 from dataclasses import dataclass, field
-from pathlib import Path
 
-import tomllib
-
-from kb_bench import grok_runner, workspace
+from kb_bench import codex_runner, context7_probe, workspace
 from kb_bench.config import ARM_LETTERS, BENCH_DIR, BenchConfig, inside_git_repo
-from kb_bench.transcript import parse_ndjson
+from kb_bench.isolation import under
+from kb_bench.transcript import parse_jsonl
 
-TRUST_FILE = Path(os.environ.get("KB_BENCH_TRUST_FILE", "~/.grok/trusted_folders.toml")).expanduser()
 REQUIREMENTS = BENCH_DIR / "requirements-evals.txt"
 COVERAGE_QUERIES = {
     "dbt": ("dbt", ("dbt",)),
@@ -36,6 +29,9 @@ COVERAGE_QUERIES = {
     "shadowtraffic": ("shadowtraffic", ("shadowtraffic",)),
 }
 _LIB_BLOCK = re.compile(r"- Title: (?P<title>[^\n]+)\n- Context7-compatible library ID: (?P<id>\S+)")
+NO_KEY_WARNING = (f"{context7_probe.API_KEY_ENV} is not set — the free anonymous Context7 quota runs out "
+                  "quickly (\"Monthly quota exceeded\") and arms B/C then end as `unavailable`. Create a key at "
+                  "https://context7.com/dashboard and export it before running.")
 
 
 class SetupError(RuntimeError):
@@ -52,6 +48,7 @@ class Check:
 @dataclass
 class SmokeResult:
     checks: list[Check] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     coverage: dict[str, dict[str, str | None]] = field(default_factory=dict)
 
     @property
@@ -63,77 +60,14 @@ class SmokeResult:
         return ok
 
 
-# ── trust file ───────────────────────────────────────────────────────────────
-
-def trusted_folders(path: Path | None = None) -> set[str]:
-    path = path or TRUST_FILE
-    if not path.is_file():
-        return set()
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
-    return {k for k, v in (data.get("folders") or {}).items() if v.get("trusted")}
-
-
-def trust_targets(cfg: BenchConfig) -> list[Path]:
-    return [cfg.arm_dir(a).resolve() for a in ARM_LETTERS if cfg.arms[a].uses_context7]
-
-
-def _state_path(cfg: BenchConfig) -> Path:
-    return cfg.home / "state.json"
-
-
-def _read_state(cfg: BenchConfig) -> dict:
-    path = _state_path(cfg)
-    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
-
-
-def _write_state(cfg: BenchConfig, state: dict) -> None:
-    _state_path(cfg).write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
-
-
-def backup_trust_file(cfg: BenchConfig) -> Path | None:
-    if not TRUST_FILE.is_file():
-        return None
-    cfg.backups_dir.mkdir(parents=True, exist_ok=True)
-    stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
-    dest = cfg.backups_dir / f"trusted_folders.{stamp}.toml"
-    shutil.copy2(TRUST_FILE, dest)
-    return dest
-
-
-def add_trust(cfg: BenchConfig, folders: list[Path]) -> list[str]:
-    existing = trusted_folders()
-    added = [str(f) for f in folders if str(f) not in existing]
-    if not added:
-        return []
-    TRUST_FILE.parent.mkdir(parents=True, exist_ok=True)
-    blocks = "".join(
-        f'\n[folders."{f}"]\ntrusted = true\ndecided_at = {int(time.time())}\n' for f in added
-    )
-    with TRUST_FILE.open("a", encoding="utf-8") as fh:
-        fh.write(blocks)
-    return added
-
-
-def remove_trust(folders: list[str]) -> list[str]:
-    if not TRUST_FILE.is_file() or not folders:
-        return []
-    text = TRUST_FILE.read_text(encoding="utf-8")
-    removed: list[str] = []
-    for folder in folders:
-        pattern = re.compile(r"\n?\[folders\.\"" + re.escape(folder) + r"\"\]\n(?:(?!\[)[^\n]*\n?)*")
-        text, n = pattern.subn("\n", text)
-        if n:
-            removed.append(folder)
-    TRUST_FILE.write_text(re.sub(r"\n{3,}", "\n\n", text).lstrip("\n"), encoding="utf-8")
-    tomllib.loads(TRUST_FILE.read_text(encoding="utf-8"))  # must stay valid TOML
-    return removed
-
-
 # ── setup / teardown ─────────────────────────────────────────────────────────
 
 def ensure_home(cfg: BenchConfig) -> None:
     if inside_git_repo(cfg.home):
         raise SetupError(f"{cfg.home} is inside a git repository; set KB_BENCH_HOME to a folder outside any repo")
+    blocked = [p for p in (cfg.arms_root, cfg.agent_home) if under(p.resolve(), cfg.deny_paths())]
+    if blocked:
+        raise SetupError(f"{blocked[0]} falls under a sandbox deny root; move KB_BENCH_HOME elsewhere")
     for path in (cfg.arms_root, cfg.results_root, cfg.backups_dir, cfg.canary_dir, cfg.npm_cache_dir):
         path.mkdir(parents=True, exist_ok=True)
     for letter in ARM_LETTERS:
@@ -155,100 +89,83 @@ def ensure_eval_venv(cfg: BenchConfig, log=print) -> None:
     log(f"eval venv ready: {venv}")
 
 
-def setup(cfg: BenchConfig, *, assume_yes: bool, skip_venv: bool = False, log=print,
-          confirm=input) -> list[str]:
+def setup(cfg: BenchConfig, *, skip_venv: bool = False, log=print) -> None:
     ensure_home(cfg)
     if not skip_venv:
         ensure_eval_venv(cfg, log)
-    for letter in ARM_LETTERS:
-        workspace.write_grok_files(cfg.arms[letter], cfg.arm_dir(letter), cfg)
-    targets = trust_targets(cfg)
-    missing = [t for t in targets if str(t) not in trusted_folders()]
-    if not missing:
-        log("arms B/C already trusted")
-        return []
-    log(f"Grok only starts project-scoped MCP servers in trusted folders. This adds {len(missing)} "
-        f"entr{'y' if len(missing) == 1 else 'ies'} to {TRUST_FILE}:")
-    for t in missing:
-        log(f"  {t}")
-    if not assume_yes and confirm("Proceed? [y/N] ").strip().lower() not in {"y", "yes", "s", "sim"}:
-        raise SetupError("trust not granted — arms B/C cannot use Context7; rerun with --yes to accept")
-    backup = backup_trust_file(cfg)
-    added = add_trust(cfg, missing)
-    state = _read_state(cfg)
-    state["trust_added"] = sorted(set(state.get("trust_added", [])) | set(added))
-    state["trust_backup"] = str(backup) if backup else None
-    _write_state(cfg, state)
-    log(f"trusted {len(added)} folder(s); backup: {backup}")
-    return added
+    try:
+        codex_runner.ensure_codex_home(cfg)
+    except codex_runner.CodexHomeError as exc:
+        raise SetupError(str(exc)) from exc
+    log(f"agent home ready: {cfg.agent_home} (auth.json → {cfg.user_auth_file})")
+    if not context7_probe.api_key_present():
+        log(f"WARNING: {NO_KEY_WARNING}")
 
 
-def teardown(cfg: BenchConfig, *, log=print) -> list[str]:
-    state = _read_state(cfg)
-    added = state.get("trust_added", [])
-    if not added:
-        log("nothing to remove (setup added no trust entries)")
-        return []
-    backup_trust_file(cfg)
-    removed = remove_trust(added)
-    state["trust_added"] = sorted(set(added) - set(removed))
-    _write_state(cfg, state)
-    log(f"removed trust for: {', '.join(removed) or 'none (already gone)'}")
+def teardown(cfg: BenchConfig, *, log=print) -> bool:
+    moved = codex_runner.sync_auth_back(cfg)
+    removed = codex_runner.remove_agent_home(cfg)
+    if moved:
+        log(f"moved a refreshed auth.json back to {cfg.user_auth_file}")
+    log(f"removed {cfg.agent_home}" if removed else "nothing to remove (no agent home)")
     return removed
 
 
 # ── smoke ────────────────────────────────────────────────────────────────────
 
-def _mcp_names(info: dict | None) -> set[str]:
-    if not info:
-        return set()
-    return {m.get("name") for m in info.get("mcpServers", []) if m.get("enabled") is not False}
-
-
-def canary(cfg: BenchConfig) -> Check:
+def _write_canary(cfg: BenchConfig) -> tuple[str, str]:
     token = f"KBBENCH-CANARY-{secrets.token_hex(6)}"
     cfg.canary_dir.mkdir(parents=True, exist_ok=True)
     target = cfg.canary_dir / "canary.txt"
     target.write_text(token + "\n", encoding="utf-8")
-    arm = cfg.arms["D"]
-    arm_dir = cfg.arm_dir("D")
-    workspace.reset_arm_dir(arm_dir, cfg)
-    workspace.write_grok_files(arm, arm_dir, cfg)
-    out = grok_runner.run_attempt(
-        f"Use the read_file tool on {target} and reply with its exact content, or the exact error.",
-        arm_dir, cfg, timeout_s=240,
-    )
-    t = parse_ndjson(out.ndjson)
-    leaked = token in t.text or any(token in c.output_text for c in t.tool_calls)
-    denied = any(c.permission_denied for c in t.tool_calls)
-    if leaked:
-        return Check("sandbox canary", False, "canary content was READ — sandbox not enforced; aborting")
-    if not denied:
-        return Check("sandbox canary", False, "no PermissionDenied observed (agent may not have tried); rerun smoke")
-    return Check("sandbox canary", True, "read of deny path returned PermissionDenied")
+    return token, str(target)
 
 
-def coverage(cfg: BenchConfig) -> dict[str, dict[str, str | None]]:
-    arm = cfg.arms["B"]
-    arm_dir = cfg.arm_dir("B")
+def sandbox_canary(cfg: BenchConfig) -> Check:
+    """No model: run ``cat`` on a deny path and a write in the arm folder under the attempt's profile."""
+    token, target = _write_canary(cfg)
+    arm, arm_dir = cfg.arms["D"], cfg.arm_dir("D")
     workspace.reset_arm_dir(arm_dir, cfg)
-    workspace.write_grok_files(arm, arm_dir, cfg)
-    names = ", ".join(q for q, _ in COVERAGE_QUERIES.values())
-    out = grok_runner.run_attempt(
-        "Using ONLY the context7 MCP tool resolve-library-id, call it once for each of these library "
-        f"names, in order: {names}. Do not call anything else. Then reply DONE.",
-        arm_dir, cfg, timeout_s=400,
+    codex_runner.reset_agent_home(cfg)
+    code, out = codex_runner.sandbox_run(["cat", target], arm_dir, cfg, arm)
+    if token in out:
+        return Check("sandbox canary", False, "canary content was READ — permission profile not enforced")
+    if code == 0 or "Operation not permitted" not in out:
+        return Check("sandbox canary", False, f"expected 'Operation not permitted', got exit {code}: {out[-160:]}")
+    probe = ".kbbench-write-probe"
+    code, out = codex_runner.sandbox_run(["sh", "-c", f"echo ok > {probe} && cat {probe} && rm {probe}"],
+                                         arm_dir, cfg, arm)
+    if code != 0 or "ok" not in out:
+        return Check("sandbox canary", False, f"arm folder not writable under the profile: {out[-160:]}")
+    return Check("sandbox canary", True, "deny path → Operation not permitted; arm folder writable")
+
+
+def exec_canary(cfg: BenchConfig) -> Check:
+    """One model call: the same read through ``codex exec``. Codex may decline to try — that passes."""
+    token, target = _write_canary(cfg)
+    arm, arm_dir = cfg.arms["D"], cfg.arm_dir("D")
+    workspace.reset_arm_dir(arm_dir, cfg)
+    out = codex_runner.run_attempt(
+        f"Run exactly this shell command and reply with its exact output or error: cat {target}",
+        arm_dir, cfg, arm, timeout_s=240,
     )
-    t = parse_ndjson(out.ndjson)
-    raw_inputs = _raw_inputs(out.ndjson)
-    by_query = {
-        raw_inputs.get(call.call_id, "").lower(): call.output_text
-        for call in t.mcp_calls("context7__resolve-library-id")
-    }
+    t = parse_jsonl(out.jsonl)
+    if token in t.text or any(token in c.output_text for c in t.tool_calls):
+        return Check("exec canary", False, "canary content was READ by codex exec — aborting")
+    if not t.ended:
+        why = t.error_message or f"no turn.completed (exit {out.exit_code}, timed out {out.timed_out})"
+        return Check("exec canary", False, f"codex exec did not finish: {why[:200]}")
+    tokens = f"{t.input_tokens or 0:,} input tokens"
+    if any(c.permission_denied for c in t.tool_calls):
+        return Check("exec canary", True, f"read of deny path → Operation not permitted ({tokens})")
+    return Check("exec canary", True, f"model declined to read the deny path; sandbox canary is authoritative ({tokens})")
+
+
+def parse_coverage(calls: dict[str, str]) -> dict[str, dict[str, str | None]]:
     result: dict[str, dict[str, str | None]] = {}
     for domain, (query, keywords) in COVERAGE_QUERIES.items():
-        text = by_query.get(query.lower())
-        if text is None:
+        text = calls.get(query)
+        if text is None or context7_probe.unavailable_text(text):
             result[domain] = {"status": "not_checked", "library_id": None, "title": None}
             continue
         libs = [(m["title"].strip(), m["id"]) for m in _LIB_BLOCK.finditer(text)]
@@ -261,51 +178,57 @@ def coverage(cfg: BenchConfig) -> dict[str, dict[str, str | None]]:
     return result
 
 
-def _raw_inputs(ndjson: str) -> dict[str, str]:
-    """toolCallId → libraryName for context7 resolve calls."""
-    out: dict[str, str] = {}
-    for line in ndjson.splitlines():
-        try:
-            ev = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if ev.get("type") == "tool_call":
-            tool_input = (ev.get("rawInput") or {}).get("tool_input") or {}
-            if isinstance(tool_input, dict) and tool_input.get("libraryName"):
-                out[ev.get("toolCallId", "")] = str(tool_input["libraryName"])
-    return out
+def coverage(cfg: BenchConfig) -> tuple[context7_probe.ProbeResult, dict[str, dict[str, str | None]]]:
+    """No model: call ``resolve-library-id`` directly for each domain (uses Context7 quota)."""
+    arm = cfg.arms["B"]
+    queries = tuple(q for q, _ in COVERAGE_QUERIES.values())
+    res = context7_probe.probe(cfg, cfg.arm_dir("B"), env=codex_runner.agent_env(cfg, arm), resolve=queries)
+    return res, parse_coverage(res.calls)
 
 
 def smoke(cfg: BenchConfig, *, model_calls: bool = True, log=print) -> SmokeResult:
     res = SmokeResult()
-    if not res.add("grok on PATH", grok_runner.grok_available(), grok_runner.GROK_BIN):
+    if not res.add("codex on PATH", codex_runner.codex_available(),
+                   codex_runner.resolved_bin() or f"{codex_runner.CODEX_BIN} not found (set KB_BENCH_CODEX)"):
         return res
-    res.add("grok version", True, grok_runner.version())
-    res.add(f"model {cfg.model} listed", cfg.model in grok_runner.models())
+    res.add("codex version", True, codex_runner.version())
     res.add("home outside git", not inside_git_repo(cfg.home), str(cfg.home))
     res.add("eval venv present", (cfg.eval_venv_bin / "python").exists(), str(cfg.eval_venv_bin))
-    trusted = trusted_folders()
+    try:
+        codex_runner.reset_agent_home(cfg)
+        res.add("isolated agent home", True, f"{cfg.agent_home} (auth.json symlink)")
+    except codex_runner.CodexHomeError as exc:
+        res.add("isolated agent home", False, str(exc))
+        return res
+    res.add("codex login (isolated home)", *codex_runner.auth_status(cfg))
+    if cfg.model:
+        res.add(f"model {cfg.model} listed", cfg.model in codex_runner.models(cfg))
+    if not res.add("disabled features accepted", *codex_runner.features_accepted(cfg)):
+        return res  # every later codex call would fail on the same flag
+    if not context7_probe.api_key_present():
+        res.warnings.append(NO_KEY_WARNING)
     for letter in ARM_LETTERS:
-        arm = cfg.arms[letter]
-        arm_dir = cfg.arm_dir(letter)
+        arm, arm_dir = cfg.arms[letter], cfg.arm_dir(letter)
         if not arm_dir.is_dir():
             res.add(f"arm {letter} folder", False, "run `make kb-bench-setup`")
             continue
-        workspace.write_grok_files(arm, arm_dir, cfg)
-        names = _mcp_names(grok_runner.inspect(arm_dir))
-        if arm.uses_context7:
-            res.add(f"arm {letter} trusted", str(arm_dir.resolve()) in trusted, str(arm_dir))
-            healthy, detail = grok_runner.mcp_doctor(arm_dir, sandbox=cfg.sandbox_profile)
-            res.add(f"arm {letter} context7 healthy", healthy, detail[-160:])
-        else:
-            res.add(f"arm {letter} has no context7", "context7" not in names, ", ".join(sorted(n for n in names if n)))
+        names = codex_runner.mcp_servers(arm_dir, cfg, arm)
+        if names is None:
+            res.add(f"arm {letter} MCP listing", False, "`codex mcp list --json` failed")
+            continue
+        res.add(f"arm {letter} {'has' if arm.uses_context7 else 'has no'} context7",
+                ("context7" in names) == arm.uses_context7, ", ".join(sorted(n for n in names if n)))
         extra = names - {"context7"} - {None}
         res.add(f"arm {letter} no other MCP", not extra, ", ".join(sorted(extra)))
+        if arm.uses_context7:
+            probe = context7_probe.probe(cfg, arm_dir, env=codex_runner.agent_env(cfg, arm))
+            res.add(f"arm {letter} context7 starts", probe.ok, f"{probe.detail} in {probe.elapsed_s:.1f}s")
+    check = sandbox_canary(cfg)
+    res.add(check.name, check.ok, check.detail)
     if model_calls and res.ok:
-        check = canary(cfg)
-        res.add(check.name, check.ok, check.detail)
-        if check.ok:
-            res.coverage = coverage(cfg)
-            res.add("context7 coverage probed", any(v["status"] != "not_checked" for v in res.coverage.values()),
-                    ", ".join(f"{d}={v['status']}" for d, v in res.coverage.items()))
+        probe, res.coverage = coverage(cfg)
+        res.add("context7 quota available", probe.ok, probe.detail)
+        if res.ok:
+            check = exec_canary(cfg)
+            res.add(check.name, check.ok, check.detail)
     return res

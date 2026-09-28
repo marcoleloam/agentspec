@@ -1,4 +1,4 @@
-"""Drift gate: runtime scripts called by phase commands must ship in the built plugins.
+"""Drift gate: runtime scripts called by phase commands must ship in the built plugin.
 
 Phase commands call ``${CLAUDE_PLUGIN_ROOT}/scripts/jev_select.py``. If the copy in a
 built plugin diverges from ``scripts/`` (or is missing), installed users silently run a
@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE = REPO_ROOT / "scripts" / "jev_select.py"
 
 
-@pytest.mark.parametrize("plugin_dir", ["plugin", "plugin-grok"])
+@pytest.mark.parametrize("plugin_dir", ["plugin"])
 def test_jev_select_shipped_and_in_sync(plugin_dir):
     root = REPO_ROOT / plugin_dir
     if not root.is_dir():

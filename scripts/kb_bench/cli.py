@@ -5,11 +5,11 @@ import argparse
 import sys
 from pathlib import Path
 
-from kb_bench import grok_runner, setup_env
+from kb_bench import codex_runner, context7_probe, setup_env
 from kb_bench.config import ARM_LETTERS, STRATA, BenchConfig, ConfigError, load_config
 from kb_bench.evals import discriminates
 from kb_bench.human_queue import HumanQueue
-from kb_bench.loop import BudgetExceeded, RunContext, plan, run_plan
+from kb_bench.loop import RunContext, RunStopped, plan, run_plan
 from kb_bench.report import write_report
 from kb_bench.store import RunStore, git_commit, git_dirty_paths, latest_run, new_run_id
 from kb_bench.tasks import Task, TaskError, load_tasks
@@ -74,7 +74,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_setup(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    setup_env.setup(cfg, assume_yes=args.yes, skip_venv=args.skip_venv)
+    setup_env.setup(cfg, skip_venv=args.skip_venv)
     print(f"setup complete — home {cfg.home}. Next: python3 -m kb_bench smoke")
     return 0
 
@@ -87,6 +87,8 @@ def cmd_teardown(args: argparse.Namespace) -> int:
 def _print_smoke(res: setup_env.SmokeResult) -> None:
     for c in res.checks:
         print(f"[{'ok' if c.ok else 'FAIL'}] {c.name}" + (f" — {c.detail}" if c.detail else ""))
+    for w in res.warnings:
+        print(f"[WARN] {w}")
 
 
 def cmd_smoke(args: argparse.Namespace) -> int:
@@ -142,17 +144,20 @@ def cmd_run(args: argparse.Namespace) -> int:
             return 1
         coverage = res.coverage
         store.write_json("coverage.json", coverage)
-    env = {"commit": git_commit(), "grok_version": grok_runner.version(), "model": cfg.model,
-           "seed": cfg.seed, "home": str(cfg.home), "deny": [str(p) for p in cfg.deny_paths()],
+    env = {"commit": git_commit(), "cli_version": codex_runner.version(),
+           "codex_bin": codex_runner.resolved_bin(), "model": cfg.model or "account default",
+           "reasoning_effort": cfg.reasoning_effort or "model default", "seed": cfg.seed,
+           "budget_tokens": cfg.budget_tokens, "home": str(cfg.home),
+           "deny": [str(p) for p in cfg.deny_paths()], "context7_api_key": context7_probe.api_key_present(),
            "smoke_skipped": bool(args.skip_smoke), "coverage_present": bool(coverage)}
     store.write_json("env.json", env)
 
-    ctx = RunContext(cfg=cfg, store=store, queue=HumanQueue(store.root), grok_version=env["grok_version"], log=_log)
-    ctx.spent_usd = sum(r.cost_usd or 0 for r in store.records())
+    ctx = RunContext(cfg=cfg, store=store, queue=HumanQueue(store.root), cli_version=env["cli_version"], log=_log)
+    ctx.spent_tokens = sum(r.fresh_tokens or 0 for r in store.records())
     status = 0
     try:
         run_plan(tasks, arms, ctx, pairs=pairs)
-    except BudgetExceeded as exc:
+    except RunStopped as exc:
         print(f"stopped: {exc} — resume later with --resume {store.run_id}")
         status = 3
     except KeyboardInterrupt:
@@ -217,12 +222,11 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--tasks-dir", type=Path, default=None,
                        help="extra tasks folder (<dir>/<domain>/<id>.toml; fixtures/solutions resolved from its parent)")
 
-    p = sub.add_parser("setup", help="arm folders, eval venv, trust arms B/C (asks first)")
-    p.add_argument("--yes", action="store_true", help="accept the trust change without prompting")
+    p = sub.add_parser("setup", help="arm folders, eval venv, isolated Codex home (auth.json symlink)")
     p.add_argument("--skip-venv", action="store_true")
     p.set_defaults(func=cmd_setup)
 
-    p = sub.add_parser("teardown", help="remove the trust entries setup added")
+    p = sub.add_parser("teardown", help="remove the isolated agent home (results are kept)")
     p.set_defaults(func=cmd_teardown)
 
     p = sub.add_parser("validate", help="schema + discrimination check for every task")
@@ -230,8 +234,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("-v", "--verbose", action="store_true")
     p.set_defaults(func=cmd_validate)
 
-    p = sub.add_parser("smoke", help="preflight: grok, trust, MCP per arm, sandbox canary, Context7 coverage")
-    p.add_argument("--no-model", action="store_true", help="skip the canary and coverage model calls")
+    p = sub.add_parser("smoke", help="preflight: codex + login, MCP per arm, sandbox canary, Context7 quota/coverage")
+    p.add_argument("--no-model", action="store_true",
+                   help="skip the Context7 quota/coverage requests and the codex exec canary")
     p.set_defaults(func=cmd_smoke)
 
     p = sub.add_parser("run", help="execute the plan (all tasks × arms by default)")
@@ -260,6 +265,6 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)
-    except (ConfigError, TaskError, setup_env.SetupError) as exc:
+    except (ConfigError, TaskError, setup_env.SetupError, codex_runner.CodexHomeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
