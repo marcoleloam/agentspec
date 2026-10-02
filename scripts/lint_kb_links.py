@@ -37,7 +37,8 @@ def _unescape(text: str) -> str:
 
 
 def _label(text: str) -> str:
-    return " ".join(_unescape(text).split()).casefold()
+    # Escapes and entities are literal label content, unlike destinations.
+    return " ".join(text.split()).casefold()
 
 
 def _hide(text: str, marker: str = "\0") -> str:

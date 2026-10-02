@@ -90,6 +90,34 @@ def test_syntax_titles_escapes_references_and_crlf(repo):
     assert result.stderr == ""
 
 
+@pytest.mark.parametrize("distinct,plain", [(r"a\*", "a*"), ("a&amp;", "a&")])
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("form", ["full", "collapsed", "shortcut"])
+def test_reference_labels_preserve_escapes_and_entities(repo, distinct, plain, reverse, form):
+    write(repo, ".claude/kb/present.md")
+    source = ".claude/kb/source.md"
+
+    def reference(label):
+        label = " " + label.upper() + "\t "
+        if form == "full":
+            return f"[text][{label}]"
+        return f"[{label}]" + ("[]" if form == "collapsed" else "")
+
+    # Either definition order must keep the two labels distinct. Check both
+    # clean uses and broken uses so collisions cannot hide behind exit 1.
+    for used, target in ((plain, "present.md"), (distinct, "missing.md")):
+        definitions = [f"[{distinct}]: missing.md", f"[{plain}]: present.md"]
+        if reverse:
+            definitions.reverse()
+        usage = reference(used)
+        write(repo, source, "\r\n".join([usage, "!" + usage, "", *definitions, ""]))
+        result = run(repo)
+        expected = (0, "", "") if target == "present.md" else (
+            1, f"{source}:1: missing.md\n{source}:2: missing.md\n", "",
+        )
+        assert (result.returncode, result.stdout, result.stderr) == expected
+
+
 def test_ignored_constructs_and_network_destinations(repo):
     write(repo, ".claude/kb/ignored.md", "\n".join([
         '`[code](lost.md)` ``[tick ` code](lost.md)``',
