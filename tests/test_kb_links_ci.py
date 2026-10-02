@@ -75,6 +75,21 @@ def test_ci_lints_real_checkout_kb():
 
 @pytest.mark.parametrize("content, expected", [
     pytest.param(
+        "2 < 3 and [broken](missing.md) > 1\n",
+        ".claude/kb/source.md:1: missing.md\n",
+        id="angle-bracket-prose-fails-ci",
+    ),
+    pytest.param(
+        "2 < 3 and ![broken](missing.png) > 1\n",
+        ".claude/kb/source.md:1: missing.png\n",
+        id="angle-bracket-prose-image-fails-ci",
+    ),
+    pytest.param(
+        "2 < 3 and [broken][ref] > 1\n\n[ref]: missing.md\n",
+        ".claude/kb/source.md:1: missing.md\n",
+        id="angle-bracket-prose-reference-fails-ci",
+    ),
+    pytest.param(
         '[x](missing.md "<!--")\n[y](other.md)\n',
         ".claude/kb/source.md:1: missing.md\n.claude/kb/source.md:2: other.md\n",
         id="comment-marker-in-title-fails-ci",
