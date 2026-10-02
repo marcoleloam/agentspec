@@ -178,6 +178,22 @@ def test_html_tags_and_autolinks_preserve_surrounding_links(repo, opaque):
     )
 
 
+@pytest.mark.parametrize('source,line', [
+    ('<a title="<!--">text</a>\n\n[real](missing.md)\n', 3),
+    ("<a title='<!--'>text</a> [real](missing.md)\n", 1),
+    ('<a title="<!--\nmore">text</a>\n\n[real](missing.md)\n', 4),
+    ('<a title="`">text</a> [real](missing.md) <a title="`">\n', 1),
+    ('<!-- [hidden](hidden.md) -->\n[real](missing.md)\n', 2),
+    ('<foo [real](missing.md)>\n', 1),
+])
+def test_html_attributes_are_opaque_to_comment_and_code_scan(repo, source, line):
+    write(repo, '.claude/kb/source.md', source)
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, f'.claude/kb/source.md:{line}: missing.md\n', '',
+    )
+
+
 @pytest.mark.parametrize('source,targets', [
     ('[a [b](b.md)](a.md)', ['b.md']),
     ('[![b](b.png)](a.md)', ['a.md', 'b.png']),

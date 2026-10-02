@@ -227,6 +227,16 @@ def _blocks(text: str) -> str:
                 # and backticks there must not affect later Markdown. Keep
                 # scanning the label itself so its code/comments still work.
                 position = offset + index
+                if line[index] == "<":
+                    # An HTML attribute may contain literal <!-- or ticks.
+                    # Keep the whole recognized tag opaque during block scan.
+                    tag = _HTML_TAG.match(text, position) or _AUTOLINK.match(text, position)
+                    if tag:
+                        code_until = tag.end()
+                        end = min(len(line), code_until - offset)
+                        result += line[index:end]
+                        index = end
+                        continue
                 if line[index] == "[":
                     close = _bracket_end(inline_source, position)
                     if close is not None:
@@ -356,6 +366,11 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
     pattern = re.compile(r"(?:^|(?<=\0))[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
     index = 0
     while index < len(text):
+        if text[index] == "<":
+            tag = _HTML_TAG.match(text, index) or _AUTOLINK.match(text, index)
+            if tag:
+                index = tag.end()
+                continue
         # Definitions are block syntax. Consume their literal destinations and
         # titles before looking for inline code, so backticks cannot conceal a
         # subsequent definition. Real code spans are skipped as a whole below.
