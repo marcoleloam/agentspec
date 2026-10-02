@@ -75,6 +75,34 @@ def test_ci_lints_real_checkout_kb():
 
 @pytest.mark.parametrize("content, expected", [
     pytest.param(
+        '[x](missing.md "<!--")\n[y](other.md)\n',
+        ".claude/kb/source.md:1: missing.md\n.claude/kb/source.md:2: other.md\n",
+        id="comment-marker-in-title-fails-ci",
+    ),
+    pytest.param(
+        "paragraph\n    [x](missing.md)\n",
+        ".claude/kb/source.md:2: missing.md\n",
+        id="indented-paragraph-continuation-fails-ci",
+    ),
+])
+def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
+    workflow = yaml.safe_load((ROOT / WORKFLOW).read_text())
+    step = next(step for step in workflow["jobs"]["python"]["steps"]
+                if step.get("name") == "Lint KB links")
+    (tmp_path / "scripts").mkdir()
+    shutil.copyfile(ROOT / "scripts/lint_kb_links.py", tmp_path / "scripts/lint_kb_links.py")
+    kb = tmp_path / ".claude/kb"
+    kb.mkdir(parents=True)
+    (kb / "source.md").write_text(content, encoding="utf-8")
+    result = subprocess.run(
+        ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=tmp_path, capture_output=True, text=True, timeout=30,
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (1, expected, "")
+
+
+@pytest.mark.parametrize("content, expected", [
+    pytest.param(
         "> [texto][ref]\n>\n> [ref]: ausente.md\n",
         ".claude/kb/source.md:1: ausente.md\n",
         id="quoted-reference-fails-ci",
