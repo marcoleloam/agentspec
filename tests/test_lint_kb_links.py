@@ -153,6 +153,54 @@ def test_unclosed_quote_fence_ends_with_quote_container(repo):
     )
 
 
+@pytest.mark.parametrize("opening,continuation", [
+    ("- > ", "  > "), ("12) > ", "    > "),
+    ("> - > ", ">   > "), ("- > - > ", "  >   > "),
+])
+@pytest.mark.parametrize("fence", ["~~~", "```"])
+@pytest.mark.parametrize("closed", [False, True])
+def test_fences_in_alternating_list_and_quote_containers(repo, opening, continuation, fence, closed):
+    lines = [
+        opening + fence,
+        continuation + '[code](missing.md)',
+        continuation + '![code](missing.png)',
+        continuation + '[hidden]: hidden.md',
+    ]
+    if closed:
+        lines += [continuation + fence, continuation + '[inside](inside.md)']
+    lines += ['[outside](outside.md)', '[hidden]']
+    write(repo, '.claude/kb/source.md', '\r\n'.join(lines) + '\r\n')
+    result = run(repo)
+    expected = '.claude/kb/source.md:6: inside.md\n' if closed else ''
+    expected += f'.claude/kb/source.md:{7 if closed else 5}: outside.md\n'
+    assert (result.returncode, result.stdout, result.stderr) == (1, expected, '')
+
+
+@pytest.mark.parametrize("prefix", ['', '> ', '- > '])
+@pytest.mark.parametrize("blank", ['', '  ', '\t'])
+@pytest.mark.parametrize("delimiter", ['`', '``'])
+def test_inline_code_cannot_cross_blank_paragraph_boundaries(repo, prefix, blank, delimiter):
+    continuation = '  > ' if prefix == '- > ' else prefix
+    write(repo, '.claude/kb/source.md', '\r\n'.join([
+        prefix + delimiter + 'unmatched', continuation + blank,
+        continuation + '[x](missing.md)', continuation + blank,
+        continuation + delimiter, '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:3: missing.md\n', '',
+    )
+
+
+def test_inline_code_still_spans_soft_line_breaks(repo):
+    write(repo, '.claude/kb/source.md',
+          '`code\n[x](missing.md)\n` [real](real.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:3: real.md\n', '',
+    )
+
+
 @pytest.mark.parametrize("prefix", ["> ", "> > ", "  > > "])
 def test_reference_definitions_inside_quotes(repo, prefix):
     write(repo, ".claude/kb/source.md", "\r\n".join([

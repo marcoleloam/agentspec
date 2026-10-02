@@ -53,31 +53,33 @@ def _blocks(text: str) -> str:
     code_until = 0
     literal_suffixes = {}
     paragraph = False
-    list_indents = []
-    previous_quote_depth = 0
+    containers = []
     for line in text.splitlines(keepends=True):
         # Remove container syntax for block recognition, retaining its width
         # below so every link still points to its original source position.
         content = line
-        quote_depth = 0
-        while prefix := re.match(r" {0,3}>[ \t]?", content):
-            quote_depth += 1
-            content = content[prefix.end():]
-        if quote_depth != previous_quote_depth:
-            list_indents.clear()
+        # Match existing containers in nesting order: a quote may contain a
+        # list, and a list may contain a quote (and so on).
+        matched = 0
+        for kind, width in containers:
+            if kind == "quote":
+                prefix = re.match(r" {0,3}>[ \t]?", content)
+                if prefix is None:
+                    break
+                content = content[prefix.end():]
+            else:
+                indentation = len(content) - len(content.lstrip(" "))
+                if content.strip() and indentation < width:
+                    break
+                content = content[min(indentation, width):]
+            matched += 1
+        if matched < len(containers):
+            del containers[matched:]
             paragraph = False
-        previous_quote_depth = quote_depth
-        indentation = len(content) - len(content.lstrip(" "))
-        if content.strip():
-            while list_indents and indentation < list_indents[-1]:
-                list_indents.pop()
-        list_indent = list_indents[-1] if list_indents else 0
-        content = content[min(indentation, list_indent):]
-        if fence and (quote_depth < fence[2] or
-                      (line.strip() and list_indent < fence[3])):
+        if fence and matched < fence[2]:
             fence = None
         if fence:
-            if quote_depth == fence[2] and re.fullmatch(
+            if re.fullmatch(
                     r" {0,3}" + re.escape(fence[0]) +
                     r"{" + str(fence[1]) + r",}[ \t]*\n?", content):
                 fence = None
@@ -86,16 +88,20 @@ def _blocks(text: str) -> str:
             offset += len(line)
             continue
         if not comment and code_until <= offset:
-            # A list item's first line can open a fence or a definition;
-            # continuation lines use the indentation established by its marker.
-            while marker := re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]{1,4})(?=\S)", content):
+            # Discover new containers only outside code/comments. A list's
+            # continuation indentation is relative to its enclosing container.
+            while True:
+                quote = re.match(r" {0,3}>[ \t]?", content)
+                marker = quote or re.match(
+                    r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]{1,4})(?=\S)", content)
+                if marker is None:
+                    break
                 paragraph = False
-                list_indent += marker.end()
-                list_indents.append(list_indent)
+                containers.append(("quote" if quote else "list", marker.end()))
                 content = content[marker.end():]
             opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", content)
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
-                fence = (opening[1][0], len(opening[1]), quote_depth, list_indent)
+                fence = (opening[1][0], len(opening[1]), len(containers))
                 lines.append(_hide(line))
                 paragraph = False
                 offset += len(line)
@@ -289,9 +295,14 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
 
 def _code_end(text: str, index: int) -> int | None:
     run = re.match(r"`+", text[index:])[0]
+    start = index + len(run)
+    # Inline code can span soft line breaks, but not separate paragraphs or
+    # masked blocks. Include quote-only blank lines before block normalization.
+    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|\0", text[start:])
+    limit = start + boundary.start() if boundary else len(text)
     # Only a delimiter with the exact same number of backticks closes a span.
-    closing = re.search(r"(?<!`)" + run + r"(?!`)", text[index + len(run):])
-    return index + len(run) + closing.end() if closing else None
+    closing = re.search(r"(?<!`)" + run + r"(?!`)", text[start:limit])
+    return start + closing.end() if closing else None
 
 
 def _bracket_end(text: str, index: int) -> int | None:
