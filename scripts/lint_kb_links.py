@@ -120,6 +120,7 @@ def _blocks(text: str) -> str:
     comment = False
     offset = 0
     code_until = 0
+    code_kind = None
     literal_suffixes = {}
     paragraph = False
     containers = []
@@ -157,6 +158,33 @@ def _blocks(text: str) -> str:
             offset += len(line)
             continue
         indented = _indent_columns(line, content) >= 4
+        if not comment and code_until > offset and code_kind == "span":
+            # Block fences interrupt a provisional inline code span, even
+            # after new quote/list markers. Literal tags and link suffixes do
+            # not use this rule: their contents remain opaque across lines.
+            probe = content
+            probe_paragraph = paragraph
+            tab_list_code = False
+            while True:
+                quote = re.match(r" {0,3}>[ \t]?", probe)
+                tab_width = None if quote else _tab_list_code_prefix(line, probe)
+                marker = quote or re.match(
+                    r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
+                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", probe)
+                if marker is None and tab_width is None:
+                    break
+                # An ordered list starting above 1 cannot interrupt an open
+                # paragraph; a newly opened quote/list resets that context.
+                ordered = re.match(r" {0,3}([0-9]{1,9})[.)]", probe)
+                if probe_paragraph and ordered and int(ordered[1]) != 1:
+                    break
+                tab_list_code |= tab_width is not None
+                probe = probe[tab_width if tab_width is not None else marker.end():]
+                probe_paragraph = False
+            opening = None if tab_list_code else re.match(r" {0,3}(`{3,}|~{3,})(.*)", probe)
+            if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+                code_until = 0
+                code_kind = None
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
             # continuation indentation is relative to its enclosing container.
@@ -210,6 +238,7 @@ def _blocks(text: str) -> str:
         while index < len(line):
             if not comment and offset + index in literal_suffixes:
                 code_until = literal_suffixes.pop(offset + index)
+                code_kind = "literal"
             if code_until > offset + index:
                 end = min(len(line), code_until - offset)
                 result += line[index:end]
@@ -233,6 +262,7 @@ def _blocks(text: str) -> str:
                     tag = _HTML_TAG.match(text, position) or _AUTOLINK.match(text, position)
                     if tag:
                         code_until = tag.end()
+                        code_kind = "literal"
                         end = min(len(line), code_until - offset)
                         result += line[index:end]
                         index = end
@@ -256,6 +286,7 @@ def _blocks(text: str) -> str:
                     end += 1
                     if line[index] == "`":
                         code_until = _code_end(inline_source, position) or 0
+                        code_kind = "span"
                         end = index + len(re.match(r"`+", line[index:])[0])
                     elif line[index] == "\\" and end < len(line) and line[end] in string.punctuation:
                         end += 1

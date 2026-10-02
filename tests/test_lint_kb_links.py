@@ -265,6 +265,93 @@ def test_unclosed_quote_fence_ends_with_quote_container(repo):
     )
 
 
+@pytest.mark.parametrize('opening,continuation', [
+    ('', ''), ('> ', '> '), ('- ', '  '),
+])
+@pytest.mark.parametrize('fence', ['~~~', '```'])
+def test_fence_interrupts_provisional_inline_code(repo, opening, continuation, fence):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        opening + '`open', continuation + fence, continuation + '`',
+        continuation + fence, continuation + '[real](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:5: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize('opening,continuation', [
+    ('> ', '> '), ('- ', '  '), ('- > ', '  > '),
+])
+@pytest.mark.parametrize('fence', ['~~~', '```'])
+def test_fence_in_new_container_interrupts_inline_code(repo, opening, continuation, fence):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '`open', opening + fence, continuation + '`',
+        continuation + fence, '[real](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:5: missing.md\n', '',
+    )
+
+
+def test_fence_keeps_links_inside_hidden_after_provisional_inline_code(repo):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '`open', '~~~python', '` [hidden](hidden.md)', '~~~',
+        '[real](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:5: missing.md\n', '',
+    )
+
+
+def test_fence_like_indent_and_text_do_not_interrupt_inline_code(repo):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '`open', '    ~~~', '[hidden](hidden.md)', '`',
+        '`open', 'text ~~~', '` [real](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:7: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize('marker', ['0. ', '2. ', '02. ', '3) ', '9) '])
+def test_ordered_list_not_starting_at_one_cannot_interrupt_inline_paragraph(repo, marker):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '`open', marker + '~~~', '[hidden](hidden.md)', '`',
+        '[real](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:5: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize('marker', ['1. ', '01. ', '001) ', '> 2. ', '- 2. '])
+def test_fence_after_interrupting_list_is_visible(repo, marker):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '`open', marker + '~~~', '[real](missing.md)', '`', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:3: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize('literal', [
+    '<a title="open\n~~~\nclose">',
+    '[valid](#ok "open\n~~~\nclose")',
+])
+def test_fence_like_line_inside_literal_syntax_stays_opaque(repo, literal):
+    write(repo, '.claude/kb/source.md', literal + '\n[real](missing.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:4: missing.md\n', '',
+    )
+
+
 @pytest.mark.parametrize("opening,continuation", [
     ("- > ", "  > "), ("12) > ", "    > "),
     ("> - > ", ">   > "), ("- > - > ", "  >   > "),
