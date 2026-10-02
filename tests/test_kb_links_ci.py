@@ -174,6 +174,16 @@ def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
         "",
         id="inline-code-across-soft-breaks-passes-ci",
     ),
+    pytest.param(
+        "# `heading\n[x](missing.md)\n`\n",
+        ".claude/kb/source.md:2: missing.md\n",
+        id="unclosed-heading-backtick-preserves-ci-failure",
+    ),
+    pytest.param(
+        "> # ``heading\r\n[x](missing.md)\r\n``\r\n",
+        ".claude/kb/source.md:2: missing.md\n",
+        id="quoted-heading-backticks-crlf-preserve-ci-failure",
+    ),
 ])
 def test_ci_step_handles_markdown_containers(tmp_path, content, expected):
     workflow = yaml.safe_load((ROOT / WORKFLOW).read_text())
