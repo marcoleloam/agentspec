@@ -338,6 +338,52 @@ def test_reference_definitions_in_list_items(repo):
     )
 
 
+@pytest.mark.parametrize("prefix", ["", "> "])
+@pytest.mark.parametrize("marker", ["-", "12)"])
+@pytest.mark.parametrize("spacing", [1, 4, 5, 6])
+def test_list_opening_padding_distinguishes_paragraphs_from_code(repo, prefix, marker, spacing):
+    padding = ' ' * spacing
+    width = len(marker) + (spacing if spacing <= 4 else 1)
+    continuation = prefix + ' ' * width
+    write(repo, '.claude/kb/source.md', '\r\n'.join([
+        prefix + marker + padding + '[code](missing-code.md)',
+        continuation + (padding[1:] if spacing > 4 else '') + '![image](missing.png)',
+        '', '[after](after.md)', '',
+    ]))
+    result = run(repo)
+    expected = '' if spacing > 4 else (
+        '.claude/kb/source.md:1: missing-code.md\n'
+        '.claude/kb/source.md:2: missing.png\n'
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, expected + '.claude/kb/source.md:4: after.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("literal,target", [
+    ('a`b.md', 'a`b.md'), ('<a`b.md>', 'a`b.md'),
+    ('a.md "literal ` title"', 'a.md'),
+])
+@pytest.mark.parametrize("definition", [True, False])
+def test_literal_backticks_do_not_hide_intervening_reference_definitions(repo, literal, target, definition):
+    first = f'[a]: {literal}' if definition else f'[a]({literal})'
+    last = '[c]: c`d.md' if definition else '[c](c`d.md)'
+    write(repo, '.claude/kb/source.md', '\r\n'.join([
+        first, '[b]: missing.md', last, '',
+        '[b] ![b][] [full][b]', '[a] [c]', '',
+        '`real code', '[hidden]: hidden.md', '`', '[hidden]', '',
+    ]))
+    result = run(repo)
+    expected = '' if definition else (
+        f'.claude/kb/source.md:1: {target}\n'
+        '.claude/kb/source.md:3: c`d.md\n'
+    )
+    expected += '.claude/kb/source.md:5: missing.md\n' * 3
+    if definition:
+        expected += f'.claude/kb/source.md:6: {target}\n.claude/kb/source.md:6: c`d.md\n'
+    assert (result.returncode, result.stdout, result.stderr) == (1, expected, '')
+
+
 def test_multiline_reference_definitions_normalize_labels_per_use(repo):
     write(repo, '.claude/kb/source.md', '\r\n'.join([
         '[hello', 'world]: <./missing.md?q=1#part> "title"', '',

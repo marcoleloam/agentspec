@@ -108,8 +108,11 @@ def _blocks(text: str) -> str:
             # continuation indentation is relative to its enclosing container.
             while True:
                 quote = re.match(r" {0,3}>[ \t]?", content)
+                # With more than four padding spaces, only the first belongs
+                # to the marker; the remainder introduces indented code.
                 marker = quote or re.match(
-                    r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]{1,4})(?=\S)", content)
+                    r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
+                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", content)
                 if marker is None:
                     break
                 paragraph = False
@@ -283,35 +286,39 @@ def _definition_value(text: str, index: int) -> tuple[str, int] | None:
 def _definitions(text: str) -> tuple[str, dict[str, str]]:
     definitions = {}
     spans = []
-    code_spans = []
+    pattern = re.compile(r"(?:^|(?<=\0))[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
     index = 0
     while index < len(text):
+        # Definitions are block syntax. Consume their literal destinations and
+        # titles before looking for inline code, so backticks cannot conceal a
+        # subsequent definition. Real code spans are skipped as a whole below.
+        match = pattern.match(text, index)
+        if match and not re.search(r"\n[ \t]*\n", match[1]):
+            parsed = _definition_value(text, match.end())
+            label = _label(match[1])
+            if parsed is not None and label:
+                target, line_end = parsed
+                definitions.setdefault(label, target)
+                spans.append((index, line_end))
+                index = line_end
+                continue
         if text[index] == "\\" and index + 1 < len(text) and text[index + 1] in string.punctuation:
             index += 2
         elif text[index] == "`":
             end = _code_end(text, index)
-            if end is not None:
-                code_spans.append((index, end))
             index = end if end is not None else index + len(re.match(r"`+", text[index:])[0])
         else:
+            # Inline links have literal destinations/titles too. Their labels
+            # are consumed here only for definition discovery; _links handles
+            # the occurrences (including nested images) in the later pass.
+            if text[index] == "[":
+                close = _bracket_end(text, index)
+                if close is not None and text[close + 1:close + 2] == "(":
+                    parsed = _inline(text, close + 1)
+                    if parsed is not None:
+                        index = parsed[1]
+                        continue
             index += 1
-    pattern = re.compile(r"(?:^|(?<=\0))[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
-    for match in pattern.finditer(text):
-        # Reference labels may span lines, but cannot cross a blank line.
-        if re.search(r"\n[ \t]*\n", match[1]):
-            continue
-        if spans and match.start() < spans[-1][1]:
-            continue
-        if any(start <= match.start() < end for start, end in code_spans):
-            continue
-        parsed = _definition_value(text, match.end())
-        if parsed is None:
-            continue
-        target, line_end = parsed
-        label = _label(match[1])
-        if label:
-            definitions.setdefault(label, target)
-            spans.append((match.start(), line_end))
     masked = list(text)
     for start, end in spans:
         masked[start:end] = _hide(text[start:end])
