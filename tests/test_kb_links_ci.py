@@ -191,6 +191,22 @@ def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
         id="inline-code-across-soft-breaks-passes-ci",
     ),
     pytest.param(
+        "`open\n~~~\n`\n~~~\n[x](missing.md)\n",
+        ".claude/kb/source.md:5: missing.md\n",
+        id="unclosed-backtick-before-fence-preserves-ci-failure",
+    ),
+    pytest.param(
+        "- > `open\r\n  > ~~~\r\n  > `\r\n  > ~~~\r\n"
+        "  > [x](missing.md)\r\n",
+        ".claude/kb/source.md:5: missing.md\n",
+        id="unclosed-backtick-before-nested-fence-crlf-fails-ci",
+    ),
+    pytest.param(
+        "`open\n~~~\n` [hidden](missing.md)\n~~~\n[x](#local)\n",
+        "",
+        id="unclosed-backtick-before-fence-with-valid-link-passes-ci",
+    ),
+    pytest.param(
         "# `heading\n[x](missing.md)\n`\n",
         ".claude/kb/source.md:2: missing.md\n",
         id="unclosed-heading-backtick-preserves-ci-failure",
