@@ -370,6 +370,35 @@ def test_code_spans_do_not_define_references_or_start_comments(repo):
     assert result.stderr == ""
 
 
+@pytest.mark.parametrize("prefix", ["# ", "   ## ", "######\t", "> # ", "> > ## ", "- # ", "- - ### "])
+@pytest.mark.parametrize("ticks", ["`", "``"])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_unclosed_heading_code_does_not_hide_following_links(repo, prefix, ticks, newline):
+    write(repo, ".claude/kb/source.md", newline.join([
+        prefix + ticks + "heading", "[x](missing.md)", ticks, "",
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("prefix", ["# ", "> > ## ", "- - ### "])
+def test_heading_code_keeps_inline_syntax_and_following_definitions(repo, prefix):
+    write(repo, ".claude/kb/source.md", "\r\n".join([
+        prefix + '`[hidden](hidden.md)` [x](first.md "literal ` title") `open',
+        '[ref]: second.md', '[ref]', '`', '',
+        '`multiline', '[hidden](also-hidden.md)', '`',
+        '[after](last.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:1: first.md\n"
+           ".claude/kb/source.md:3: second.md\n"
+           ".claude/kb/source.md:9: last.md\n", "",
+    )
+
+
 @pytest.mark.parametrize("title", ['"<!--"', "'<!--'", '(<!--)', '"first\n<!-- last"'])
 @pytest.mark.parametrize("image", ["", "!"])
 @pytest.mark.parametrize("reference", [False, True])

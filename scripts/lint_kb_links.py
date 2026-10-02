@@ -127,6 +127,10 @@ def _blocks(text: str) -> str:
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
+        # ATX headings end on this line, including inside quotes/lists. Bound
+        # inline parsing before container prefixes are neutralized below.
+        heading = not comment and re.match(r" {0,3}#{1,6}(?:[ \t]|$)", content) is not None
+        inline_source = text[:offset + len(line)] if heading else text
         # Spaces neutralize quote/list markers in definitions and multiline
         # labels without changing offsets. Indented code was masked above.
         line = " " * (len(line) - len(content)) + content
@@ -154,11 +158,11 @@ def _blocks(text: str) -> str:
                 # scanning the label itself so its code/comments still work.
                 position = offset + index
                 if line[index] == "[":
-                    close = _bracket_end(text, position)
+                    close = _bracket_end(inline_source, position)
                     if close is not None:
                         suffix = close + 1
                         if text[suffix:suffix + 1] == "(":
-                            parsed = _inline(text, suffix)
+                            parsed = _inline(inline_source, suffix)
                             if parsed is not None:
                                 literal_suffixes[suffix] = parsed[1]
                         elif text[suffix:suffix + 1] == ":" and not line[:index].strip():
@@ -171,13 +175,16 @@ def _blocks(text: str) -> str:
                 else:
                     end += 1
                     if line[index] == "`":
-                        code_until = _code_end(text, position) or 0
+                        code_until = _code_end(inline_source, position) or 0
                         end = index + len(re.match(r"`+", line[index:])[0])
                     elif line[index] == "\\" and end < len(line) and line[end] in string.punctuation:
                         end += 1
                     result += line[index:end]
             index = end
-        lines.append(result)
+        # Retain the heading boundary in subsequent inline/definition passes.
+        # Replacing its newline preserves offsets; reported line numbers are
+        # calculated from the untouched source, not this parser-only mask.
+        lines.append(result[:-1] + "\0" if heading and result.endswith("\n") else result)
         visible = result.replace("\0", "").replace("\x01", "").strip()
         # These complete blocks do not leave a paragraph open for the next
         # indented line. Container prefixes have already been neutralized.
@@ -288,7 +295,7 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
             index = end if end is not None else index + len(re.match(r"`+", text[index:])[0])
         else:
             index += 1
-    pattern = re.compile(r"^[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
+    pattern = re.compile(r"(?:^|(?<=\0))[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
     for match in pattern.finditer(text):
         # Reference labels may span lines, but cannot cross a blank line.
         if re.search(r"\n[ \t]*\n", match[1]):
