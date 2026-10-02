@@ -51,6 +51,8 @@ def _blocks(text: str) -> str:
     comment = False
     offset = 0
     code_until = 0
+    literal_suffixes = {}
+    paragraph = False
     list_indents = []
     previous_quote_depth = 0
     for line in text.splitlines(keepends=True):
@@ -63,6 +65,7 @@ def _blocks(text: str) -> str:
             content = content[prefix.end():]
         if quote_depth != previous_quote_depth:
             list_indents.clear()
+            paragraph = False
         previous_quote_depth = quote_depth
         indentation = len(content) - len(content.lstrip(" "))
         if content.strip():
@@ -79,12 +82,14 @@ def _blocks(text: str) -> str:
                     r"{" + str(fence[1]) + r",}[ \t]*\n?", content):
                 fence = None
             lines.append(_hide(line))
+            paragraph = False
             offset += len(line)
             continue
         if not comment and code_until <= offset:
             # A list item's first line can open a fence or a definition;
             # continuation lines use the indentation established by its marker.
             while marker := re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]{1,4})(?=\S)", content):
+                paragraph = False
                 list_indent += marker.end()
                 list_indents.append(list_indent)
                 content = content[marker.end():]
@@ -92,9 +97,11 @@ def _blocks(text: str) -> str:
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
                 fence = (opening[1][0], len(opening[1]), quote_depth, list_indent)
                 lines.append(_hide(line))
+                paragraph = False
                 offset += len(line)
                 continue
-            if content.startswith(("    ", "\t")):
+            # Indented code cannot interrupt an open paragraph.
+            if not paragraph and content.startswith(("    ", "\t")):
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
@@ -105,6 +112,8 @@ def _blocks(text: str) -> str:
         result = ""
         index = 0
         while index < len(line):
+            if not comment and offset + index in literal_suffixes:
+                code_until = literal_suffixes.pop(offset + index)
             if code_until > offset + index:
                 end = min(len(line), code_until - offset)
                 result += line[index:end]
@@ -116,21 +125,45 @@ def _blocks(text: str) -> str:
                 result += _hide(line[index:end])
                 comment = not line[index:end].endswith("-->")
             else:
-                token = re.search(r"<!--|`+|\\[" + re.escape(string.punctuation) + "]", line[index:])
-                if token is None:
-                    result += line[index:]
-                    break
-                end = index + token.start()
-                result += line[index:end]
-                if token[0] == "<!--":
+                # Destinations and titles are literal syntax: comment markers
+                # and backticks there must not affect later Markdown. Keep
+                # scanning the label itself so its code/comments still work.
+                position = offset + index
+                if line[index] == "[":
+                    close = _bracket_end(text, position)
+                    if close is not None:
+                        suffix = close + 1
+                        if text[suffix:suffix + 1] == "(":
+                            parsed = _inline(text, suffix)
+                            if parsed is not None:
+                                literal_suffixes[suffix] = parsed[1]
+                        elif text[suffix:suffix + 1] == ":" and not line[:index].strip():
+                            parsed = _definition_value(text, suffix + 1)
+                            if parsed is not None:
+                                literal_suffixes[suffix] = parsed[1]
+                end = index
+                if line.startswith("<!--", index):
                     comment = True
                 else:
-                    if token[0].startswith("`"):
-                        code_until = _code_end(text, offset + end) or 0
-                    result += token[0]
-                    end += len(token[0])
+                    end += 1
+                    if line[index] == "`":
+                        code_until = _code_end(text, position) or 0
+                        end = index + len(re.match(r"`+", line[index:])[0])
+                    elif line[index] == "\\" and end < len(line) and line[end] in string.punctuation:
+                        end += 1
+                    result += line[index:end]
             index = end
         lines.append(result)
+        visible = result.replace("\0", "").strip()
+        # These complete blocks do not leave a paragraph open for the next
+        # indented line. Container prefixes have already been neutralized.
+        complete_block = not content.startswith(("    ", "\t")) and (
+            re.match(r"#{1,6}(?:\s|$)", visible)
+            or re.fullmatch(r"(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,}", visible)
+            or (paragraph and re.fullmatch(r"=+|-+", visible))
+            or _definitions(result)[1]
+        )
+        paragraph = bool(visible) and not complete_block
         offset += len(line)
     return "".join(lines)
 
@@ -196,6 +229,26 @@ def _title(text: str, index: int) -> int | None:
     return None
 
 
+def _definition_value(text: str, index: int) -> tuple[str, int] | None:
+    start = _spaces(text, index)
+    parsed = _destination(text, start)
+    if parsed is None:
+        return None
+    target, end = parsed
+    if end == start:
+        return None
+    after = _spaces(text, end)
+    title = _title(text, after) if after > end else None
+    if title is not None:
+        end = title
+    line_end = text.find("\n", end)
+    if line_end < 0:
+        line_end = len(text)
+    if text[end:line_end].strip(" \t"):
+        return None
+    return target, line_end
+
+
 def _definitions(text: str) -> tuple[str, dict[str, str]]:
     definitions = {}
     spans = []
@@ -220,23 +273,10 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
             continue
         if any(start <= match.start() < end for start, end in code_spans):
             continue
-        start = _spaces(text, match.end())
-        parsed = _destination(text, start)
+        parsed = _definition_value(text, match.end())
         if parsed is None:
             continue
-        target, end = parsed
-        if end == start:
-            continue
-        after = _spaces(text, end)
-        title = _title(text, after) if after > end else None
-        if title is not None:
-            end = title
-        # A definition must occupy the remainder of its line.
-        line_end = text.find("\n", end)
-        if line_end < 0:
-            line_end = len(text)
-        if text[end:line_end].strip(" \t"):
-            continue
+        target, line_end = parsed
         label = _label(match[1])
         if label:
             definitions.setdefault(label, target)

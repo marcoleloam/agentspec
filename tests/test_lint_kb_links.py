@@ -256,6 +256,65 @@ def test_code_spans_do_not_define_references_or_start_comments(repo):
     assert result.stderr == ""
 
 
+@pytest.mark.parametrize("title", ['"<!--"', "'<!--'", '(<!--)', '"first\n<!-- last"'])
+@pytest.mark.parametrize("image", ["", "!"])
+@pytest.mark.parametrize("reference", [False, True])
+def test_comment_markers_in_titles_are_literal(repo, title, image, reference):
+    if reference:
+        source = f'{image}[x][ref]\n\n[ref]: missing.md {title}\n'
+    else:
+        source = f'{image}[x](missing.md {title})\n'
+    following_line = source.count('\n') + 1
+    source += '[y](other.md) <!-- [hidden](hidden.md) --> [z](last.md)\n'
+    write(repo, '.claude/kb/source.md', source.replace('\n', '\r\n'))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: missing.md\n'
+           f'.claude/kb/source.md:{following_line}: other.md\n'
+           f'.claude/kb/source.md:{following_line}: last.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("indent", ['    ', '\t', '        '])
+@pytest.mark.parametrize("prefix", ['', '> ', '- '])
+def test_indented_paragraph_continuation_is_not_code(repo, indent, prefix):
+    continuation = '  ' if prefix == '- ' else prefix
+    write(repo, '.claude/kb/source.md', '\r\n'.join([
+        prefix + 'paragraph',
+        continuation + indent + '[x](missing.md)',
+        continuation + indent + '![y](missing.png)',
+        continuation.rstrip(),
+        continuation + indent + '[code](ignored.md)',
+        continuation + indent + '![code](ignored.png)',
+        '', '[after](other.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:2: missing.md\n'
+           '.claude/kb/source.md:3: missing.png\n'
+           '.claude/kb/source.md:8: other.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("block", ['', '# Heading\n', '---\n', 'Heading\n===\n',
+                                   '[ref]: target.md\n', '```\ncode\n```\n'])
+def test_indented_code_after_complete_block_is_ignored(repo, block):
+    write(repo, '.claude/kb/source.md', block + '    [code](ignored.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+@pytest.mark.parametrize("start", ['===\n', 'paragraph\n    # still paragraph\n',
+                                   'paragraph\n    ---\n'])
+def test_heading_like_paragraph_text_does_not_start_indented_code(repo, start):
+    write(repo, '.claude/kb/source.md', start + '    [x](missing.md)\n')
+    result = run(repo)
+    line = start.count('\n') + 1
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, f'.claude/kb/source.md:{line}: missing.md\n', '',
+    )
+
+
 def test_symlinks_resolve_inside_repo_but_never_expand_scan(repo):
     write(repo, "docs/real.md", "[not scanned](absent.md)")
     outside = repo.parent / "outside.md"
