@@ -153,6 +153,77 @@ def test_unclosed_quote_fence_ends_with_quote_container(repo):
     )
 
 
+@pytest.mark.parametrize("prefix", ["> ", "> > ", "  > > "])
+def test_reference_definitions_inside_quotes(repo, prefix):
+    write(repo, ".claude/kb/source.md", "\r\n".join([
+        prefix + '[texto][ref]', prefix.rstrip(),
+        prefix + '[ref]: <./ausente.md?q=1#part> "title"',
+        prefix + '![REF][] [ref]',
+        '[outside][ref]',
+        prefix + '[unused]: unused.md',
+        prefix + '[multi', prefix + 'line]: other.md',
+        prefix + '[multi', prefix + 'line]',
+    ]))
+    result = run(repo)
+    expected = [(1, './ausente.md?q=1#part'), (4, './ausente.md?q=1#part'),
+                (4, './ausente.md?q=1#part'), (5, './ausente.md?q=1#part'),
+                (9, 'other.md')]
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ''.join(f'.claude/kb/source.md:{line}: {target}\n'
+                   for line, target in expected), '',
+    )
+
+
+@pytest.mark.parametrize("quote", ["", "> ", "> > "])
+@pytest.mark.parametrize("marker", ["- ", "+ ", "* ", "1. ", "12) ", "- - "])
+@pytest.mark.parametrize("fence", ["~~~", "```"])
+def test_list_fences_ignore_examples_and_preserve_following_links(repo, quote, marker, fence):
+    continuation = quote + ' ' * len(marker)
+    write(repo, ".claude/kb/source.md", '\r\n'.join([
+        quote + marker + fence + 'markdown',
+        continuation + '[exemplo](ausente.md)',
+        continuation + '![example](missing.png)',
+        continuation + '[hidden]: hidden.md',
+        continuation + fence, '',
+        '[real](real-ausente.md)', '[hidden]',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:7: real-ausente.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("closing", ['  ~~~\n', ''])
+def test_list_continuation_fence_ends_at_container_boundary(repo, closing):
+    write(repo, ".claude/kb/source.md",
+          '- item\n\n  ~~~markdown\n  [example](missing.md)\n' + closing +
+          '\n- [sibling](sibling.md)\n\n[real](real.md)\n')
+    result = run(repo)
+    shift = bool(closing)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, f'.claude/kb/source.md:{6 + shift}: sibling.md\n'
+           f'.claude/kb/source.md:{8 + shift}: real.md\n', '',
+    )
+
+
+def test_reference_definitions_in_list_items(repo):
+    write(repo, ".claude/kb/source.md", '\n'.join([
+        '- [ref]: missing.md',
+        '  [ref]',
+        '  - [nested]: nested.md',
+        '    [nested]',
+        '    ~~~', '    [hidden]: hidden.md', '    ~~~',
+        '[hidden]', '[ref] [nested]',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:2: missing.md\n'
+           '.claude/kb/source.md:4: nested.md\n'
+           '.claude/kb/source.md:9: missing.md\n'
+           '.claude/kb/source.md:9: nested.md\n', '',
+    )
+
+
 def test_multiline_reference_definitions_normalize_labels_per_use(repo):
     write(repo, '.claude/kb/source.md', '\r\n'.join([
         '[hello', 'world]: <./missing.md?q=1#part> "title"', '',

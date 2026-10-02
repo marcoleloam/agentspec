@@ -51,15 +51,27 @@ def _blocks(text: str) -> str:
     comment = False
     offset = 0
     code_until = 0
+    list_indents = []
+    previous_quote_depth = 0
     for line in text.splitlines(keepends=True):
-        # Fences belong to their quote container. Keep the original line for
-        # masking so removing quote markers never shifts occurrence offsets.
+        # Remove container syntax for block recognition, retaining its width
+        # below so every link still points to its original source position.
         content = line
         quote_depth = 0
         while prefix := re.match(r" {0,3}>[ \t]?", content):
             quote_depth += 1
             content = content[prefix.end():]
-        if fence and quote_depth < fence[2]:
+        if quote_depth != previous_quote_depth:
+            list_indents.clear()
+        previous_quote_depth = quote_depth
+        indentation = len(content) - len(content.lstrip(" "))
+        if content.strip():
+            while list_indents and indentation < list_indents[-1]:
+                list_indents.pop()
+        list_indent = list_indents[-1] if list_indents else 0
+        content = content[min(indentation, list_indent):]
+        if fence and (quote_depth < fence[2] or
+                      (line.strip() and list_indent < fence[3])):
             fence = None
         if fence:
             if quote_depth == fence[2] and re.fullmatch(
@@ -70,9 +82,15 @@ def _blocks(text: str) -> str:
             offset += len(line)
             continue
         if not comment and code_until <= offset:
+            # A list item's first line can open a fence or a definition;
+            # continuation lines use the indentation established by its marker.
+            while marker := re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]{1,4})(?=\S)", content):
+                list_indent += marker.end()
+                list_indents.append(list_indent)
+                content = content[marker.end():]
             opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", content)
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
-                fence = (opening[1][0], len(opening[1]), quote_depth)
+                fence = (opening[1][0], len(opening[1]), quote_depth, list_indent)
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
@@ -80,6 +98,9 @@ def _blocks(text: str) -> str:
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
+        # Spaces neutralize quote/list markers in definitions and multiline
+        # labels without changing offsets. Indented code was masked above.
+        line = " " * (len(line) - len(content)) + content
         # Comments can span lines and can share a line with real links.
         result = ""
         index = 0
@@ -190,7 +211,7 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
             index = end if end is not None else index + len(re.match(r"`+", text[index:])[0])
         else:
             index += 1
-    pattern = re.compile(r"^ {0,3}\[((?:\\.|[^\[\]\\\0])+)\]:[ \t]*", re.M)
+    pattern = re.compile(r"^[ \t]*\[((?:\\.|[^\[\]\\\0])+)\]:[ \t]*", re.M)
     for match in pattern.finditer(text):
         # Reference labels may span lines, but cannot cross a blank line.
         if re.search(r"\n[ \t]*\n", match[1]):
