@@ -52,21 +52,31 @@ def _blocks(text: str) -> str:
     offset = 0
     code_until = 0
     for line in text.splitlines(keepends=True):
+        # Fences belong to their quote container. Keep the original line for
+        # masking so removing quote markers never shifts occurrence offsets.
+        content = line
+        quote_depth = 0
+        while prefix := re.match(r" {0,3}>[ \t]?", content):
+            quote_depth += 1
+            content = content[prefix.end():]
+        if fence and quote_depth < fence[2]:
+            fence = None
         if fence:
-            if re.fullmatch(r" {0,3}" + re.escape(fence[0]) +
-                            r"{" + str(fence[1]) + r",}[ \t]*\n?", line):
+            if quote_depth == fence[2] and re.fullmatch(
+                    r" {0,3}" + re.escape(fence[0]) +
+                    r"{" + str(fence[1]) + r",}[ \t]*\n?", content):
                 fence = None
             lines.append(_hide(line))
             offset += len(line)
             continue
         if not comment and code_until <= offset:
-            opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", line)
+            opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", content)
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
-                fence = (opening[1][0], len(opening[1]))
+                fence = (opening[1][0], len(opening[1]), quote_depth)
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
-            if line.startswith(("    ", "\t")):
+            if content.startswith(("    ", "\t")):
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
@@ -180,8 +190,11 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
             index = end if end is not None else index + len(re.match(r"`+", text[index:])[0])
         else:
             index += 1
-    pattern = re.compile(r"^ {0,3}\[((?:\\.|[^\[\]\\\n\0])+)\]:[ \t]*", re.M)
+    pattern = re.compile(r"^ {0,3}\[((?:\\.|[^\[\]\\\0])+)\]:[ \t]*", re.M)
     for match in pattern.finditer(text):
+        # Reference labels may span lines, but cannot cross a blank line.
+        if re.search(r"\n[ \t]*\n", match[1]):
+            continue
         if spans and match.start() < spans[-1][1]:
             continue
         if any(start <= match.start() < end for start, end in code_spans):

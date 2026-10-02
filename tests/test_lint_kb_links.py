@@ -123,6 +123,52 @@ def test_sources_order_duplicates_and_nested_images(repo):
     )
 
 
+@pytest.mark.parametrize("prefix", ["> ", "> > ", "  > > "])
+@pytest.mark.parametrize("fence", ["~~~", "```"])
+def test_code_fences_in_quotes_preserve_surrounding_links(repo, prefix, fence):
+    write(repo, ".claude/kb/source.md", "\r\n".join([
+        '[before](before.md)',
+        prefix + fence + 'markdown',
+        prefix + '[example](missing.md)',
+        prefix + '![image](missing.png)',
+        prefix + '[hidden]: hidden.md',
+        prefix + fence[0] * 4,
+        prefix + '[after](after.md)',
+        '[hidden]', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: before.md\n.claude/kb/source.md:7: after.md\n', '',
+    )
+
+
+def test_unclosed_quote_fence_ends_with_quote_container(repo):
+    write(repo, ".claude/kb/source.md", '\n'.join([
+        '> > ~~~', '> > [hidden](hidden.md)',
+        '> [outer](outer.md)', '[outside](outside.md)',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:3: outer.md\n.claude/kb/source.md:4: outside.md\n', '',
+    )
+
+
+def test_multiline_reference_definitions_normalize_labels_per_use(repo):
+    write(repo, '.claude/kb/source.md', '\r\n'.join([
+        '[hello', 'world]: <./missing.md?q=1#part> "title"', '',
+        '[hello world]', '[full][ HELLO\tWORLD ]', '![hello world][]',
+        '[hello', 'world]',
+        '[unused', 'label]: unused.md',
+        '[hello world]: duplicate.md', '',
+        '[invalid', '', 'label]: invalid.md', '[invalid label]',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ''.join(f'.claude/kb/source.md:{line}: ./missing.md?q=1#part\n'
+                   for line in (4, 5, 6, 7)), '',
+    )
+
+
 def test_code_spans_do_not_define_references_or_start_comments(repo):
     write(repo, ".claude/kb/source.md", "\n".join([
         '`<!--` [broken](lost.md)',
