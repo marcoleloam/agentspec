@@ -160,6 +160,8 @@ def test_angle_bracket_prose_preserves_markdown_links(repo, source):
     '<a href="missing.md" title="[hidden](hidden.md) >">',
     "<img src='missing.png' title='[hidden](hidden.md) <' />",
     '<custom-element data-label="[hidden](hidden.md)" disabled>',
+    '<a title="<!--">',
+    "<a title='<!--'>",
     '<https://example.invalid/[hidden](hidden.md)>',
     '<custom+v2:opaque[hidden](hidden.md)>',
     '<user@example.invalid>',
@@ -172,6 +174,55 @@ def test_html_tags_and_autolinks_preserve_surrounding_links(repo, opaque):
     assert (result.returncode, result.stdout, result.stderr) == (
         1, '.claude/kb/source.md:1: before.md\n'
            '.claude/kb/source.md:1: after.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("tag", [
+    '<a title="<!--">text</a>',
+    "<a title='<!--'>text</a>",
+    '<a title="first line\n<!-- [hidden](hidden.md)">text</a>',
+    '<custom-element data-label="<!-- > [hidden](hidden.md)" />',
+])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+@pytest.mark.parametrize("comment", [False, True])
+def test_comment_markers_in_html_attributes_preserve_later_links(repo, tag, newline, comment):
+    lines = [tag, '', '[real](missing.md)']
+    if comment:
+        lines.append('<!-- [ignored](ignored.md) --> [after](after.md)')
+    write(repo, '.claude/kb/source.md', '\n'.join(lines).replace('\n', newline))
+    result = run(repo)
+    line = tag.count('\n') + 3
+    expected = f'.claude/kb/source.md:{line}: missing.md\n'
+    if comment:
+        expected += f'.claude/kb/source.md:{line + 1}: after.md\n'
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, expected, '',
+    )
+
+
+def test_html_attributes_are_literal_in_labels_and_definition_discovery(repo):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '[<a title="<!-- ] ` [hidden](hidden.md)">text</a>](missing.md)',
+        '<span title="`">[ref]</span>',
+        '', '[ref]: reference.md', '', '<span title="`"></span>',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: missing.md\n'
+           '.claude/kb/source.md:2: reference.md\n', '',
+    )
+
+
+def test_backticks_in_html_attributes_do_not_hide_reference_definitions(repo):
+    write(repo, '.claude/kb/source.md', '\n'.join([
+        '<span title="`">text</span>',
+        '[ref]: missing.md',
+        '<span title="`">text</span>',
+        '', '[ref]',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:5: missing.md\n', '',
     )
 
 

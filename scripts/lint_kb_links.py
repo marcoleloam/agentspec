@@ -160,6 +160,14 @@ def _blocks(text: str) -> str:
                 # and backticks there must not affect later Markdown. Keep
                 # scanning the label itself so its code/comments still work.
                 position = offset + index
+                # A complete HTML tag is opaque even when a quoted attribute
+                # contains comment markers or backticks. Preserve it for the
+                # inline passes, including when it spans multiple lines.
+                if line[index] == "<":
+                    tag = _HTML_TAG.match(inline_source, position)
+                    if tag:
+                        code_until = tag.end()
+                        continue
                 if line[index] == "[":
                     close = _bracket_end(inline_source, position)
                     if close is not None:
@@ -289,6 +297,11 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
     pattern = re.compile(r"(?:^|(?<=\0))[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
     index = 0
     while index < len(text):
+        if text[index] == "<":
+            tag = _HTML_TAG.match(text, index) or _AUTOLINK.match(text, index)
+            if tag:
+                index = tag.end()
+                continue
         # Definitions are block syntax. Consume their literal destinations and
         # titles before looking for inline code, so backticks cannot conceal a
         # subsequent definition. Real code spans are skipped as a whole below.
@@ -342,6 +355,11 @@ def _bracket_end(text: str, index: int) -> int | None:
     index += 1
     while index < len(text):
         char = text[index]
+        if char == "<":
+            tag = _HTML_TAG.match(text, index) or _AUTOLINK.match(text, index)
+            if tag:
+                index = tag.end()
+                continue
         # _blocks also calls this on raw source to locate literal destinations
         # and titles. Brackets/backticks inside comments cannot close a label.
         if text.startswith("<!--", index):
