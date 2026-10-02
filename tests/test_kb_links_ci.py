@@ -184,6 +184,32 @@ def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
         ".claude/kb/source.md:2: missing.md\n",
         id="quoted-heading-backticks-crlf-preserve-ci-failure",
     ),
+    pytest.param(
+        "-     [code](missing-code.md)\n",
+        "",
+        id="list-opening-indented-code-passes-ci",
+    ),
+    pytest.param(
+        "-     [code](missing-code.md)\r\n\r\n[real](missing.md)\r\n",
+        ".claude/kb/source.md:3: missing.md\n",
+        id="list-opening-code-preserves-real-ci-failure",
+    ),
+    pytest.param(
+        "[a]: a`b.md\n[b]: missing.md\n[c]: c`d.md\n\n[b]\n",
+        ".claude/kb/source.md:5: missing.md\n",
+        id="literal-definition-backticks-preserve-ci-failure",
+    ),
+    pytest.param(
+        "[a]: a`b.md\r\n[b]: ./missing.png?q=1#part\r\n[c]: c`d.md\r\n"
+        "\r\n![b][] [full][b]\r\n",
+        ".claude/kb/source.md:5: ./missing.png?q=1#part\n" * 2,
+        id="literal-definition-backticks-preserve-image-and-link-ci-failures",
+    ),
+    pytest.param(
+        "[a]: a`b.md\n[b]: #local\n[c]: c`d.md\n\n[b]\n",
+        "",
+        id="unused-backtick-definitions-with-valid-reference-pass-ci",
+    ),
 ])
 def test_ci_step_handles_markdown_containers(tmp_path, content, expected):
     workflow = yaml.safe_load((ROOT / WORKFLOW).read_text())
