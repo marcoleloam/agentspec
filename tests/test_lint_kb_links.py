@@ -164,6 +164,9 @@ def test_angle_bracket_prose_preserves_markdown_links(repo, source):
     '<custom+v2:opaque[hidden](hidden.md)>',
     '<user@example.invalid>',
     '</a >',
+    '<!DOCTYPE [hidden](hidden.md)>',
+    '<?pi [hidden](hidden.md)?>',
+    '<![CDATA[[hidden](hidden.md)]]>',
 ])
 def test_html_tags_and_autolinks_preserve_surrounding_links(repo, opaque):
     write(repo, '.claude/kb/source.md',
@@ -172,6 +175,33 @@ def test_html_tags_and_autolinks_preserve_surrounding_links(repo, opaque):
     assert (result.returncode, result.stdout, result.stderr) == (
         1, '.claude/kb/source.md:1: before.md\n'
            '.claude/kb/source.md:1: after.md\n', '',
+    )
+
+
+@pytest.mark.parametrize('source,targets', [
+    ('[a [b](b.md)](a.md)', ['b.md']),
+    ('[![b](b.png)](a.md)', ['a.md', 'b.png']),
+    ('![a [b](b.md)](a.png)', ['a.png']),
+    ('![![b](b.png)](a.png)', ['a.png']),
+    ('[a [![b](b.png)](c.md)](a.md)', ['c.md', 'b.png']),
+    ('[a [b](b.md)]([c](c.md))', ['b.md', 'c.md']),
+])
+def test_nested_links_follow_commonmark_precedence(repo, source, targets):
+    write(repo, '.claude/kb/source.md', source + '\n')
+    result = run(repo)
+    expected = ''.join(f'.claude/kb/source.md:1: {target}\n' for target in targets)
+    assert (result.returncode, result.stdout, result.stderr) == (1, expected, '')
+
+
+@pytest.mark.parametrize('source', [
+    '> paragraph\n>\n> \t[link](missing.md)\n',
+    '- paragraph\n\n  \t[link](missing.md)\n',
+])
+def test_tab_after_container_prefix_is_visible(repo, source):
+    write(repo, '.claude/kb/source.md', source)
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:3: missing.md\n', '',
     )
 
 
@@ -360,6 +390,21 @@ def test_list_opening_padding_distinguishes_paragraphs_from_code(repo, prefix, m
     )
 
 
+@pytest.mark.parametrize('prefix,visible', [
+    ('-\t  ', False), ('- \t  ', False), ('  - \t  ', False),
+    ('-\t ', True), ('- \t ', True), ('> -\t  ', True),
+    ('- -\t  ', True), ('12)\t  ', True),
+])
+def test_tab_padding_after_list_marker_uses_visual_columns(repo, prefix, visible):
+    write(repo, '.claude/kb/source.md', prefix + '[link](missing.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if visible else 0,
+        '.claude/kb/source.md:1: missing.md\n' if visible else '',
+        '',
+    )
+
+
 @pytest.mark.parametrize("literal,target", [
     ('a`b.md', 'a`b.md'), ('<a`b.md>', 'a`b.md'),
     ('a.md "literal ` title"', 'a.md'),
@@ -445,6 +490,38 @@ def test_heading_code_keeps_inline_syntax_and_following_definitions(repo, prefix
     )
 
 
+@pytest.mark.parametrize('underline', ['===', '---'])
+@pytest.mark.parametrize('opening,continuation', [
+    ('', ''), ('> ', '> '), ('- ', '  '), ('> - ', '>   '),
+])
+def test_unclosed_code_span_in_setext_heading_ends_at_line_break(
+        repo, opening, continuation, underline):
+    write(repo, '.claude/kb/source.md',
+          opening + '`heading\n' + continuation + underline + '\n'
+          + continuation + '[x](missing.md)\n' + continuation + '`\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:3: missing.md\n', '',
+    )
+
+
+def test_indented_paragraph_continuation_is_not_setext_heading(repo):
+    write(repo, '.claude/kb/source.md',
+          'foo\n    `heading\n    ===\n[x](missing.md)\n`\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+def test_setext_heading_in_nested_list_continuation(repo):
+    write(repo, '.claude/kb/source.md',
+          '- - intro\n    `heading\n    ===\n'
+          '    [x](missing.md)\n    `\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:4: missing.md\n', '',
+    )
+
+
 @pytest.mark.parametrize("title", ['"<!--"', "'<!--'", '(<!--)', '"first\n<!-- last"'])
 @pytest.mark.parametrize("image", ["", "!"])
 @pytest.mark.parametrize("reference", [False, True])
@@ -478,10 +555,16 @@ def test_indented_paragraph_continuation_is_not_code(repo, indent, prefix):
         '', '[after](other.md)', '',
     ]))
     result = run(repo)
+    expected = ('.claude/kb/source.md:2: missing.md\n'
+                '.claude/kb/source.md:3: missing.png\n')
+    # A tab after a quote/list marker starts at the marker's original column.
+    # One tab, or one space then a tab, may add fewer than four columns.
+    if prefix and indent in ('\t', ' \t'):
+        expected += ('.claude/kb/source.md:5: ignored.md\n'
+                     '.claude/kb/source.md:6: ignored.png\n')
+    expected += '.claude/kb/source.md:8: other.md\n'
     assert (result.returncode, result.stdout, result.stderr) == (
-        1, '.claude/kb/source.md:2: missing.md\n'
-           '.claude/kb/source.md:3: missing.png\n'
-           '.claude/kb/source.md:8: other.md\n', '',
+        1, expected, '',
     )
 
 

@@ -32,6 +32,9 @@ _HTML_TAG = re.compile(
     r"(?:[ \t\n]+[A-Za-z_:][A-Za-z0-9_.:-]*"
     r'''(?:[ \t\n]*=[ \t\n]*(?:[^ \t\n\"'=<>`]+|"[^"]*"|'[^']*'))?)*'''
     r"[ \t\n]*/?>"
+    r"|<![A-Z]+[ \t\n]+[^>]*>"
+    r"|<\?[^<>]*\?>"
+    r"|<!\[CDATA\[[\s\S]*?\]\]>"
 )
 _AUTOLINK = re.compile(
     r"<[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*>"
@@ -59,6 +62,56 @@ def _label(text: str) -> str:
 def _hide(text: str, marker: str = "\0") -> str:
     """Mask ignored syntax while preserving offsets and newline positions."""
     return "".join("\n" if char == "\n" else marker for char in text)
+
+
+def _indent_columns(line: str, content: str) -> int:
+    """Count leading whitespace columns from the original tab position."""
+    column = 0
+    for char in line[:len(line) - len(content)]:
+        column += 4 - column % 4 if char == "\t" else 1
+    start = column
+    for char in content:
+        if char == " ":
+            column += 1
+        elif char == "\t":
+            column += 4 - column % 4
+        else:
+            break
+    return column - start
+
+
+def _tab_list_code_prefix(line: str, content: str) -> int | None:
+    """Find excess list padding whose tab width starts indented code."""
+    marker = re.match(
+        r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]+)(?=\S)", content)
+    if marker is None or "\t" not in marker[1]:
+        return None
+    prefix = line[:len(line) - len(content)] + content[:marker.start(1)]
+    column = len(prefix.expandtabs(4))
+    before_padding = column
+    for char in marker[1]:
+        column += 4 - column % 4 if char == "\t" else 1
+    return marker.start(1) + 1 if column - before_padding > 4 else None
+
+
+def _setext_underline(text: str, start: int, containers: list[tuple[str, int]]) -> bool:
+    """Whether the next physical line is a setext underline in these containers."""
+    if start >= len(text):
+        return False
+    end = text.find("\n", start)
+    line = text[start:end if end >= 0 else len(text)].rstrip("\r")
+    for kind, width in containers:
+        if kind == "quote":
+            prefix = re.match(r" {0,3}>[ \t]?", line)
+            if prefix is None:
+                return False
+            line = line[prefix.end():]
+        else:
+            indentation = len(line) - len(line.lstrip(" "))
+            if indentation < width:
+                return False
+            line = line[width:]
+    return re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*", line) is not None
 
 
 def _blocks(text: str) -> str:
@@ -103,21 +156,31 @@ def _blocks(text: str) -> str:
             paragraph = False
             offset += len(line)
             continue
+        indented = _indent_columns(line, content) >= 4
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
             # continuation indentation is relative to its enclosing container.
+            tab_list_code = False
             while True:
                 quote = re.match(r" {0,3}>[ \t]?", content)
+                tab_width = None if quote else _tab_list_code_prefix(line, content)
                 # With more than four padding spaces, only the first belongs
                 # to the marker; the remainder introduces indented code.
                 marker = quote or re.match(
                     r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
                     r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", content)
-                if marker is None:
+                if marker is None and tab_width is None:
                     break
+                width = tab_width if tab_width is not None else marker.end()
+                tab_list_code |= tab_width is not None
                 paragraph = False
-                containers.append(("quote" if quote else "list", marker.end()))
-                content = content[marker.end():]
+                containers.append(("quote" if quote else "list", width))
+                content = content[width:]
+            indented = _indent_columns(line, content) >= 4
+            if tab_list_code:
+                lines.append(_hide(line))
+                offset += len(line)
+                continue
             opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", content)
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
                 fence = (opening[1][0], len(opening[1]), len(containers))
@@ -126,13 +189,17 @@ def _blocks(text: str) -> str:
                 offset += len(line)
                 continue
             # Indented code cannot interrupt an open paragraph.
-            if not paragraph and content.expandtabs(4).startswith("    "):
+            if not paragraph and indented:
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
-        # ATX headings end on this line, including inside quotes/lists. Bound
-        # inline parsing before container prefixes are neutralized below.
-        heading = not comment and re.match(r" {0,3}#{1,6}(?:[ \t]|$)", content) is not None
+        # ATX and setext headings end on this line, including inside
+        # quotes/lists. Bound inline parsing before neutralizing prefixes.
+        heading = not comment and (
+            re.match(r" {0,3}#{1,6}(?:[ \t]|$)", content) is not None
+            or (bool(content.strip()) and _setext_underline(
+                text, offset + len(line), containers))
+        )
         inline_source = text[:offset + len(line)] if heading else text
         # Spaces neutralize quote/list markers in definitions and multiline
         # labels without changing offsets. Indented code was masked above.
@@ -191,7 +258,7 @@ def _blocks(text: str) -> str:
         visible = result.replace("\0", "").replace("\x01", "").strip()
         # These complete blocks do not leave a paragraph open for the next
         # indented line. Container prefixes have already been neutralized.
-        complete_block = not content.expandtabs(4).startswith("    ") and (
+        complete_block = not indented and (
             re.match(r"#{1,6}(?:\s|$)", visible)
             or re.fullmatch(r"(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,}", visible)
             or (paragraph and re.fullmatch(r"=+|-+", visible))
@@ -433,10 +500,18 @@ def _links(text: str, definitions: dict[str, str], offset: int = 0) -> list[Link
                 parsed = target, end
         if parsed is not None:
             target, end = parsed
-            links.append(Link(offset + index, target))
-            # Images in a link's label are occurrences in their own right.
-            links.extend(_links(label, definitions, offset + bracket + 1))
-            index = end
+            image = bracket != index
+            # Image alt text is plain text. A link label may contain images,
+            # but an inner link takes precedence over its outer link.
+            inner_offset = offset + bracket + 1
+            inner = [] if image else _links(label, definitions, inner_offset)
+            nested_link = any(label[link.position - inner_offset] == "[" for link in inner)
+            if not nested_link:
+                links.append(Link(offset + index, target))
+            links.extend(inner)
+            # When the outer link is invalid, its would-be destination is
+            # ordinary text and can contain another Markdown link.
+            index = close + 1 if nested_link else end
         else:
             index += 1
     return links
