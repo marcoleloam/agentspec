@@ -12,8 +12,8 @@ _BASE = 'eJzFV99z2kYQfmeG/2EHJ2PwxCht3tzGExnklFYgIgknbSYDZ+lsq5F0+O4EdjL+37t3J8Q
 
 
 def test_authorized_replacement_matches_base_byte_for_byte():
-    code = 'import base64,json,pathlib; p=pathlib.Path(".claude/kb/lakeflow/patterns/sql-tables.md"); print(json.dumps({"bytes":base64.b64encode(p.read_bytes()).decode(),"symlink":p.is_symlink()}))'
-    result = subprocess.run([os.environ['FACTORY_CANDIDATE'], sys.executable, '-c', code], capture_output=True, text=True, timeout=60)
+    code = 'import base64,json,pathlib; print(json.dumps([{"path":p.as_posix(),"bytes":base64.b64encode(p.read_bytes()).decode(),"symlink":p.is_symlink()} for base in (".claude/kb","plugin/kb","plugin-grok/kb") for p in [pathlib.Path(base)/"lakeflow/patterns/sql-tables.md"]]))'
+    result = subprocess.run(([os.environ['FACTORY_CANDIDATE']] if os.environ.get('FACTORY_CANDIDATE') else []) + [sys.executable, '-c', code], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     data = json.loads(result.stdout)
     original = zlib.decompress(base64.b64decode(_BASE))
@@ -21,8 +21,10 @@ def test_authorized_replacement_matches_base_byte_for_byte():
     new = b'[CDC SQL Syntax](cdc-apply-changes.md)'
     assert original.count(old) == 1
     expected = original.replace(old, new)
-    actual = base64.b64decode(data['bytes'])
-    assert not data['symlink'], data
-    assert actual == expected, 'Only the authorized literal replacement may change base bytes'
-    assert hashlib.sha256(actual).hexdigest() == 'c2020a1112a86caf0c30281be8ec7ec62831ef28831a167e5cff230d0f687de9'
-    assert actual.count(b'\r\n') == actual.count(b'\n') == 182
+    assert len(data) == 3, data
+    for entry in data:
+        actual = base64.b64decode(entry['bytes'])
+        assert not entry['symlink'], entry
+        assert actual == expected, (entry['path'], 'Only the authorized literal replacement may change base bytes')
+        assert hashlib.sha256(actual).hexdigest() == 'c2020a1112a86caf0c30281be8ec7ec62831ef28831a167e5cff230d0f687de9', entry['path']
+        assert actual.count(b'\r\n') == actual.count(b'\n') == 182, entry['path']

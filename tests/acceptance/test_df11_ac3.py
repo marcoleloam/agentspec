@@ -11,8 +11,15 @@ with tempfile.TemporaryDirectory(prefix='.df11-', dir=source) as temporary:
     work = pathlib.Path(temporary)
     root = work / 'repo'
     def ignore(directory, names):
-        return [n for n in names if n in {'.git', '.venv', '__pycache__', 'node_modules', '.pytest_cache', 'acceptance'} or n.startswith('.df11-')]
+        ignored = [n for n in names if n in {'.git', '.venv', '__pycache__', 'node_modules', '.pytest_cache', 'acceptance'} or n.startswith('.df11-')]
+        if pathlib.Path(directory) == source / '.claude':
+            ignored.extend(n for n in ('agents', 'commands') if n in names)
+        return ignored
     shutil.copytree(source, root, symlinks=True, ignore=ignore)
+    for name in ('agents', 'commands'):
+        original = source / '.claude' / name
+        if original.exists():
+            (root / '.claude' / name).symlink_to(original, target_is_directory=True)
     if (source / '.venv').is_dir():
         (root / '.venv').symlink_to(source / '.venv', target_is_directory=True)
     plugin = work / 'df11_observer.py'
@@ -47,8 +54,21 @@ with tempfile.TemporaryDirectory(prefix='.df11-', dir=source) as temporary:
 '''
 
 
+def test_requirements_dev_appends_only_pyyaml():
+    base = (
+        b'# Dev/test dependencies for the root pytest suite and the /eval gate.\n'
+        b'# Installed into the project virtualenv by `make venv` (.venv/, gitignored).\n'
+        b'pytest>=8.3\n'
+    )
+    code = 'import pathlib, sys; sys.stdout.buffer.write(pathlib.Path("requirements-dev.txt").read_bytes())'
+    command = ([os.environ['FACTORY_CANDIDATE']] if os.environ.get('FACTORY_CANDIDATE') else []) + [sys.executable, '-c', code]
+    result = subprocess.run(command, capture_output=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == base + b'PyYAML>=6.0\n', result.stdout
+
+
 def test_make_test_passes_and_detects_an_always_successful_linter():
-    result = subprocess.run([os.environ['FACTORY_CANDIDATE'], sys.executable, '-c', _DRIVER], capture_output=True, text=True, timeout=600)
+    result = subprocess.run(([os.environ['FACTORY_CANDIDATE']] if os.environ.get('FACTORY_CANDIDATE') else []) + [sys.executable, '-c', _DRIVER], capture_output=True, text=True, timeout=600)
     assert result.returncode == 0, result.stdout + result.stderr
     data = json.loads(result.stdout)
     assert data['healthy']['code'] == 0, data['healthy']['output']
