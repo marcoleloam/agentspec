@@ -95,6 +95,22 @@ def test_ci_lints_real_checkout_kb():
         id="comment-marker-in-title-fails-ci",
     ),
     pytest.param(
+        '<a title="<!--">text</a>\n\n[real](missing.md)\n',
+        ".claude/kb/source.md:3: missing.md\n",
+        id="comment-marker-in-html-attribute-fails-ci",
+    ),
+    pytest.param(
+        "<a title='<!--'>text</a>\n\n[real](missing.md)\n",
+        ".claude/kb/source.md:3: missing.md\n",
+        id="comment-marker-in-single-quoted-html-attribute-fails-ci",
+    ),
+    pytest.param(
+        '<a title="first line\n<!-- [hidden](hidden.md)">text</a>\n\n'
+        '[real](missing.md)\n<!-- [ignored](ignored.md) --> [after](after.md)\n',
+        ".claude/kb/source.md:4: missing.md\n.claude/kb/source.md:5: after.md\n",
+        id="multiline-html-attribute-preserves-real-ci-failures",
+    ),
+    pytest.param(
         "paragraph\n    [x](missing.md)\n",
         ".claude/kb/source.md:2: missing.md\n",
         id="indented-paragraph-continuation-fails-ci",
