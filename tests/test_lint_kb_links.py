@@ -323,7 +323,7 @@ def test_comment_markers_in_titles_are_literal(repo, title, image, reference):
     )
 
 
-@pytest.mark.parametrize("indent", ['    ', '\t', '        '])
+@pytest.mark.parametrize("indent", ['    ', '\t', '        ', ' \t', '  \t', '   \t'])
 @pytest.mark.parametrize("prefix", ['', '> ', '- '])
 def test_indented_paragraph_continuation_is_not_code(repo, indent, prefix):
     continuation = '  ' if prefix == '- ' else prefix
@@ -346,8 +346,9 @@ def test_indented_paragraph_continuation_is_not_code(repo, indent, prefix):
 
 @pytest.mark.parametrize("block", ['', '# Heading\n', '---\n', 'Heading\n===\n',
                                    '[ref]: target.md\n', '```\ncode\n```\n'])
-def test_indented_code_after_complete_block_is_ignored(repo, block):
-    write(repo, '.claude/kb/source.md', block + '    [code](ignored.md)\n')
+@pytest.mark.parametrize("indent", ['    ', ' \t', '  \t', '   \t'])
+def test_indented_code_after_complete_block_is_ignored(repo, block, indent):
+    write(repo, '.claude/kb/source.md', block + indent + '[code](ignored.md)\n')
     result = run(repo)
     assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
 
@@ -360,6 +361,26 @@ def test_heading_like_paragraph_text_does_not_start_indented_code(repo, start):
     line = start.count('\n') + 1
     assert (result.returncode, result.stdout, result.stderr) == (
         1, f'.claude/kb/source.md:{line}: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("image", ['', '!'])
+@pytest.mark.parametrize("suffix", ['(./missing.md?q=1#part "<!-- literal -->")', '[ref]'])
+@pytest.mark.parametrize("comment", [
+    '<!-- ignored -->',
+    '<!-- [hidden](hidden.md) ] ` -->',
+    '<!-- multiline\n[hidden](hidden.md) [ -->',
+])
+def test_comments_in_link_labels_preserve_occurrences(repo, image, suffix, comment):
+    source = (f'{image}[text {comment}]{suffix}\n'
+              '[after](after.md)\n\n'
+              '[ref]: ./missing.md?q=1#part\n')
+    write(repo, '.claude/kb/source.md', source.replace('\n', '\r\n'))
+    result = run(repo)
+    after_line = comment.count('\n') + 2
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: ./missing.md?q=1#part\n'
+           f'.claude/kb/source.md:{after_line}: after.md\n', '',
     )
 
 

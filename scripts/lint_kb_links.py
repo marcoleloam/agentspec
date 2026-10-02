@@ -40,9 +40,9 @@ def _label(text: str) -> str:
     return " ".join(_unescape(text).split()).casefold()
 
 
-def _hide(text: str) -> str:
+def _hide(text: str, marker: str = "\0") -> str:
     """Mask ignored syntax while preserving offsets and newline positions."""
-    return "".join("\n" if char == "\n" else "\0" for char in text)
+    return "".join("\n" if char == "\n" else marker for char in text)
 
 
 def _blocks(text: str) -> str:
@@ -107,7 +107,7 @@ def _blocks(text: str) -> str:
                 offset += len(line)
                 continue
             # Indented code cannot interrupt an open paragraph.
-            if not paragraph and content.startswith(("    ", "\t")):
+            if not paragraph and content.expandtabs(4).startswith("    "):
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
@@ -128,7 +128,9 @@ def _blocks(text: str) -> str:
             if comment:
                 end = line.find("-->", index)
                 end = len(line) if end < 0 else end + 3
-                result += _hide(line[index:end])
+                # Comments are inline content, so a surrounding link label
+                # may cross them. Keep block boundaries (NUL) distinct.
+                result += _hide(line[index:end], "\x01")
                 comment = not line[index:end].endswith("-->")
             else:
                 # Destinations and titles are literal syntax: comment markers
@@ -160,10 +162,10 @@ def _blocks(text: str) -> str:
                     result += line[index:end]
             index = end
         lines.append(result)
-        visible = result.replace("\0", "").strip()
+        visible = result.replace("\0", "").replace("\x01", "").strip()
         # These complete blocks do not leave a paragraph open for the next
         # indented line. Container prefixes have already been neutralized.
-        complete_block = not content.startswith(("    ", "\t")) and (
+        complete_block = not content.expandtabs(4).startswith("    ") and (
             re.match(r"#{1,6}(?:\s|$)", visible)
             or re.fullmatch(r"(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,}", visible)
             or (paragraph and re.fullmatch(r"=+|-+", visible))
@@ -192,7 +194,7 @@ def _destination(text: str, index: int) -> tuple[str, int] | None:
                 continue
             if char == ">":
                 return text[start:index], index + 1
-            if char in "<\n\0":
+            if char in "<\n\0\x01":
                 return None
             index += 1
         return None
@@ -202,7 +204,7 @@ def _destination(text: str, index: int) -> tuple[str, int] | None:
         if char == "\\" and index + 1 < len(text) and text[index + 1] in string.punctuation:
             index += 2
             continue
-        if char.isspace() or char == "\0":
+        if char.isspace() or char in "\0\x01":
             break
         if char == "(":
             depth += 1
@@ -229,7 +231,7 @@ def _title(text: str, index: int) -> int | None:
             continue
         if text[index] == closing:
             return index + 1
-        if text[index] == "\0" or (closing == ")" and text[index] == "("):
+        if text[index] in "\0\x01" or (closing == ")" and text[index] == "("):
             return None
         index += 1
     return None
@@ -270,7 +272,7 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
             index = end if end is not None else index + len(re.match(r"`+", text[index:])[0])
         else:
             index += 1
-    pattern = re.compile(r"^[ \t]*\[((?:\\.|[^\[\]\\\0])+)\]:[ \t]*", re.M)
+    pattern = re.compile(r"^[ \t]*\[((?:\\.|[^\[\]\\\0\x01])+)\]:[ \t]*", re.M)
     for match in pattern.finditer(text):
         # Reference labels may span lines, but cannot cross a blank line.
         if re.search(r"\n[ \t]*\n", match[1]):
@@ -298,7 +300,7 @@ def _code_end(text: str, index: int) -> int | None:
     start = index + len(run)
     # Inline code can span soft line breaks, but not separate paragraphs or
     # masked blocks. Include quote-only blank lines before block normalization.
-    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|\0", text[start:])
+    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]", text[start:])
     limit = start + boundary.start() if boundary else len(text)
     # Only a delimiter with the exact same number of backticks closes a span.
     closing = re.search(r"(?<!`)" + run + r"(?!`)", text[start:limit])
@@ -310,6 +312,14 @@ def _bracket_end(text: str, index: int) -> int | None:
     index += 1
     while index < len(text):
         char = text[index]
+        # _blocks also calls this on raw source to locate literal destinations
+        # and titles. Brackets/backticks inside comments cannot close a label.
+        if text.startswith("<!--", index):
+            end = text.find("-->", index + 4)
+            if end < 0:
+                return None
+            index = end + 3
+            continue
         if char == "\\" and index + 1 < len(text) and text[index + 1] in string.punctuation:
             index += 2
             continue
