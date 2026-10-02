@@ -179,4 +179,4 @@ FROM STREAM read_files("${source_path}orders/", format => "json")
 
 - [SQL Streaming Patterns](sql-streaming.md)
 - [Data Quality Expectations](expectations.md)
-- [CDC SQL Syntax](cdc-sql.md)
+- [CDC SQL Syntax](cdc-apply-changes.md)

@@ -1,0 +1,189 @@
+"""Exercise the public KB lint command in small, isolated repositories."""
+
+from pathlib import Path
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import pytest
+
+
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts/lint_kb_links.py"
+
+
+@pytest.fixture
+def repo():
+    # Explicitly use TMPDIR, including when pytest's --basetemp is elsewhere.
+    with tempfile.TemporaryDirectory(prefix="kb-links-", dir=os.environ.get("TMPDIR")) as temporary:
+        root = Path(temporary) / "repo"
+        (root / ".claude/kb").mkdir(parents=True)
+        (root / "scripts").mkdir()
+        shutil.copyfile(SCRIPT, root / "scripts/lint_kb_links.py")
+        yield root
+
+
+def write(repo, path, content=""):
+    target = repo / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(content.encode("utf-8"))
+    return target
+
+
+def run(repo, *args):
+    return subprocess.run(
+        [sys.executable, "scripts/lint_kb_links.py", *args],
+        cwd=repo, capture_output=True, text=True, timeout=20,
+    )
+
+
+def test_relative_paths_encoding_queries_and_directories(repo):
+    write(repo, "docs/guide.md")
+    write(repo, "docs/space name.md")
+    write(repo, "docs/question?hash#.md")
+    write(repo, "docs/literal%20name.md")
+    (repo / "docs/assets").mkdir()
+    valid = [
+        "../../../docs/guide.md", "../../../docs/guide.md#not-an-anchor",
+        "../../../docs/space%20name.md?download#section",
+        "../../../docs/question%3Fhash%23.md?q#fragment",
+        "../../../docs/literal%2520name.md", "../../../docs/assets",
+        "../../../docs/assets/", "#local", "?query", "",
+    ]
+    invalid = ["./missing.md?q#section", "missing.md#section", "lost/",
+               "../../../docs/literal%20name.md", "../../../../outside.md",
+               "%2e%2e/%2e%2e/%2e%2e/%2e%2e/outside.md", "/etc/passwd"]
+    source = ".claude/kb/deep/source.md"
+    write(repo, source, "".join(f"[link]({path})\n" for path in valid + invalid))
+    result = run(repo)
+    assert result.returncode == 1
+    assert result.stdout == "".join(f"{source}:{i}: {path}\n" for i, path in enumerate(invalid, len(valid) + 1))
+    assert result.stderr == ""
+    write(repo, source, "".join(f"[link]({path})\n" for path in valid))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_syntax_titles_escapes_references_and_crlf(repo):
+    write(repo, ".claude/kb/present(v2).md")
+    source = ".claude/kb/source.md"
+    write(repo, source, "\r\n".join([
+        '[inline](./lost.md?q=1#part "title") ![image](<space name.png> \'title\')',
+        '[balanced](absent(v2).md (title)) [escaped](present\\(v2\\).md)',
+        '[full][ Foo   BAR ] [collapsed][] [shortcut] ![image ref][foo bar]',
+        '[multiline', 'label](multi.md)',
+        '[foo bar]: <refs/lost.md> "title"',
+        '[collapsed]: collapsed.md', '[shortcut]: shortcut.md',
+        '[unused]: unused.md', '[undefined] [x][undefined]',
+        '[FOO BAR]: ignored-duplicate.md',
+        '[full again][foo\tbar]',
+        '[Straße]: unicode.md', '[label][STRASSE]', '',
+    ]))
+    result = run(repo)
+    expected = [(1, "./lost.md?q=1#part"), (1, "space name.png"),
+                (2, "absent(v2).md"), (3, "refs/lost.md"), (3, "collapsed.md"),
+                (3, "shortcut.md"), (3, "refs/lost.md"), (4, "multi.md"),
+                (12, "refs/lost.md"), (14, "unicode.md")]
+    assert result.returncode == 1
+    assert result.stdout == "".join(f"{source}:{line}: {target}\n" for line, target in expected)
+    assert result.stderr == ""
+
+
+def test_ignored_constructs_and_network_destinations(repo):
+    write(repo, ".claude/kb/ignored.md", "\n".join([
+        '`[code](lost.md)` ``[tick ` code](lost.md)``',
+        '```markdown', '[fenced](lost.md)', '````',
+        '~~~', '![fenced](lost.png)', '~~~',
+        '', '    [indent](lost.md)', '\t[indent](lost.md)', '',
+        '<!-- [comment](lost.md)', '[comment](lost.md) -->',
+        '<a href="lost.md" title="[text](lost.md)">text</a><img src="lost.png">',
+        '[[wiki]] [[wiki|label]] <https://example.invalid>',
+        r'\[escaped](lost.md)', r'\![escaped image](#local)',
+        '[web](https://example.invalid/lost.md)', '[mail](mailto:x@example.invalid)',
+        '[scheme](custom+v2:opaque) [host](//example.invalid/lost.md)',
+        '[fragment](#whatever)', '[undefined][unknown]', '[unknown]',
+        '[unused]: missing.md', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_sources_order_duplicates_and_nested_images(repo):
+    write(repo, ".claude/kb/z.MD", "[one](lost.md) [two](lost.md)\n")
+    write(repo, ".claude/kb/a/deep.md", "[![nested](lost.png)](lost.md)\n")
+    for path in ("docs/outside.md", ".claude/kb/x.Md", ".claude/kb/a.md.template", ".claude/kb/x.txt"):
+        write(repo, path, "[ignored](lost.md)")
+    (repo / ".claude/kb/directory.md").mkdir()
+    result = run(repo)
+    assert result.returncode == 1
+    assert result.stdout == (
+        ".claude/kb/a/deep.md:1: lost.md\n.claude/kb/a/deep.md:1: lost.png\n"
+        ".claude/kb/z.MD:1: lost.md\n.claude/kb/z.MD:1: lost.md\n"
+    )
+
+
+def test_code_spans_do_not_define_references_or_start_comments(repo):
+    write(repo, ".claude/kb/source.md", "\n".join([
+        '`<!--` [broken](lost.md)',
+        '`multiline code', '[hidden]: hidden.md', '`',
+        '[hidden]', '[label with `code [text]` inside](other.md)',
+        '[actual]: actual.md', '[actual]',
+    ]))
+    result = run(repo)
+    assert result.returncode == 1
+    assert result.stdout == (
+        ".claude/kb/source.md:1: lost.md\n.claude/kb/source.md:6: other.md\n"
+        ".claude/kb/source.md:8: actual.md\n"
+    )
+    assert result.stderr == ""
+
+
+def test_symlinks_resolve_inside_repo_but_never_expand_scan(repo):
+    write(repo, "docs/real.md", "[not scanned](absent.md)")
+    outside = repo.parent / "outside.md"
+    outside.write_text("[outside](absent.md)")
+    kb = repo / ".claude/kb"
+    (kb / "alias.md").symlink_to(repo / "docs/real.md")
+    (kb / "alias-dir").symlink_to(repo / "docs", target_is_directory=True)
+    (kb / "outside.md").symlink_to(outside)
+    (kb / "outside-dir").symlink_to(repo.parent, target_is_directory=True)
+    (kb / "dangling.md").symlink_to(kb / "nonexistent")
+    (kb / "cycle.md").symlink_to(kb / "cycle.md")
+    write(repo, ".claude/kb/source.md", "\n".join([
+        '[valid](alias.md) [valid](alias-dir/) [valid](alias-dir/real.md)',
+        '[bad](outside.md) [bad](outside-dir/outside.md)',
+        '[bad](dangling.md) [bad](cycle.md)',
+    ]))
+    result = run(repo)
+    assert result.returncode == 1
+    assert result.stdout == (
+        ".claude/kb/source.md:2: outside.md\n.claude/kb/source.md:2: outside-dir/outside.md\n"
+        ".claude/kb/source.md:3: dangling.md\n.claude/kb/source.md:3: cycle.md\n"
+    )
+    assert result.stderr == ""
+
+
+@pytest.mark.parametrize("args", [("somewhere",), ("--unknown",), ("--root", ".")])
+def test_invalid_invocations(repo, args):
+    result = run(repo, *args)
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert result.stderr.strip()
+
+
+@pytest.mark.parametrize("failure", ["missing-kb", "invalid-utf8"])
+def test_operational_errors(repo, failure):
+    if failure == "missing-kb":
+        (repo / ".claude/kb").rmdir()
+    else:
+        (repo / ".claude/kb/source.md").write_bytes(b"\xff")
+    result = run(repo)
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "lint_kb_links:" in result.stderr
+
+
+def test_empty_kb_is_clean(repo):
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
