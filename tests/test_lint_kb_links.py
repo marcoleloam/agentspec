@@ -318,6 +318,35 @@ def test_inline_code_still_spans_soft_line_breaks(repo):
     )
 
 
+@pytest.mark.parametrize("opening,continuation", [
+    ("", ""), ("> ", "> "), ("- ", "  "), ("- > ", "  > "),
+])
+@pytest.mark.parametrize("fence,closing", [
+    ("~~~", "~~~"), ("```", "```"), ("   ~~~~python", "~~~~"),
+])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_unclosed_inline_code_cannot_close_inside_following_fence(
+        repo, opening, continuation, fence, closing, newline):
+    write(repo, '.claude/kb/source.md', newline.join([
+        opening + '`open', continuation + fence, continuation + '`',
+        continuation + closing, continuation + '[x](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:5: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("line", ["~~", "```invalid`info", "    ~~~", r"\~~~"])
+def test_non_fences_do_not_interrupt_multiline_inline_code(repo, line):
+    write(repo, '.claude/kb/source.md',
+          f'``open\n{line}\n[hidden](hidden.md)\n`` [real](missing.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:4: missing.md\n', '',
+    )
+
+
 @pytest.mark.parametrize("prefix", ["> ", "> > ", "  > > "])
 def test_reference_definitions_inside_quotes(repo, prefix):
     write(repo, ".claude/kb/source.md", "\r\n".join([

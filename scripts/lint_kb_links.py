@@ -169,7 +169,7 @@ def _blocks(text: str) -> str:
                         code_until = tag.end()
                         continue
                 if line[index] == "[":
-                    close = _bracket_end(inline_source, position)
+                    close = _bracket_end(inline_source, position, containers)
                     if close is not None:
                         suffix = close + 1
                         if text[suffix:suffix + 1] == "(":
@@ -186,7 +186,7 @@ def _blocks(text: str) -> str:
                 else:
                     end += 1
                     if line[index] == "`":
-                        code_until = _code_end(inline_source, position) or 0
+                        code_until = _code_end(inline_source, position, containers) or 0
                         end = index + len(re.match(r"`+", line[index:])[0])
                     elif line[index] == "\\" and end < len(line) and line[end] in string.punctuation:
                         end += 1
@@ -338,19 +338,32 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
     return "".join(masked), definitions
 
 
-def _code_end(text: str, index: int) -> int | None:
+def _code_end(text: str, index: int, containers=()) -> int | None:
     run = re.match(r"`+", text[index:])[0]
     start = index + len(run)
-    # Inline code can span soft line breaks, but not separate paragraphs or
-    # masked blocks. Include quote-only blank lines before block normalization.
-    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]", text[start:])
+    # _blocks calls this before fences have been masked. A fence interrupts
+    # a paragraph even if a preceding code delimiter is still unmatched; a
+    # backtick inside that block must never close the preceding inline span.
+    # Include container prefixes and reject backtick fences with backticks in
+    # their info string, just as _blocks does when recognizing the opening.
+    # Continuation indentation belongs to its list container, so a fence may
+    # be more than three columns from the physical start of the source line.
+    prefixes = [""]
+    for kind, width in containers:
+        prefixes.append(prefixes[-1] + (r" {0,3}>[ \t]?" if kind == "quote" else " " * width))
+    prefix = "(?:" + "|".join(prefixes) + ")"
+    fence = (r"\n" + prefix + r" {0,3}(?:(?:>[ \t]?|(?:[-+*]|[0-9]{1,9}[.)])"
+             r"[ \t]{1,4}) {0,3})*(?:`{3,}[^`\n]*|~{3,}[^\n]*)(?=\n|$)")
+    # Inline code may otherwise span soft line breaks, but not separate
+    # paragraphs or masked blocks (including quote-only blank lines).
+    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]|" + fence, text[start:])
     limit = start + boundary.start() if boundary else len(text)
     # Only a delimiter with the exact same number of backticks closes a span.
     closing = re.search(r"(?<!`)" + run + r"(?!`)", text[start:limit])
     return start + closing.end() if closing else None
 
 
-def _bracket_end(text: str, index: int) -> int | None:
+def _bracket_end(text: str, index: int, containers=()) -> int | None:
     depth = 1
     index += 1
     while index < len(text):
@@ -372,7 +385,7 @@ def _bracket_end(text: str, index: int) -> int | None:
             index += 2
             continue
         if char == "`":
-            end = _code_end(text, index)
+            end = _code_end(text, index, containers)
             if end is not None:
                 index = end
                 continue
