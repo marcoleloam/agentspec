@@ -137,6 +137,44 @@ def test_ignored_constructs_and_network_destinations(repo):
     assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
 
 
+@pytest.mark.parametrize("source", [
+    '2 < 3 and [broken](missing.md) > 1',
+    '2 < 3 and ![broken](missing.md) > 1',
+    '2 < 3 and [broken][ref] > 1\n\n[ref]: missing.md',
+    '2 < 3 and [ref][] > 1\n\n[ref]: missing.md',
+    '2 < 3 and [ref] > 1\n\n[ref]: missing.md',
+    'text <word [broken](missing.md) > text',
+    'text </word [broken](missing.md)> text',
+    'text <https://example.invalid/ [broken](missing.md)> text',
+    'text <user@example.invalid [broken](missing.md)> text',
+])
+def test_angle_bracket_prose_preserves_markdown_links(repo, source):
+    write(repo, '.claude/kb/source.md', source + '\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: missing.md\n', '',
+    )
+
+
+@pytest.mark.parametrize("opaque", [
+    '<a href="missing.md" title="[hidden](hidden.md) >">',
+    "<img src='missing.png' title='[hidden](hidden.md) <' />",
+    '<custom-element data-label="[hidden](hidden.md)" disabled>',
+    '<https://example.invalid/[hidden](hidden.md)>',
+    '<custom+v2:opaque[hidden](hidden.md)>',
+    '<user@example.invalid>',
+    '</a >',
+])
+def test_html_tags_and_autolinks_preserve_surrounding_links(repo, opaque):
+    write(repo, '.claude/kb/source.md',
+          f'[before](before.md) {opaque} [after](after.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: before.md\n'
+           '.claude/kb/source.md:1: after.md\n', '',
+    )
+
+
 def test_sources_order_duplicates_and_nested_images(repo):
     write(repo, ".claude/kb/z.MD", "[one](lost.md) [two](lost.md)\n")
     write(repo, ".claude/kb/a/deep.md", "[![nested](lost.png)](lost.md)\n")

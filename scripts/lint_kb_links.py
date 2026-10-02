@@ -24,6 +24,21 @@ from urllib.parse import unquote
 
 _ESCAPE = re.compile(r"\\([" + re.escape(string.punctuation) + r"])")
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+# Recognize Markdown's raw HTML tag grammar, including quoted attributes.
+# Arbitrary angle-bracket prose (e.g. "2 < 3 and [x](y) > 1") is not HTML.
+_HTML_TAG = re.compile(
+    r"</[A-Za-z][A-Za-z0-9-]*[ \t\n]*>"
+    r"|<[A-Za-z][A-Za-z0-9-]*"
+    r"(?:[ \t\n]+[A-Za-z_:][A-Za-z0-9_.:-]*"
+    r'''(?:[ \t\n]*=[ \t\n]*(?:[^ \t\n\"'=<>`]+|"[^"]*"|'[^']*'))?)*'''
+    r"[ \t\n]*/?>"
+)
+_AUTOLINK = re.compile(
+    r"<[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*>"
+    r"|<[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*>"
+)
 
 
 @dataclass(frozen=True)
@@ -372,9 +387,9 @@ def _links(text: str, definitions: dict[str, str], offset: int = 0) -> list[Link
             continue
         if char == "<":
             # HTML tags (including quoted attributes) and autolinks are opaque.
-            tag = re.match(r'''<(?:[^<>"']|"[^"]*"|'[^']*')*>''', text[index:])
+            tag = _HTML_TAG.match(text, index) or _AUTOLINK.match(text, index)
             if tag:
-                index += tag.end()
+                index = tag.end()
                 continue
         if text.startswith("[[", index):
             end = text.find("]]", index + 2)
