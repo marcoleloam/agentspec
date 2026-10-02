@@ -103,6 +103,26 @@ def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
 
 @pytest.mark.parametrize("content, expected", [
     pytest.param(
+        " \t[code](missing.md)\n",
+        "",
+        id="space-tab-indented-code-passes-ci",
+    ),
+    pytest.param(
+        " \t[code](missing.md)\n\n[real](real-missing.md)\n",
+        ".claude/kb/source.md:3: real-missing.md\n",
+        id="space-tab-code-preserves-real-ci-failure",
+    ),
+    pytest.param(
+        "[text <!-- ignored -->](missing.md)\n",
+        ".claude/kb/source.md:1: missing.md\n",
+        id="comment-in-link-label-fails-ci",
+    ),
+    pytest.param(
+        "[text <!-- [hidden](hidden.md) -->](#local)\n",
+        "",
+        id="comment-in-valid-link-label-passes-ci",
+    ),
+    pytest.param(
         "> [texto][ref]\n>\n> [ref]: ausente.md\n",
         ".claude/kb/source.md:1: ausente.md\n",
         id="quoted-reference-fails-ci",
