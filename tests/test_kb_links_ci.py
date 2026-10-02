@@ -118,6 +118,27 @@ def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
         "",
         id="list-code-example-passes-ci",
     ),
+    pytest.param(
+        "- > ~~~\n  > [code](missing.md)\n  > ~~~\n",
+        "",
+        id="quoted-fence-inside-list-passes-ci",
+    ),
+    pytest.param(
+        "- > ~~~\n  > [code](missing.md)\n  > ~~~\n"
+        "\n[real](real-missing.md)\n",
+        ".claude/kb/source.md:5: real-missing.md\n",
+        id="quoted-list-fence-preserves-real-ci-failure",
+    ),
+    pytest.param(
+        "`unmatched\n\n[x](missing.md)\n\n`\n",
+        ".claude/kb/source.md:3: missing.md\n",
+        id="backticks-in-separate-paragraphs-fail-ci",
+    ),
+    pytest.param(
+        "`code\n[x](missing.md)\n`\n",
+        "",
+        id="inline-code-across-soft-breaks-passes-ci",
+    ),
 ])
 def test_ci_step_handles_markdown_containers(tmp_path, content, expected):
     workflow = yaml.safe_load((ROOT / WORKFLOW).read_text())
