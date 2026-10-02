@@ -73,6 +73,42 @@ def test_ci_lints_real_checkout_kb():
     assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
 
 
+@pytest.mark.parametrize("content, expected", [
+    pytest.param(
+        "> [texto][ref]\n>\n> [ref]: ausente.md\n",
+        ".claude/kb/source.md:1: ausente.md\n",
+        id="quoted-reference-fails-ci",
+    ),
+    pytest.param(
+        "- ~~~markdown\n  [exemplo](ausente.md)\n  ~~~\n\n"
+        "[real](real-ausente.md)\n",
+        ".claude/kb/source.md:5: real-ausente.md\n",
+        id="list-fence-preserves-real-failure",
+    ),
+    pytest.param(
+        "- ~~~markdown\n  [exemplo](ausente.md)\n  ~~~\n",
+        "",
+        id="list-code-example-passes-ci",
+    ),
+])
+def test_ci_step_handles_markdown_containers(tmp_path, content, expected):
+    workflow = yaml.safe_load((ROOT / WORKFLOW).read_text())
+    step = next(step for step in workflow["jobs"]["python"]["steps"]
+                if step.get("name") == "Lint KB links")
+    (tmp_path / "scripts").mkdir()
+    shutil.copyfile(ROOT / "scripts/lint_kb_links.py", tmp_path / "scripts/lint_kb_links.py")
+    kb = tmp_path / ".claude/kb"
+    kb.mkdir(parents=True)
+    (kb / "source.md").write_bytes(content.encode("utf-8"))
+    result = subprocess.run(
+        ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=tmp_path, capture_output=True, text=True, timeout=30,
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if expected else 0, expected, "",
+    )
+
+
 @pytest.mark.parametrize("name, script", [
     ("Check agent-router drift", "generate-agent-router.py"),
     ("Check Codex agents and command skills drift", "generate-codex-plugin.py"),
