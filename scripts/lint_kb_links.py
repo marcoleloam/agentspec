@@ -120,7 +120,6 @@ def _blocks(text: str) -> str:
     comment = False
     offset = 0
     code_until = 0
-    code_kind = None
     literal_suffixes = {}
     paragraph = False
     containers = []
@@ -158,10 +157,9 @@ def _blocks(text: str) -> str:
             offset += len(line)
             continue
         indented = _indent_columns(line, content) >= 4
-        if not comment and code_until > offset and code_kind == "span":
-            # Block fences interrupt a provisional inline code span, even
-            # after new quote/list markers. Literal tags and link suffixes do
-            # not use this rule: their contents remain opaque across lines.
+        if not comment and code_until > offset:
+            # Block fences take precedence over provisional inline syntax,
+            # even after new quote/list markers on this line.
             probe = content
             probe_paragraph = paragraph
             tab_list_code = False
@@ -184,7 +182,6 @@ def _blocks(text: str) -> str:
             opening = None if tab_list_code else re.match(r" {0,3}(`{3,}|~{3,})(.*)", probe)
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
                 code_until = 0
-                code_kind = None
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
             # continuation indentation is relative to its enclosing container.
@@ -238,7 +235,6 @@ def _blocks(text: str) -> str:
         while index < len(line):
             if not comment and offset + index in literal_suffixes:
                 code_until = literal_suffixes.pop(offset + index)
-                code_kind = "literal"
             if code_until > offset + index:
                 end = min(len(line), code_until - offset)
                 result += line[index:end]
@@ -262,7 +258,6 @@ def _blocks(text: str) -> str:
                     tag = _HTML_TAG.match(text, position) or _AUTOLINK.match(text, position)
                     if tag:
                         code_until = tag.end()
-                        code_kind = "literal"
                         end = min(len(line), code_until - offset)
                         result += line[index:end]
                         index = end
@@ -286,7 +281,6 @@ def _blocks(text: str) -> str:
                     end += 1
                     if line[index] == "`":
                         code_until = _code_end(inline_source, position) or 0
-                        code_kind = "span"
                         end = index + len(re.match(r"`+", line[index:])[0])
                     elif line[index] == "\\" and end < len(line) and line[end] in string.punctuation:
                         end += 1

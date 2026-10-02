@@ -344,12 +344,13 @@ def test_fence_after_interrupting_list_is_visible(repo, marker):
     '<a title="open\n~~~\nclose">',
     '[valid](#ok "open\n~~~\nclose")',
 ])
-def test_fence_like_line_inside_literal_syntax_stays_opaque(repo, literal):
-    write(repo, '.claude/kb/source.md', literal + '\n[real](missing.md)\n')
+@pytest.mark.parametrize('closed', [False, True])
+def test_fence_line_interrupts_multiline_literal_syntax(repo, literal, closed):
+    write(repo, '.claude/kb/source.md', literal + '\n' + ('~~~\n' if closed else '')
+          + '[real](missing.md)\n')
     result = run(repo)
-    assert (result.returncode, result.stdout, result.stderr) == (
-        1, '.claude/kb/source.md:4: missing.md\n', '',
-    )
+    expected = (1, '.claude/kb/source.md:5: missing.md\n', '') if closed else (0, '', '')
+    assert (result.returncode, result.stdout, result.stderr) == expected
 
 
 @pytest.mark.parametrize("opening,continuation", [
