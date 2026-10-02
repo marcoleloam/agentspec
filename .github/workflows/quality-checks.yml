@@ -2,14 +2,16 @@ name: Quality Checks
 
 # Fast, per-PR checks that don't need the full plugin build:
 #   - Python test suite (tests/)
+#   - KB Markdown link lint
 #   - Agent-router drift check
 #   - Shell script lint (shellcheck)
-# Triggered on any change to scripts/, tests/, or shell files.
+# Triggered on relevant source, KB, test, and workflow changes.
 
 on:
   push:
-    branches: [main]
+    branches: [main, df/bf02-baseline-9de8ce4]
     paths:
+      - '.claude/kb/**'
       - 'scripts/**'
       - 'tests/**'
       - '**/*.sh'
@@ -21,8 +23,9 @@ on:
       - 'tools/spec-judge/**'
       - '.github/workflows/quality-checks.yml'
   pull_request:
-    branches: [main]
+    branches: [main, df/bf02-baseline-9de8ce4]
     paths:
+      - '.claude/kb/**'
       - 'scripts/**'
       - 'tests/**'
       - '**/*.sh'
@@ -51,6 +54,10 @@ jobs:
 
       - name: Run test suite
         run: python3 -m pytest tests/ -v
+
+      - name: Lint KB links
+        working-directory: .
+        run: python3 scripts/lint_kb_links.py
 
       - name: Check agent-router drift
         run: python3 scripts/generate-agent-router.py --check
