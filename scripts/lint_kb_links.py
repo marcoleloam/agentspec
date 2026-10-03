@@ -30,11 +30,11 @@ _HTML_TAG = re.compile(
     r"</[A-Za-z][A-Za-z0-9-]*[ \t\n]*>"
     r"|<[A-Za-z][A-Za-z0-9-]*"
     r"(?:[ \t\n]+[A-Za-z_:][A-Za-z0-9_.:-]*"
-    r'''(?:[ \t\n]*=[ \t\n]*(?:[^ \t\n\"'=<>`]+|"[^"]*"|'[^']*'))?)*'''
+    r'''(?:[ \t\n]*=[ \t\n]*(?:[^ \t\n\"'=<>`\0]+|"[^"\0]*"|'[^'\0]*'))?)*'''
     r"[ \t\n]*/?>"
-    r"|<![A-Z]+[ \t\n]+[^>]*>"
+    r"|<![A-Z]+[ \t\n]+[^>\0]*>"
     r"|<\?[^<>]*\?>"
-    r"|<!\[CDATA\[[\s\S]*?\]\]>"
+    r"|<!\[CDATA\[[^\0]*?\]\]>"
 )
 _AUTOLINK = re.compile(
     r"<[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*>"
@@ -139,7 +139,7 @@ def _blocks(text: str) -> str:
         indented = _indent_columns(line, content) >= 4
         if not comment and code_until > offset:
             # An inline span is provisional until block syntax is known. A
-            # fence can start after fresh quote/list markers on this line.
+            # fence or ATX heading can start after fresh quote/list markers.
             probe = content
             probe_paragraph = paragraph
             tab_list_code = False
@@ -160,7 +160,9 @@ def _blocks(text: str) -> str:
                 probe = probe[tab_width if tab_width is not None else marker.end():]
                 probe_paragraph = False
             opening = None if tab_list_code else re.match(r" {0,3}(`{3,}|~{3,})(.*)", probe)
-            if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+            heading = not tab_list_code and re.match(
+                r" {0,3}#{1,6}(?:[ \t]|$)", probe)
+            if (opening and not (opening[1][0] == "`" and "`" in opening[2])) or heading:
                 code_until = 0
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
@@ -210,6 +212,11 @@ def _blocks(text: str) -> str:
         # inline parsing before container prefixes are neutralized below.
         heading = not comment and re.match(r" {0,3}#{1,6}(?:[ \t]|$)", content) is not None
         inline_source = text[:offset + len(line)] if heading else text
+        # ATX headings interrupt paragraphs. Break the preceding inline
+        # source too, so later link parsing cannot pair an earlier backtick
+        # with one on the heading line.
+        if heading and lines and lines[-1].endswith("\n"):
+            lines[-1] = lines[-1][:-1] + "\0"
         # Spaces neutralize quote/list markers in definitions and multiline
         # labels without changing offsets. Indented code was masked above.
         line = " " * (len(line) - len(content)) + content

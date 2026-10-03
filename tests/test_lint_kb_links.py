@@ -613,6 +613,67 @@ def test_unclosed_heading_code_does_not_hide_following_links(repo, prefix, ticks
     )
 
 
+@pytest.mark.parametrize("prefix", ["# ", "   ## ", "######\t", "> # ",
+                                    "- # ", "1. # ", "> - # ", "- - # "])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_atx_heading_interrupts_provisional_inline_code(repo, prefix, newline):
+    write(repo, ".claude/kb/source.md", newline.join([
+        "text `", prefix + "[broken](missing.md) `", "",
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("prefix", ["#notheading ", "####### ", "    # ",
+                                    "2. # ", r"\# "])
+def test_non_atx_line_keeps_provisional_inline_code(repo, prefix):
+    write(repo, ".claude/kb/source.md",
+          "text `\n" + prefix + "[hidden](missing.md) `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_atx_heading_interrupts_code_inside_existing_list(repo):
+    write(repo, ".claude/kb/source.md",
+          "- `open\n  # [broken](missing.md) `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
+def test_atx_heading_keeps_its_own_code_span(repo):
+    write(repo, ".claude/kb/source.md",
+          "`open\n# `[hidden](hidden.md)` [broken](missing.md) `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
+def test_ordered_list_after_blank_line_can_start_atx_heading(repo):
+    write(repo, ".claude/kb/source.md",
+          "text `\n\n2. # [broken](missing.md) `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("source", [
+    '<a title="\n# [broken](missing.md) `\n">\n',
+    '[label](target.md "literal\n# [broken](missing.md) `")\n',
+])
+def test_atx_heading_interrupts_multiline_literal_syntax(repo, source):
+    write(repo, ".claude/kb/source.md", source)
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
 @pytest.mark.parametrize("underline", ["=======", "---", "=", "-", "   ===\t"])
 @pytest.mark.parametrize("prefix,continuation", [("", ""), ("> ", "> "), ("- ", "  "),
                                                   ("- > ", "  > ")])
