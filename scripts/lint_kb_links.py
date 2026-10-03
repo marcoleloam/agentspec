@@ -24,6 +24,7 @@ from urllib.parse import unquote
 
 _ESCAPE = re.compile(r"\\([" + re.escape(string.punctuation) + r"])")
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+_BLANK_LINE = re.compile(r"\r?\n[ \t]*(?:>[ \t]*)*\r?\n")
 # Recognize Markdown's raw HTML tag grammar, including quoted attributes.
 # Arbitrary angle-bracket prose (e.g. "2 < 3 and [x](y) > 1") is not HTML.
 _HTML_TAG = re.compile(
@@ -543,20 +544,30 @@ def _code_end(text: str, index: int, containers=()) -> int | None:
 
 
 def _bracket_end(text: str, index: int, containers=()) -> int | None:
+    # A label may contain a soft line break, but not an empty line. Find that
+    # boundary before skipping opaque tags, comments or code spans, which may
+    # otherwise jump over it. Quote-only lines count as empty paragraphs too.
+    blank = _BLANK_LINE.search(text, index)
+    limit = blank.start() if blank else len(text)
+    nul = text.find("\0", index, limit)
+    if nul >= 0:
+        limit = nul
     depth = 1
     index += 1
-    while index < len(text):
+    while index < limit:
         char = text[index]
         if char == "<":
             tag = _HTML_TAG.match(text, index) or _AUTOLINK.match(text, index)
             if tag:
+                if tag.end() > limit:
+                    return None
                 index = tag.end()
                 continue
         # _blocks also calls this on raw source to locate literal destinations
         # and titles. Brackets/backticks inside comments cannot close a label.
         if text.startswith("<!--", index):
             end = text.find("-->", index + 4)
-            if end < 0:
+            if end < 0 or end + 3 > limit:
                 return None
             index = end + 3
             continue
@@ -566,6 +577,8 @@ def _bracket_end(text: str, index: int, containers=()) -> int | None:
         if char == "`":
             end = _code_end(text, index, containers)
             if end is not None:
+                if end > limit:
+                    return None
                 index = end
                 continue
         if char == "[":
