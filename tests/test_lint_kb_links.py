@@ -118,6 +118,30 @@ def test_reference_labels_preserve_escapes_and_entities(repo, distinct, plain, r
         assert (result.returncode, result.stdout, result.stderr) == expected
 
 
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+@pytest.mark.parametrize("form", ["inline", "reference"])
+@pytest.mark.parametrize("target,existing,broken", [
+    (r"a\&amp;b.md", "a&amp;b.md", False),
+    (r"a\&amp;b.md", "a&b.md", True),
+    ("a&amp;b.md", "a&b.md", False),
+    ("a&amp;b.md", "a&amp;b.md", True),
+    (r"a\&copy;b.md", "a&copy;b.md", False),
+    (r"a&amp\;b.md", "a&amp;b.md", False),
+    (r"a&amp\;b.md", "a&b.md", True),
+    (r"a&copy\;b.md", "a&copy;b.md", False),
+    ("a&copyb.md", "a&copyb.md", False),
+    ("a&notarealname;b.md", "a&notarealname;b.md", False),
+])
+def test_escaped_ampersand_does_not_start_destination_entity(repo, newline, form,
+                                                              target, existing, broken):
+    write(repo, ".claude/kb/" + existing)
+    source = "[x](" + target + ")" if form == "inline" else "[x][ref]\n\n[ref]: " + target
+    write(repo, ".claude/kb/source.md", source.replace("\n", newline) + newline)
+    result = run(repo)
+    expected = (1, f".claude/kb/source.md:1: {target}\n", "") if broken else (0, "", "")
+    assert (result.returncode, result.stdout, result.stderr) == expected
+
+
 def test_ignored_constructs_and_network_destinations(repo):
     write(repo, ".claude/kb/ignored.md", "\n".join([
         '`[code](lost.md)` ``[tick ` code](lost.md)``',
@@ -935,6 +959,37 @@ def test_list_continuation_overflow_stays_code_after_blank(repo, source):
     write(repo, ".claude/kb/source.md", source)
     result = run(repo)
     assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+@pytest.mark.parametrize("source,visible", [
+    ('> paragraph\n    [link](missing.md)', True),
+    ('> paragraph\n\t[link](missing.md)', True),
+    ('> paragraph\n    text [link](missing.md)', True),
+    ('> paragraph\n    plain text\n    [link](missing.md)', True),
+    ('> - item\n    [link](missing.md)', True),
+    ('> > paragraph\n    [link](missing.md)', True),
+    ('> paragraph\n    ![image](missing.md)', True),
+    ('> paragraph\n\n    [link](missing.md)', False),
+    ('> paragraph\n\n    text [link](missing.md)', False),
+    ('> > paragraph\n    # [link](missing.md)', False),
+    ('> > paragraph\n    - [link](missing.md)', False),
+    ('> > paragraph\n    <div>[link](missing.md)</div>', False),
+    ('> > paragraph\n    > <div>[link](missing.md)</div>', False),
+    ('> paragraph\n    > <div>[link](missing.md)</div>', False),
+    ('> > paragraph\n    ```[link](missing.md)', False),
+    ('> > paragraph\n      ~~~[link](missing.md)', False),
+])
+@pytest.mark.parametrize("newline", ['\n', '\r\n'])
+def test_lazy_quote_link_continuation_is_not_indented_code(
+        repo, source, visible, newline):
+    write(repo, '.claude/kb/source.md', source.replace('\n', newline) + newline)
+    result = run(repo)
+    line = source.count('\n') + 1
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if visible else 0,
+        f'.claude/kb/source.md:{line}: missing.md\n' if visible else '',
+        '',
+    )
 
 
 @pytest.mark.parametrize("underline", ["=======", "---", "=", "-", "   ===\t"])

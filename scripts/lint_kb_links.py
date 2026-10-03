@@ -13,6 +13,7 @@ from bisect import bisect_right
 from dataclasses import dataclass
 import errno
 import html
+from html.entities import html5
 import os
 from pathlib import Path
 import re
@@ -22,7 +23,10 @@ import sys
 from urllib.parse import unquote
 
 
-_ESCAPE = re.compile(r"\\([" + re.escape(string.punctuation) + r"])")
+_UNESCAPE_TOKEN = re.compile(
+    r"\\([" + re.escape(string.punctuation) + r"])"
+    r"|&(?:#[0-9]+|#[xX][0-9A-Fa-f]+|[A-Za-z][A-Za-z0-9]+);"
+)
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 _BLANK_LINE = re.compile(r"\r?\n[ \t]*(?:>[ \t]*)*\r?\n")
 # Recognize Markdown's raw HTML tag grammar, including quoted attributes.
@@ -52,7 +56,15 @@ class Link:
 
 
 def _unescape(text: str) -> str:
-    return html.unescape(_ESCAPE.sub(r"\1", text))
+    # Markdown escapes and complete HTML entities are consumed once, in source
+    # order. An escaped '&' or ';' cannot create a new entity afterward.
+    def decode(match: re.Match[str]) -> str:
+        if match[1] is not None:
+            return match[1]
+        token = match[0]
+        return html.unescape(token) if token.startswith("&#") else html5.get(token[1:], token)
+
+    return _UNESCAPE_TOKEN.sub(decode, text)
 
 
 def _label(text: str) -> str:
@@ -168,8 +180,20 @@ def _blocks(text: str) -> str:
                 paragraph = False
             empty_list_pending = None
         if matched < len(containers):
+            # A paragraph may continue lazily without its quote marker. In
+            # particular, four leading spaces here remain paragraph text;
+            # they do not start an indented code block until a blank line.
+            inner = content.lstrip(" \t")
+            deep_quote = sum(kind == "quote" for kind, _ in containers[matched:]) > 1
+            indent = _indent_columns(line, content)
+            nested_block = re.match(r"(?:#{1,6}(?:[ \t]|$)|[-+*](?:[ \t]|$)"
+                                    r"|[0-9]{1,9}[.)](?:[ \t]|$)|<|`{3,}|~{3,})", inner)
+            quoted_html = re.match(r"(?:>[ \t]*)+<", inner)
+            deep_block = (indent >= 4 and ((deep_quote and nested_block) or quoted_html))
+            lazy_quote = (paragraph and bool(content.strip()) and not deep_block
+                          and containers[matched][0] == "quote")
             del containers[matched:]
-            paragraph = False
+            paragraph = lazy_quote
         if fence and matched < fence[2]:
             fence = None
         if fence:
