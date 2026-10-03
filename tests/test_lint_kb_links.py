@@ -705,6 +705,108 @@ def test_non_thematic_line_keeps_provisional_inline_code(repo, marker):
     assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
 
 
+@pytest.mark.parametrize("opening,marker", [
+    ("text `", "> [broken](missing.md) `"),
+    ("text `", "- [broken](missing.md) `"),
+    ("text `", "+ [broken](missing.md) `"),
+    ("text `", "* [broken](missing.md) `"),
+    ("text `", "1. [broken](missing.md) `"),
+    ("- `open", "  - [broken](missing.md) `"),
+    ("- `open", "  > [broken](missing.md) `"),
+    ("- `open", "> [broken](missing.md) `"),
+])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_new_quote_or_list_interrupts_provisional_inline_code(
+        repo, opening, marker, newline):
+    write(repo, ".claude/kb/source.md", newline.join([opening, marker, ""]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("opening,marker", [
+    ("text `", "0. [hidden](missing.md) `"),
+    ("text `", "2. [hidden](missing.md) `"),
+    ("text `", "    - [hidden](missing.md) `"),
+    ("- `open", "  [hidden](missing.md) `"),
+    ("> `open", "> [hidden](missing.md) `"),
+])
+def test_non_interrupting_container_lines_keep_inline_code(repo, opening, marker):
+    write(repo, ".claude/kb/source.md", opening + "\n" + marker + "\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_new_list_interrupts_code_before_following_link(repo):
+    write(repo, ".claude/kb/source.md",
+          "text `\n- item\n[broken](missing.md)\n`\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: missing.md\n", "",
+    )
+
+
+def test_new_list_keeps_its_own_inline_code(repo):
+    write(repo, ".claude/kb/source.md",
+          "text `\n- `[hidden](hidden.md)` [broken](missing.md) `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("marker", ["*", "+", "1.", "1)"])
+@pytest.mark.parametrize("padding", ["     ", "       "])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_empty_list_marker_does_not_interrupt_paragraph_code(
+        repo, marker, padding, newline):
+    write(repo, ".claude/kb/source.md", newline.join([
+        "`open", marker + padding, "[hidden](missing.md) `", "",
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_hyphen_underline_still_ends_setext_heading(repo):
+    write(repo, ".claude/kb/source.md",
+          "`open\n-     \n[broken](missing.md) `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("source,line", [
+    ("- item\n\t[broken](missing.md)\n", 2),
+    ("1. item\n\t[broken](missing.md)\n", 2),
+    ("- - nested\n\t[broken](missing.md)\n", 2),
+    ("- item\n\n\t[broken](missing.md)\n", 3),
+    ("- item\n\t\t[broken](missing.md)\n", 2),
+    ("- item\n    [broken](missing.md)\n", 2),
+    ("- item\n      [broken](missing.md)\n", 2),
+])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_list_continuation_uses_tab_columns(repo, source, line, newline):
+    write(repo, ".claude/kb/source.md", source.replace("\n", newline))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, f".claude/kb/source.md:{line}: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("source", [
+    "- item\n\n\t\t[hidden](missing.md)\n",
+    "- item\n\n\t  [hidden](missing.md)\n",
+    "- - nested\n\n\t\t[hidden](missing.md)\n",
+    "- item\n\n      [hidden](missing.md)\n",
+])
+def test_list_continuation_overflow_stays_code_after_blank(repo, source):
+    write(repo, ".claude/kb/source.md", source)
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
 @pytest.mark.parametrize("underline", ["=======", "---", "=", "-", "   ===\t"])
 @pytest.mark.parametrize("prefix,continuation", [("", ""), ("> ", "> "), ("- ", "  "),
                                                   ("- > ", "  > ")])

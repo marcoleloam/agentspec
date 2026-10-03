@@ -94,6 +94,22 @@ def _tab_list_code_prefix(line: str, content: str) -> int | None:
     return marker.start(1) + 1 if column - before_padding > 4 else None
 
 
+def _list_continuation_prefix(
+        line: str, content: str, width: int, carry: int) -> tuple[int, int] | None:
+    """Consume list indentation, retaining columns a tab passes beyond it."""
+    column = len(line[:len(line) - len(content)].expandtabs(4))
+    target = column + max(width - carry, 0)
+    consumed = 0
+    for char in content:
+        if char not in " \t" or column >= target:
+            break
+        column += 4 - column % 4 if char == "\t" else 1
+        consumed += 1
+    if content.strip() and column < target:
+        return None
+    return consumed, max(carry - width, 0) + max(column - target, 0)
+
+
 def _thematic_break(content: str, paragraph: bool) -> bool:
     """Recognize a thematic break before interpreting its markers as lists."""
     body = content.rstrip("\r\n")
@@ -119,6 +135,7 @@ def _blocks(text: str) -> str:
         # Remove container syntax for block recognition, retaining its width
         # below so every link still points to its original source position.
         content = line
+        virtual_indent = 0
         # Match existing containers in nesting order: a quote may contain a
         # list, and a list may contain a quote (and so on).
         matched = 0
@@ -129,10 +146,12 @@ def _blocks(text: str) -> str:
                     break
                 content = content[prefix.end():]
             else:
-                indentation = len(content) - len(content.lstrip(" "))
-                if content.strip() and indentation < width:
+                indentation = _list_continuation_prefix(
+                    line, content, width, virtual_indent)
+                if indentation is None:
                     break
-                content = content[min(indentation, width):]
+                consumed, virtual_indent = indentation
+                content = content[consumed:]
             matched += 1
         if matched < len(containers):
             del containers[matched:]
@@ -158,13 +177,14 @@ def _blocks(text: str) -> str:
             paragraph = False
             offset += len(line)
             continue
-        indented = _indent_columns(line, content) >= 4
+        indented = virtual_indent + _indent_columns(line, content) >= 4
         if not comment and code_until > offset:
             # An inline span is provisional until block syntax is known. A
             # fence or ATX heading can start after fresh quote/list markers.
             probe = content
             probe_paragraph = paragraph
             tab_list_code = False
+            new_container = False
             while True:
                 if _thematic_break(probe, probe_paragraph):
                     break
@@ -180,19 +200,24 @@ def _blocks(text: str) -> str:
                 ordered = re.match(r" {0,3}([0-9]{1,9})[.)]", probe)
                 if probe_paragraph and ordered and int(ordered[1]) != 1:
                     break
+                if (probe_paragraph and not quote and tab_width is None
+                        and not probe[marker.end():].strip()):
+                    break
                 tab_list_code |= tab_width is not None
+                new_container = True
                 probe = probe[tab_width if tab_width is not None else marker.end():]
                 probe_paragraph = False
             opening = None if tab_list_code else re.match(r" {0,3}(`{3,}|~{3,})(.*)", probe)
             heading = not tab_list_code and re.match(
                 r" {0,3}#{1,6}(?:[ \t]|$)", probe)
             thematic = not tab_list_code and _thematic_break(probe, probe_paragraph)
-            if (opening and not (opening[1][0] == "`" and "`" in opening[2])) or heading or thematic:
+            if (opening and not (opening[1][0] == "`" and "`" in opening[2])) or heading or thematic or new_container:
                 code_until = 0
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
             # continuation indentation is relative to its enclosing container.
             tab_list_code = False
+            new_container = False
             while True:
                 if _thematic_break(content, paragraph):
                     break
@@ -205,12 +230,21 @@ def _blocks(text: str) -> str:
                     r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", content)
                 if marker is None and tab_width is None:
                     break
+                ordered = re.match(r" {0,3}([0-9]{1,9})[.)]", content)
+                if paragraph and ordered and int(ordered[1]) != 1:
+                    break
+                if (paragraph and not quote and tab_width is None
+                        and not content[marker.end():].strip()):
+                    break
+                if not new_container and lines and lines[-1].endswith("\n"):
+                    lines[-1] = lines[-1][:-1] + "\0"
+                new_container = True
                 width = tab_width if tab_width is not None else marker.end()
                 tab_list_code |= tab_width is not None
                 paragraph = False
                 containers.append(("quote" if quote else "list", width))
                 content = content[width:]
-            indented = _indent_columns(line, content) >= 4
+            indented = virtual_indent + _indent_columns(line, content) >= 4
             if tab_list_code:
                 lines.append(_hide(line))
                 offset += len(line)
