@@ -73,18 +73,21 @@ def test_syntax_titles_escapes_references_and_crlf(repo):
         '[balanced](absent(v2).md (title)) [escaped](present\\(v2\\).md)',
         '[full][ Foo   BAR ] [collapsed][] [shortcut] ![image ref][foo bar]',
         '[multiline', 'label](multi.md)',
+        '',
         '[foo bar]: <refs/lost.md> "title"',
         '[collapsed]: collapsed.md', '[shortcut]: shortcut.md',
         '[unused]: unused.md', '[undefined] [x][undefined]',
+        '',
         '[FOO BAR]: ignored-duplicate.md',
         '[full again][foo\tbar]',
+        '',
         '[Straße]: unicode.md', '[label][STRASSE]', '',
     ]))
     result = run(repo)
     expected = [(1, "./lost.md?q=1#part"), (1, "space name.png"),
                 (2, "absent(v2).md"), (3, "refs/lost.md"), (3, "collapsed.md"),
                 (3, "shortcut.md"), (3, "refs/lost.md"), (4, "multi.md"),
-                (12, "refs/lost.md"), (14, "unicode.md")]
+                (14, "refs/lost.md"), (17, "unicode.md")]
     assert result.returncode == 1
     assert result.stdout == "".join(f"{source}:{line}: {target}\n" for line, target in expected)
     assert result.stderr == ""
@@ -243,13 +246,14 @@ def test_html_attributes_are_literal_in_labels_and_definition_discovery(repo):
 def test_backticks_in_html_attributes_do_not_hide_reference_definitions(repo):
     write(repo, '.claude/kb/source.md', '\n'.join([
         '<span title="`">text</span>',
+        '',
         '[ref]: missing.md',
         '<span title="`">text</span>',
         '', '[ref]',
     ]))
     result = run(repo)
     assert (result.returncode, result.stdout, result.stderr) == (
-        1, '.claude/kb/source.md:5: missing.md\n', '',
+        1, '.claude/kb/source.md:6: missing.md\n', '',
     )
 
 
@@ -625,21 +629,21 @@ def test_empty_list_marker_after_paragraph_preserves_interruption_rules(
 ])
 @pytest.mark.parametrize("definition", [True, False])
 def test_literal_backticks_do_not_hide_intervening_reference_definitions(repo, literal, target, definition):
-    first = f'[a]: {literal}' if definition else f'[a]({literal})'
-    last = '[c]: c`d.md' if definition else '[c](c`d.md)'
+    first = f'[a]: {literal}' if definition else f'# [a]({literal})'
+    last = '[c]: c`d.md' if definition else '# [c](c`d.md)'
     write(repo, '.claude/kb/source.md', '\r\n'.join([
-        first, '[b]: missing.md', last, '',
+        first, '[b]: missing.md', '', last, '',
         '[b] ![b][] [full][b]', '[a] [c]', '',
         '`real code', '[hidden]: hidden.md', '`', '[hidden]', '',
     ]))
     result = run(repo)
     expected = '' if definition else (
         f'.claude/kb/source.md:1: {target}\n'
-        '.claude/kb/source.md:3: c`d.md\n'
+        '.claude/kb/source.md:4: c`d.md\n'
     )
-    expected += '.claude/kb/source.md:5: missing.md\n' * 3
+    expected += '.claude/kb/source.md:6: missing.md\n' * 3
     if definition:
-        expected += f'.claude/kb/source.md:6: {target}\n.claude/kb/source.md:6: c`d.md\n'
+        expected += f'.claude/kb/source.md:7: {target}\n.claude/kb/source.md:7: c`d.md\n'
     assert (result.returncode, result.stdout, result.stderr) == (1, expected, '')
 
 
@@ -692,6 +696,7 @@ def test_multiline_reference_definitions_normalize_labels_per_use(repo):
         '[hello', 'world]: <./missing.md?q=1#part> "title"', '',
         '[hello world]', '[full][ HELLO\tWORLD ]', '![hello world][]',
         '[hello', 'world]',
+        '',
         '[unused', 'label]: unused.md',
         '[hello world]: duplicate.md', '',
         '[invalid', '', 'label]: invalid.md', '[invalid label]',
@@ -700,6 +705,39 @@ def test_multiline_reference_definitions_normalize_labels_per_use(repo):
     assert (result.returncode, result.stdout, result.stderr) == (
         1, ''.join(f'.claude/kb/source.md:{line}: ./missing.md?q=1#part\n'
                    for line in (4, 5, 6, 7)), '',
+    )
+
+
+@pytest.mark.parametrize('invalid', ['[]', '[ ]', '[\t]', '[a[b]]', '[[a]]'])
+@pytest.mark.parametrize('newline', ['\n', '\r\n'])
+def test_invalid_reference_label_keeps_following_definition_in_paragraph(repo, invalid, newline):
+    write(repo, '.claude/kb/source.md', newline.join([
+        f'{invalid}: unused.md', '[ref]: missing.md', '', '[ref]', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+@pytest.mark.parametrize("source,expected", [
+    ('paragraph\n[ref]: missing.md\n\n[ref]', []),
+    ('paragraph\n[ref]: missing.md\n[ref]', []),
+    ('paragraph\n[hello\nworld]: missing.md\n\n[hello world]', []),
+    ('> paragraph\n> [ref]: missing.md\n>\n> [ref]', []),
+    ('- paragraph\n  [ref]: missing.md\n\n[ref]', []),
+    ('paragraph\n[ref]: [x](missing.md)', [(2, 'missing.md')]),
+    ('paragraph\n\n[ref]: missing.md\n\n[ref]', [(5, 'missing.md')]),
+    ('# heading\n[ref]: missing.md\n\n[ref]', [(4, 'missing.md')]),
+    ('> paragraph\n>\n> [ref]: missing.md\n>\n> [ref]', [(5, 'missing.md')]),
+    ('[ref]: existing.md\n\nparagraph\n[ref]: missing.md\n\n[ref]',
+     [(4, 'existing.md'), (6, 'existing.md')]),
+])
+@pytest.mark.parametrize("newline", ['\n', '\r\n'])
+def test_reference_definition_does_not_interrupt_paragraph(repo, source, expected, newline):
+    write(repo, '.claude/kb/source.md', source.replace('\n', newline) + newline)
+    result = run(repo)
+    output = ''.join(f'.claude/kb/source.md:{line}: {target}\n' for line, target in expected)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if expected else 0, output, '',
     )
 
 
@@ -771,7 +809,7 @@ def test_code_spans_do_not_define_references_or_start_comments(repo):
     write(repo, ".claude/kb/source.md", "\n".join([
         '`<!--` [broken](lost.md)',
         '`multiline code', '[hidden]: hidden.md', '`',
-        '[hidden]', '[label with `code [text]` inside](other.md)',
+        '[hidden]', '# [label with `code [text]` inside](other.md)',
         '[actual]: actual.md', '[actual]',
     ]))
     result = run(repo)

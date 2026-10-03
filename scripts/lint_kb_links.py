@@ -72,6 +72,14 @@ def _label(text: str) -> str:
     return " ".join(text.split()).casefold()
 
 
+def _valid_definition_label(text: str) -> bool:
+    # Match the label grammar used by _definitions before treating a candidate
+    # as a complete block in _blocks.
+    return (re.fullmatch(r"(?:\\.|[^\[\]\\\0\x01])+", text) is not None
+            and not re.search(r"\n[ \t]*\n", text)
+            and bool(_label(text)))
+
+
 def _hide(text: str, marker: str = "\0") -> str:
     """Mask ignored syntax while preserving offsets and newline positions."""
     return "".join("\n" if char == "\n" else marker for char in text)
@@ -151,6 +159,7 @@ def _blocks(text: str) -> str:
     paragraph = False
     containers = []
     empty_list_pending = None
+    definition_until = 0
     for line in text.splitlines(keepends=True):
         # Remove container syntax for block recognition, retaining its width
         # below so every link still points to its original source position.
@@ -323,6 +332,20 @@ def _blocks(text: str) -> str:
             paragraph = False
             offset += len(line)
             continue
+        # A reference definition cannot interrupt an open paragraph. Keep
+        # the preceding soft break as a space so the later definition pass
+        # cannot treat this line as a fresh block, while preserving offsets.
+        definition_continuation = False
+        if paragraph and not comment:
+            opener = re.match(r"[ \t]*\[", content)
+            if opener is not None:
+                position = offset + len(line) - len(content) + opener.end() - 1
+                close = _bracket_end(text, position, containers)
+                definition_continuation = (
+                    close is not None and text[close + 1:close + 2] == ":"
+                    and _valid_definition_label(text[position + 1:close]))
+        if definition_continuation and lines and lines[-1].endswith("\n"):
+            lines[-1] = lines[-1][:-1] + " "
         # ATX headings end on this line, including inside quotes/lists. Bound
         # inline parsing before container prefixes are neutralized below.
         heading = not comment and re.match(r" {0,3}#{1,6}(?:[ \t]|$)", content) is not None
@@ -373,10 +396,13 @@ def _blocks(text: str) -> str:
                             parsed = _inline(inline_source, suffix)
                             if parsed is not None:
                                 literal_suffixes[suffix] = parsed[1]
-                        elif text[suffix:suffix + 1] == ":" and not line[:index].strip():
+                        elif (not definition_continuation and text[suffix:suffix + 1] == ":"
+                              and _valid_definition_label(text[position + 1:close])
+                              and not line[:index].strip()):
                             parsed = _definition_value(text, suffix + 1)
                             if parsed is not None:
                                 literal_suffixes[suffix] = parsed[1]
+                                definition_until = max(definition_until, parsed[1])
                 end = index
                 if line.startswith("<!--", index):
                     comment = True
@@ -400,7 +426,7 @@ def _blocks(text: str) -> str:
             re.match(r"#{1,6}(?:\s|$)", visible)
             or re.fullmatch(r"(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,}", visible)
             or (paragraph and re.fullmatch(r"=+|-+", visible))
-            or _definitions(result)[1]
+            or offset < definition_until
         )
         paragraph = bool(visible) and not complete_block
         offset += len(line)
