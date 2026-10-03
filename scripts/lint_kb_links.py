@@ -94,6 +94,12 @@ def _tab_list_code_prefix(line: str, content: str) -> int | None:
     return marker.start(1) + 1 if column - before_padding > 4 else None
 
 
+def _empty_list_marker(content: str):
+    """Find a list marker whose opening line has no item content."""
+    marker = re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])", content)
+    return marker if marker and not content[marker.end():].strip() else None
+
+
 def _list_continuation_prefix(
         line: str, content: str, width: int, carry: int) -> tuple[int, int] | None:
     """Consume list indentation, retaining columns a tab passes beyond it."""
@@ -131,6 +137,7 @@ def _blocks(text: str) -> str:
     literal_suffixes = {}
     paragraph = False
     containers = []
+    empty_list_pending = None
     for line in text.splitlines(keepends=True):
         # Remove container syntax for block recognition, retaining its width
         # below so every link still points to its original source position.
@@ -153,6 +160,12 @@ def _blocks(text: str) -> str:
                 consumed, virtual_indent = indentation
                 content = content[consumed:]
             matched += 1
+        if empty_list_pending is not None:
+            if not content.strip():
+                del containers[empty_list_pending:]
+                matched = min(matched, len(containers))
+                paragraph = False
+            empty_list_pending = None
         if matched < len(containers):
             del containers[matched:]
             paragraph = False
@@ -190,9 +203,10 @@ def _blocks(text: str) -> str:
                     break
                 quote = re.match(r" {0,3}>[ \t]?", probe)
                 tab_width = None if quote else _tab_list_code_prefix(line, probe)
+                empty = None if quote else _empty_list_marker(probe)
                 marker = quote or re.match(
                     r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
-                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", probe)
+                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", probe) or empty
                 if marker is None and tab_width is None:
                     break
                 # An ordered list starting above 1 cannot interrupt the
@@ -223,11 +237,12 @@ def _blocks(text: str) -> str:
                     break
                 quote = re.match(r" {0,3}>[ \t]?", content)
                 tab_width = None if quote else _tab_list_code_prefix(line, content)
+                empty = None if quote else _empty_list_marker(content)
                 # With more than four padding spaces, only the first belongs
                 # to the marker; the remainder introduces indented code.
                 marker = quote or re.match(
                     r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
-                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", content)
+                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", content) or empty
                 if marker is None and tab_width is None:
                     break
                 ordered = re.match(r" {0,3}([0-9]{1,9})[.)]", content)
@@ -239,11 +254,18 @@ def _blocks(text: str) -> str:
                 if not new_container and lines and lines[-1].endswith("\n"):
                     lines[-1] = lines[-1][:-1] + "\0"
                 new_container = True
-                width = tab_width if tab_width is not None else marker.end()
+                span = tab_width if tab_width is not None else marker.end()
                 tab_list_code |= tab_width is not None
                 paragraph = False
+                width = span
+                if empty is not None:
+                    prefix = line[:len(line) - len(content)]
+                    marker_width = (len((prefix + content[:empty.end()]).expandtabs(4))
+                                    - len(prefix.expandtabs(4)))
+                    width = max(width, marker_width + 1)
+                    empty_list_pending = len(containers)
                 containers.append(("quote" if quote else "list", width))
-                content = content[width:]
+                content = content[span:]
             indented = virtual_indent + _indent_columns(line, content) >= 4
             if tab_list_code:
                 lines.append(_hide(line))

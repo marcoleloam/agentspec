@@ -544,6 +544,57 @@ def test_tab_padding_after_list_marker_uses_visual_columns(repo, prefix, visible
     )
 
 
+@pytest.mark.parametrize("opening,continuation,visible", [
+    ('-', '      ', False), ('+', '      ', False), ('*', '      ', False),
+    ('- ', '      ', False), ('-\t', '      ', False),
+    ('-', '    ', True),
+    ('1.', '       ', False), ('2.', '       ', False),
+    ('1.', '      ', True),
+    ('> -', '>       ', False),
+    ('- -', '      ', True), ('1. -', '        ', True),
+    ('- > -', '      ', False),
+])
+@pytest.mark.parametrize("newline", ['\n', '\r\n'])
+def test_empty_list_item_distinguishes_indented_code(
+        repo, opening, continuation, visible, newline):
+    write(repo, '.claude/kb/source.md', newline.join([
+        opening, continuation + '[link](missing.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if visible else 0,
+        '.claude/kb/source.md:2: missing.md\n' if visible else '',
+        '',
+    )
+
+
+@pytest.mark.parametrize("opening,continuation", [
+    ('-', '    '), ('- -', '      '), ('1. -', '        '),
+    ('> -', '>       '),
+])
+def test_blank_after_empty_list_item_closes_item(
+        repo, opening, continuation):
+    write(repo, '.claude/kb/source.md',
+          opening + '\n\n' + continuation + '[code](missing.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+@pytest.mark.parametrize("opening,visible", [
+    ('-', False), ('- ', False), ('+', True), ('1.', True),
+])
+def test_empty_list_marker_after_paragraph_preserves_interruption_rules(
+        repo, opening, visible):
+    write(repo, '.claude/kb/source.md',
+          'paragraph\n' + opening + '\n      [link](missing.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if visible else 0,
+        '.claude/kb/source.md:3: missing.md\n' if visible else '',
+        '',
+    )
+
+
 @pytest.mark.parametrize("literal,target", [
     ('a`b.md', 'a`b.md'), ('<a`b.md>', 'a`b.md'),
     ('a.md "literal ` title"', 'a.md'),
