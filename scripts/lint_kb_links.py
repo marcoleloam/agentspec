@@ -94,6 +94,18 @@ def _tab_list_code_prefix(line: str, content: str) -> int | None:
     return marker.start(1) + 1 if column - before_padding > 4 else None
 
 
+def _thematic_break(content: str, paragraph: bool) -> bool:
+    """Recognize a thematic break before interpreting its markers as lists."""
+    body = content.rstrip("\r\n")
+    if paragraph and re.fullmatch(r" {0,3}-+[ \t]*", body):
+        # A hyphen underline immediately after paragraph text is Setext.
+        return False
+    return re.fullmatch(
+        r" {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})",
+        body,
+    ) is not None
+
+
 def _blocks(text: str) -> str:
     lines = []
     fence = None
@@ -136,6 +148,16 @@ def _blocks(text: str) -> str:
             paragraph = False
             offset += len(line)
             continue
+        if not comment and _thematic_break(content, paragraph):
+            # A thematic break interrupts a paragraph, including provisional
+            # inline code. Mark both sides of the block boundary for _links.
+            if lines and lines[-1].endswith("\n"):
+                lines[-1] = lines[-1][:-1] + "\0"
+            lines.append(_hide(line))
+            code_until = 0
+            paragraph = False
+            offset += len(line)
+            continue
         indented = _indent_columns(line, content) >= 4
         if not comment and code_until > offset:
             # An inline span is provisional until block syntax is known. A
@@ -144,6 +166,8 @@ def _blocks(text: str) -> str:
             probe_paragraph = paragraph
             tab_list_code = False
             while True:
+                if _thematic_break(probe, probe_paragraph):
+                    break
                 quote = re.match(r" {0,3}>[ \t]?", probe)
                 tab_width = None if quote else _tab_list_code_prefix(line, probe)
                 marker = quote or re.match(
@@ -162,13 +186,16 @@ def _blocks(text: str) -> str:
             opening = None if tab_list_code else re.match(r" {0,3}(`{3,}|~{3,})(.*)", probe)
             heading = not tab_list_code and re.match(
                 r" {0,3}#{1,6}(?:[ \t]|$)", probe)
-            if (opening and not (opening[1][0] == "`" and "`" in opening[2])) or heading:
+            thematic = not tab_list_code and _thematic_break(probe, probe_paragraph)
+            if (opening and not (opening[1][0] == "`" and "`" in opening[2])) or heading or thematic:
                 code_until = 0
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
             # continuation indentation is relative to its enclosing container.
             tab_list_code = False
             while True:
+                if _thematic_break(content, paragraph):
+                    break
                 quote = re.match(r" {0,3}>[ \t]?", content)
                 tab_width = None if quote else _tab_list_code_prefix(line, content)
                 # With more than four padding spaces, only the first belongs
@@ -186,6 +213,13 @@ def _blocks(text: str) -> str:
             indented = _indent_columns(line, content) >= 4
             if tab_list_code:
                 lines.append(_hide(line))
+                offset += len(line)
+                continue
+            if _thematic_break(content, paragraph):
+                if lines and lines[-1].endswith("\n"):
+                    lines[-1] = lines[-1][:-1] + "\0"
+                lines.append(_hide(line))
+                paragraph = False
                 offset += len(line)
                 continue
             opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", content)

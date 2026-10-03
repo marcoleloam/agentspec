@@ -674,6 +674,37 @@ def test_atx_heading_interrupts_multiline_literal_syntax(repo, source):
     )
 
 
+@pytest.mark.parametrize("marker", ["***", "* * *", "___", "_ _ _", "- - -",
+                                     "> ***", "- ***", "1. ***", "> * * *",
+                                     "> - - -", "- * * *", "1. * * *"])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_thematic_break_interrupts_provisional_inline_code(repo, marker, newline):
+    write(repo, ".claude/kb/source.md", newline.join([
+        "text `", marker, "[broken](missing.md)", "`", "",
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: missing.md\n", "",
+    )
+
+
+def test_thematic_break_inside_existing_list_interrupts_inline_code(repo):
+    write(repo, ".claude/kb/source.md",
+          "- `open\n  ***\n  [broken](missing.md)\n  `\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: missing.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("marker", ["    ***", "2. ***", "***text", "*bold*"])
+def test_non_thematic_line_keeps_provisional_inline_code(repo, marker):
+    write(repo, ".claude/kb/source.md",
+          "text `\n" + marker + "\n[hidden](missing.md)\n`\n")
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
 @pytest.mark.parametrize("underline", ["=======", "---", "=", "-", "   ===\t"])
 @pytest.mark.parametrize("prefix,continuation", [("", ""), ("> ", "> "), ("- ", "  "),
                                                   ("- > ", "  > ")])
