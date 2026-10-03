@@ -217,6 +217,21 @@ def test_ci_step_propagates_review_regressions(tmp_path, content, expected):
         id="quoted-heading-backticks-crlf-preserve-ci-failure",
     ),
     pytest.param(
+        "`titulo\n=======\n[x](missing.md)\n`\n",
+        ".claude/kb/source.md:3: missing.md\n",
+        id="setext-heading-backtick-preserves-ci-failure",
+    ),
+    pytest.param(
+        "- > `titulo\r\n  > ---\r\n  > ![x](missing.png)\r\n  > `\r\n",
+        ".claude/kb/source.md:3: missing.png\n",
+        id="nested-setext-heading-crlf-preserves-image-ci-failure",
+    ),
+    pytest.param(
+        "`titulo\n=======\n[x](#local)\n`\n",
+        "",
+        id="setext-heading-with-valid-link-passes-ci",
+    ),
+    pytest.param(
         "-     [code](missing-code.md)\n",
         "",
         id="list-opening-indented-code-passes-ci",
