@@ -32,6 +32,9 @@ _HTML_TAG = re.compile(
     r"(?:[ \t\n]+[A-Za-z_:][A-Za-z0-9_.:-]*"
     r'''(?:[ \t\n]*=[ \t\n]*(?:[^ \t\n\"'=<>`]+|"[^"]*"|'[^']*'))?)*'''
     r"[ \t\n]*/?>"
+    r"|<![A-Z]+[ \t\n]+[^>]*>"
+    r"|<\?[^<>]*\?>"
+    r"|<!\[CDATA\[[\s\S]*?\]\]>"
 )
 _AUTOLINK = re.compile(
     r"<[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*>"
@@ -59,6 +62,36 @@ def _label(text: str) -> str:
 def _hide(text: str, marker: str = "\0") -> str:
     """Mask ignored syntax while preserving offsets and newline positions."""
     return "".join("\n" if char == "\n" else marker for char in text)
+
+
+def _indent_columns(line: str, content: str) -> int:
+    """Count leading whitespace columns from the original tab position."""
+    column = 0
+    for char in line[:len(line) - len(content)]:
+        column += 4 - column % 4 if char == "\t" else 1
+    start = column
+    for char in content:
+        if char == " ":
+            column += 1
+        elif char == "\t":
+            column += 4 - column % 4
+        else:
+            break
+    return column - start
+
+
+def _tab_list_code_prefix(line: str, content: str) -> int | None:
+    """Find excess list padding whose tab width starts indented code."""
+    marker = re.match(
+        r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])([ \t]+)(?=\S)", content)
+    if marker is None or "\t" not in marker[1]:
+        return None
+    prefix = line[:len(line) - len(content)] + content[:marker.start(1)]
+    column = len(prefix.expandtabs(4))
+    before_padding = column
+    for char in marker[1]:
+        column += 4 - column % 4 if char == "\t" else 1
+    return marker.start(1) + 1 if column - before_padding > 4 else None
 
 
 def _blocks(text: str) -> str:
@@ -103,21 +136,56 @@ def _blocks(text: str) -> str:
             paragraph = False
             offset += len(line)
             continue
+        indented = _indent_columns(line, content) >= 4
+        if not comment and code_until > offset:
+            # An inline span is provisional until block syntax is known. A
+            # fence can start after fresh quote/list markers on this line.
+            probe = content
+            probe_paragraph = paragraph
+            tab_list_code = False
+            while True:
+                quote = re.match(r" {0,3}>[ \t]?", probe)
+                tab_width = None if quote else _tab_list_code_prefix(line, probe)
+                marker = quote or re.match(
+                    r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
+                    r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", probe)
+                if marker is None and tab_width is None:
+                    break
+                # An ordered list starting above 1 cannot interrupt the
+                # paragraph that contains the provisional inline code span.
+                ordered = re.match(r" {0,3}([0-9]{1,9})[.)]", probe)
+                if probe_paragraph and ordered and int(ordered[1]) != 1:
+                    break
+                tab_list_code |= tab_width is not None
+                probe = probe[tab_width if tab_width is not None else marker.end():]
+                probe_paragraph = False
+            opening = None if tab_list_code else re.match(r" {0,3}(`{3,}|~{3,})(.*)", probe)
+            if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+                code_until = 0
         if not comment and code_until <= offset:
             # Discover new containers only outside code/comments. A list's
             # continuation indentation is relative to its enclosing container.
+            tab_list_code = False
             while True:
                 quote = re.match(r" {0,3}>[ \t]?", content)
+                tab_width = None if quote else _tab_list_code_prefix(line, content)
                 # With more than four padding spaces, only the first belongs
                 # to the marker; the remainder introduces indented code.
                 marker = quote or re.match(
                     r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])"
                     r"(?:[ \t]{1,4}(?=\S)| (?= {4}))", content)
-                if marker is None:
+                if marker is None and tab_width is None:
                     break
+                width = tab_width if tab_width is not None else marker.end()
+                tab_list_code |= tab_width is not None
                 paragraph = False
-                containers.append(("quote" if quote else "list", marker.end()))
-                content = content[marker.end():]
+                containers.append(("quote" if quote else "list", width))
+                content = content[width:]
+            indented = _indent_columns(line, content) >= 4
+            if tab_list_code:
+                lines.append(_hide(line))
+                offset += len(line)
+                continue
             opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)", content)
             if opening and not (opening[1][0] == "`" and "`" in opening[2]):
                 fence = (opening[1][0], len(opening[1]), len(containers))
@@ -126,7 +194,7 @@ def _blocks(text: str) -> str:
                 offset += len(line)
                 continue
             # Indented code cannot interrupt an open paragraph.
-            if not paragraph and content.expandtabs(4).startswith("    "):
+            if not paragraph and indented:
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
@@ -168,11 +236,10 @@ def _blocks(text: str) -> str:
                 # and backticks there must not affect later Markdown. Keep
                 # scanning the label itself so its code/comments still work.
                 position = offset + index
-                # A complete HTML tag is opaque even when a quoted attribute
-                # contains comment markers or backticks. Preserve it for the
-                # inline passes, including when it spans multiple lines.
+                # HTML tags and autolinks are opaque while scanning comment
+                # markers and backticks, including across soft line breaks.
                 if line[index] == "<":
-                    tag = _HTML_TAG.match(inline_source, position)
+                    tag = _HTML_TAG.match(inline_source, position) or _AUTOLINK.match(inline_source, position)
                     if tag:
                         code_until = tag.end()
                         continue
@@ -207,7 +274,7 @@ def _blocks(text: str) -> str:
         visible = result.replace("\0", "").replace("\x01", "").strip()
         # These complete blocks do not leave a paragraph open for the next
         # indented line. Container prefixes have already been neutralized.
-        complete_block = not content.expandtabs(4).startswith("    ") and (
+        complete_block = not indented and (
             re.match(r"#{1,6}(?:\s|$)", visible)
             or re.fullmatch(r"(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,}", visible)
             or (paragraph and re.fullmatch(r"=+|-+", visible))
@@ -349,25 +416,16 @@ def _definitions(text: str) -> tuple[str, dict[str, str]]:
 def _code_end(text: str, index: int, containers=()) -> int | None:
     run = re.match(r"`+", text[index:])[0]
     start = index + len(run)
-    # _blocks calls this before fences have been masked. A fence interrupts
-    # a paragraph even if a preceding code delimiter is still unmatched; a
-    # backtick inside that block must never close the preceding inline span.
-    # Include container prefixes and reject backtick fences with backticks in
-    # their info string, just as _blocks does when recognizing the opening.
-    # Continuation indentation belongs to its list container, so a fence may
-    # be more than three columns from the physical start of the source line.
+    # Setext headings end an inline span even before _blocks masks their
+    # underlines. Fenced blocks are recognized per line by _blocks instead.
     prefixes = [""]
     for kind, width in containers:
         prefixes.append(prefixes[-1] + (r" {0,3}>[ \t]?" if kind == "quote" else " " * width))
     prefix = "(?:" + "|".join(prefixes) + ")"
-    fence = (r"\n" + prefix + r" {0,3}(?:(?:>[ \t]?|(?:[-+*]|[0-9]{1,9}[.)])"
-             r"[ \t]{1,4}) {0,3})*(?:`{3,}[^`\n]*|~{3,}[^\n]*)(?=\n|$)")
-    # Block syntax takes precedence over code spans: an unmatched backtick
-    # in a Setext heading cannot close in the paragraph after its underline.
     setext = r"\n" + prefix + r" {0,3}(?:=+|-+)[ \t]*(?=\n|$)"
     # Inline code may otherwise span soft line breaks, but not separate
     # paragraphs or masked blocks (including quote-only blank lines).
-    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]|" + fence + "|" + setext, text[start:])
+    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]|" + setext, text[start:])
     limit = start + boundary.start() if boundary else len(text)
     # Only a delimiter with the exact same number of backticks closes a span.
     closing = re.search(r"(?<!`)" + run + r"(?!`)", text[start:limit])
@@ -475,10 +533,18 @@ def _links(text: str, definitions: dict[str, str], offset: int = 0) -> list[Link
                 parsed = target, end
         if parsed is not None:
             target, end = parsed
-            links.append(Link(offset + index, target))
-            # Images in a link's label are occurrences in their own right.
-            links.extend(_links(label, definitions, offset + bracket + 1))
-            index = end
+            image = bracket != index
+            # Image alt text is plain text. A link label may contain images,
+            # but an inner link takes precedence over its outer link.
+            inner_offset = offset + bracket + 1
+            inner = [] if image else _links(label, definitions, inner_offset)
+            nested_link = any(label[link.position - inner_offset] == "[" for link in inner)
+            if not nested_link:
+                links.append(Link(offset + index, target))
+            links.extend(inner)
+            # When the outer link is invalid, its would-be destination is
+            # ordinary text and can contain another Markdown link.
+            index = close + 1 if nested_link else end
         else:
             index += 1
     return links
