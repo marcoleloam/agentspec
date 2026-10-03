@@ -422,21 +422,34 @@ def _title(text: str, index: int) -> int | None:
 
 
 def _definition_value(text: str, index: int) -> tuple[str, int] | None:
-    start = _spaces(text, index)
+    start = index
+    while start < len(text) and text[start] in " \t\r\n":
+        start += 1
+    if text[index:start].count("\n") > 1:
+        return None
     parsed = _destination(text, start)
     if parsed is None:
         return None
     target, end = parsed
     if end == start:
         return None
-    after = _spaces(text, end)
-    title = _title(text, after) if after > end else None
+    after = end
+    while after < len(text) and text[after] in " \t\r\n":
+        after += 1
+    title = (_title(text, after) if after > end
+             and text[end:after].count("\n") <= 1 else None)
     if title is not None:
-        end = title
+        title_line_end = text.find("\n", title)
+        if title_line_end < 0:
+            title_line_end = len(text)
+        if not text[title:title_line_end].strip(" \t\r"):
+            return target, title_line_end
     line_end = text.find("\n", end)
     if line_end < 0:
         line_end = len(text)
-    if text[end:line_end].strip(" \t"):
+    # An invalid title on a following line is ordinary paragraph text. A
+    # malformed same-line title still invalidates the entire definition.
+    if text[end:line_end].strip(" \t\r"):
         return None
     return target, line_end
 

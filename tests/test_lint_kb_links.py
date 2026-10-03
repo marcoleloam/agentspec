@@ -568,6 +568,50 @@ def test_literal_backticks_do_not_hide_intervening_reference_definitions(repo, l
     assert (result.returncode, result.stdout, result.stderr) == (1, expected, '')
 
 
+@pytest.mark.parametrize("definition,valid", [
+    ('[ref]: missing.md\n"title" extra', True),
+    ('[ref]: missing.md\n"valid title"', True),
+    ('[ref]: missing.md\n"unclosed title', True),
+    ('[ref]: missing.md "title" extra', False),
+    ('[ref]: missing.md "valid title"', True),
+    ('[ref]: missing.md "unclosed title', False),
+    ('[ref]:\n missing.md\n"title" extra', True),
+    ('[ref]:\n\nmissing.md', False),
+])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_reference_title_failure_only_invalidates_same_line(
+        repo, definition, valid, newline):
+    source = definition + "\n\n[ref]\n"
+    write(repo, ".claude/kb/source.md", source.replace("\n", newline))
+    result = run(repo)
+    line = definition.count("\n") + 3
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1 if valid else 0,
+        f".claude/kb/source.md:{line}: missing.md\n" if valid else "",
+        "",
+    )
+
+
+def test_invalid_next_line_title_is_scanned_as_paragraph(repo):
+    write(repo, ".claude/kb/source.md",
+          '[ref]: missing.md\n"title" [other](other.md)\n\n[ref]\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:2: other.md\n"
+           ".claude/kb/source.md:4: missing.md\n", "",
+    )
+
+
+def test_blank_line_separates_reference_title_candidate(repo):
+    write(repo, ".claude/kb/source.md",
+          '[ref]: missing.md\n\n"[other](other.md)"\n\n[ref]\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: other.md\n"
+           ".claude/kb/source.md:5: missing.md\n", "",
+    )
+
+
 def test_multiline_reference_definitions_normalize_labels_per_use(repo):
     write(repo, '.claude/kb/source.md', '\r\n'.join([
         '[hello', 'world]: <./missing.md?q=1#part> "title"', '',
