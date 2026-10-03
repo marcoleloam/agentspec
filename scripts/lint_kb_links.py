@@ -407,8 +407,16 @@ def _blocks(text: str) -> str:
     return "".join(lines)
 
 
-def _spaces(text: str, index: int) -> int:
-    while index < len(text) and text[index] in " \t\n":
+def _spaces(text: str, index: int) -> int | None:
+    """Consume inline-link spacing, which may contain at most one line ending."""
+    breaks = 0
+    while index < len(text) and text[index] in " \t\r\n":
+        if text[index] in "\r\n":
+            breaks += 1
+            if breaks > 1:
+                return None
+            if text[index:index + 2] == "\r\n":
+                index += 1
         index += 1
     return index
 
@@ -454,6 +462,7 @@ def _destination(text: str, index: int) -> tuple[str, int] | None:
 def _title(text: str, index: int) -> int | None:
     if index >= len(text) or text[index] not in "\"'(":
         return None
+    start = index
     closing = ")" if text[index] == "(" else text[index]
     index += 1
     while index < len(text):
@@ -461,6 +470,8 @@ def _title(text: str, index: int) -> int | None:
             index += 2
             continue
         if text[index] == closing:
+            if _BLANK_LINE.search(text, start, index + 1):
+                return None
             return index + 1
         if text[index] in "\0\x01" or (closing == ")" and text[index] == "("):
             return None
@@ -619,16 +630,22 @@ def _bracket_end(text: str, index: int, containers=()) -> int | None:
 
 def _inline(text: str, index: int) -> tuple[str, int] | None:
     start = _spaces(text, index + 1)
+    if start is None:
+        return None
     parsed = _destination(text, start)
     if parsed is None:
         return None
     target, end = parsed
     after = _spaces(text, end)
+    if after is None:
+        return None
     if after > end and after < len(text) and text[after] in "\"'(":
         title = _title(text, after)
         if title is None:
             return None
         after = _spaces(text, title)
+        if after is None:
+            return None
     if after < len(text) and text[after] == ")":
         return target, after + 1
     return None

@@ -738,6 +738,35 @@ def test_link_label_can_cross_soft_line_break(source, target, newline, repo):
     )
 
 
+@pytest.mark.parametrize('source', [
+    '[x](missing.md\n\n)',
+    '[x](\n\nmissing.md)',
+    '[x](missing.md\n\n"title")',
+    '[x](missing.md "title\n\ncontinued")',
+    '- [x](missing.md\n  \n  )',
+])
+@pytest.mark.parametrize('newline', ['\n', '\r\n'])
+def test_inline_link_cannot_cross_blank_paragraph(source, newline, repo):
+    write(repo, '.claude/kb/source.md', source.replace('\n', newline) + newline)
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (0, '', '')
+
+
+@pytest.mark.parametrize('source', [
+    '[x](missing.md\n)',
+    '[x](\nmissing.md)',
+    '[x](missing.md\n"title")',
+    '[x](missing.md "first\nsecond")',
+])
+@pytest.mark.parametrize('newline', ['\n', '\r\n'])
+def test_inline_link_accepts_one_soft_line_break(source, newline, repo):
+    write(repo, '.claude/kb/source.md', source.replace('\n', newline) + newline)
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, '.claude/kb/source.md:1: missing.md\n', '',
+    )
+
+
 def test_code_spans_do_not_define_references_or_start_comments(repo):
     write(repo, ".claude/kb/source.md", "\n".join([
         '`<!--` [broken](lost.md)',
