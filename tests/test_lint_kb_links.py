@@ -509,6 +509,48 @@ def test_unclosed_heading_code_does_not_hide_following_links(repo, prefix, ticks
     )
 
 
+@pytest.mark.parametrize("underline", ["=======", "---", "=", "-", "   ===\t"])
+@pytest.mark.parametrize("prefix,continuation", [("", ""), ("> ", "> "), ("- ", "  "),
+                                                  ("- > ", "  > ")])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_unclosed_setext_code_does_not_hide_following_links(
+        repo, underline, prefix, continuation, newline):
+    write(repo, ".claude/kb/source.md", newline.join([
+        prefix + "`titulo", continuation + underline,
+        continuation + "[x](missing.md)", continuation + "`", "",
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:3: missing.md\n", "",
+    )
+
+
+def test_setext_boundary_preserves_heading_links_and_following_definitions(repo):
+    write(repo, ".claude/kb/source.md", "\n".join([
+        '`[hidden](hidden.md)` [heading](heading.md) ``open',
+        'second heading line', '===',
+        '[ref]: reference.md', '[ref] ![image][ref]', '``', '',
+        '`soft break', '[hidden](also-hidden.md)', '` [after](after.md)', '',
+    ]))
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:1: heading.md\n"
+           ".claude/kb/source.md:5: reference.md\n"
+           ".claude/kb/source.md:5: reference.md\n"
+           ".claude/kb/source.md:10: after.md\n", "",
+    )
+
+
+@pytest.mark.parametrize("line", ["==== text", "== ==", "    ===", r"\===", "-- -- text"])
+def test_non_setext_lines_preserve_multiline_inline_code(repo, line):
+    write(repo, ".claude/kb/source.md",
+          f'`code\n{line}\n[x](hidden.md)\n` [after](after.md)\n')
+    result = run(repo)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, ".claude/kb/source.md:4: after.md\n", "",
+    )
+
+
 @pytest.mark.parametrize("prefix", ["# ", "> > ## ", "- - ### "])
 def test_heading_code_keeps_inline_syntax_and_following_definitions(repo, prefix):
     write(repo, ".claude/kb/source.md", "\r\n".join([

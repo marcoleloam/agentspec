@@ -130,6 +130,14 @@ def _blocks(text: str) -> str:
                 lines.append(_hide(line))
                 offset += len(line)
                 continue
+        # A Setext underline closes the preceding paragraph as a heading.
+        # Keep that boundary for every later inline/definition pass, including
+        # inside containers whose prefixes will otherwise become spaces.
+        if not comment and paragraph and re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*\n?", content):
+            lines.append(_hide(line))
+            paragraph = False
+            offset += len(line)
+            continue
         # ATX headings end on this line, including inside quotes/lists. Bound
         # inline parsing before container prefixes are neutralized below.
         heading = not comment and re.match(r" {0,3}#{1,6}(?:[ \t]|$)", content) is not None
@@ -354,9 +362,12 @@ def _code_end(text: str, index: int, containers=()) -> int | None:
     prefix = "(?:" + "|".join(prefixes) + ")"
     fence = (r"\n" + prefix + r" {0,3}(?:(?:>[ \t]?|(?:[-+*]|[0-9]{1,9}[.)])"
              r"[ \t]{1,4}) {0,3})*(?:`{3,}[^`\n]*|~{3,}[^\n]*)(?=\n|$)")
+    # Block syntax takes precedence over code spans: an unmatched backtick
+    # in a Setext heading cannot close in the paragraph after its underline.
+    setext = r"\n" + prefix + r" {0,3}(?:=+|-+)[ \t]*(?=\n|$)"
     # Inline code may otherwise span soft line breaks, but not separate
     # paragraphs or masked blocks (including quote-only blank lines).
-    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]|" + fence, text[start:])
+    boundary = re.search(r"\n[ \t]*(?:>[ \t]*)*\n|[\0\x01]|" + fence + "|" + setext, text[start:])
     limit = start + boundary.start() if boundary else len(text)
     # Only a delimiter with the exact same number of backticks closes a span.
     closing = re.search(r"(?<!`)" + run + r"(?!`)", text[start:limit])
